@@ -31,8 +31,39 @@
       {
         "hooks": [
           {
+            "type": "command",
+            "command": "command -v mempalace >/dev/null 2>&1 && mempalace hook run --hook session-start --harness claude-code || exit 0",
+            "statusMessage": "MemPalace hafiza yukleniyor..."
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
             "type": "prompt",
             "prompt": "Oturum basladi. init-check script sonucunu oku. INIT_MISSING varsa eksikleri kullaniciya bildir ve /project-init onerisi sun. INIT_OK ise sessizce devam et."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v mempalace >/dev/null 2>&1 && mempalace hook run --hook stop --harness claude-code || exit 0",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v mempalace >/dev/null 2>&1 && mempalace hook run --hook precompact --harness claude-code || exit 0",
+            "timeout": 30
           }
         ]
       }
