@@ -1,6 +1,6 @@
 {
   "name": "personal-assistant",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "Kisisel asistan plugin'i — init kontrolleri, MemPalace hafiza, oturum yonetimi, extension builder, commit, project-init, global rules",
   "author": {
     "name": "Omer Faruk Yigin"
