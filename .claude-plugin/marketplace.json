@@ -1,0 +1,17 @@
+{
+  "name": "personal-assistant",
+  "owner": {
+    "name": "Omer Faruk Yigin"
+  },
+  "metadata": {
+    "description": "Kisisel asistan plugin'i — init kontrolleri, Obsidian entegrasyonu, oturum yonetimi",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "personal-assistant",
+      "description": "Init kontrolleri, Obsidian vault senkronizasyonu ve oturum yonetimi",
+      "source": "./"
+    }
+  ]
+}
