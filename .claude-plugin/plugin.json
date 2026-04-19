@@ -1,6 +1,6 @@
 {
   "name": "personal-assistant",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Kisisel asistan plugin'i — init kontrolleri, Obsidian entegrasyonu, oturum yonetimi, extension builder, commit, project-init, global rules",
   "author": {
     "name": "Omer Faruk Yigin"
