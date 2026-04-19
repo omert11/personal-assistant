@@ -23,9 +23,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pwsh -File ${CLAUDE_PLUGIN_ROOT}/scripts/init-check.ps1",
-            "shell": "powershell",
-            "statusMessage": "Proje yapilandirmasi kontrol ediliyor..."
+            "command": "command -v pwsh >/dev/null 2>&1 && pwsh -File ${CLAUDE_PLUGIN_ROOT}/scripts/init-check.ps1 || exit 0",
+            "statusMessage": "Proje yapilandirmasi kontrol ediliyor (pwsh)..."
           }
         ]
       },
@@ -33,17 +32,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Oturum basladi. Yapman gerekenler:\n1. init-check script sonucunu oku. INIT_MISSING varsa eksikleri kullaniciya bildir ve /project-init onerisi sun. INIT_OK ise sessizce devam et.\n2. Obsidian MCP erisimi varsa (obsidian araclari mevcutsa): Vault'ta bu projeyle ilgili not var mi kontrol et (obsidian_simple_search ile proje adini ara). Yoksa kullaniciya 'Bu proje icin Obsidian notu bulunamadi, olusturayim mi?' diye sor.\n3. Obsidian MCP yoksa bu adimi atla."
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "Oturum sona eriyor. Kontrol et:\n1. Bu konusmada yeni ogrenilenler var mi? (yeni sunucu bilgisi, API key, proje detayi, teknik karar vb.)\n2. Obsidian MCP erisimi varsa ve kayda deger bilgi varsa: ilgili proje notuna ekle veya yeni not olustur. Kullanicidan onay al.\n3. Obsidian MCP yoksa bu adimi atla."
+            "prompt": "Oturum basladi. init-check script sonucunu oku. INIT_MISSING varsa eksikleri kullaniciya bildir ve /project-init onerisi sun. INIT_OK ise sessizce devam et."
           }
         ]
       }

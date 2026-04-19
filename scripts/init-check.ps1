@@ -15,7 +15,6 @@ if (-not (Test-Path "CLAUDE.local.md")) {
     if ($content -notmatch "Vikunja") { $Missing += "Vikunja ID" }
     if ($content -notmatch "Solo") { $Missing += "Solo ID" }
     if ($content -notmatch "Stitch") { $Missing += "Stitch ID" }
-    if ($content -notmatch "(?i)Obsidian") { $Missing += "Obsidian klasor adi" }
 }
 
 # Sonuc

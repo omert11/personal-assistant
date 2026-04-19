@@ -1,6 +1,6 @@
 ---
 name: project-init
-description: Yeni bir projede CLAUDE.md, CLAUDE.local.md, solo.yml dosyalarini kontrol edip eksikleri interaktif sekilde tamamlayan skill. Vikunja projesi olusturma, Solo proje baglama, Obsidian klasor olusturma ve solo.yml yapilandirmasi dahil. Bu skill'i su durumlarda kullan - "projeyi kur", "init", "proje baslat", "yapilandirma", "setup", "CLAUDE.md olustur", "solo.yml ekle", "vikunja projesi ac". Ayrica her konusmanin basinda eksik yapilandirma tespit edildiginde otomatik olarak onerilerek tetiklenmeli.
+description: Yeni bir projede CLAUDE.md, CLAUDE.local.md, solo.yml dosyalarini kontrol edip eksikleri interaktif sekilde tamamlayan skill. Vikunja projesi olusturma, Solo proje baglama ve solo.yml yapilandirmasi dahil. Bu skill'i su durumlarda kullan - "projeyi kur", "init", "proje baslat", "yapilandirma", "setup", "CLAUDE.md olustur", "solo.yml ekle", "vikunja projesi ac". Ayrica her konusmanin basinda eksik yapilandirma tespit edildiginde otomatik olarak onerilerek tetiklenmeli.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
@@ -66,7 +66,6 @@ Hangi işlemler gerekli:
 - Vikunja ID yok mu → proje oluşturulacak (sorulacak)
 - Solo ID yok mu → oluşturulacak (sorulacak)
 - Stitch ID yok mu → sorulacak
-- Obsidian klasörü yok mu → oluşturulacak
 - Projeye özel bilgiler → sorulacak
 
 ### 4. Toplu Soru Bloğu
@@ -84,7 +83,6 @@ Hangi işlemler gerekli:
 - **Vikunja**: header "Vikunja", question "Vikunja'da proje oluşturayım mı?", options ["Evet, oluştur", "Mevcut projeyi seç", "Hayır"]
 - **Solo**: header "Solo", question "Solo projesi oluşturayım mı?", options ["Evet (boş solo.yml)", "Hayır"]
 - **Stitch**: header "Stitch", question "Stitch (UI tasarım) projesi oluşturayım mı?", options ["Evet", "Hayır"]
-- **Obsidian**: header "Obsidian", question "Obsidian vault'ta proje klasörü açayım mı?", options ["Evet, aç", "Hayır"]
 
 **Soru Grubu 3 — Projeye Özel**
 
@@ -149,9 +147,6 @@ Gereksiz bölümleri atlama: kullanıcının verdiği bilgiyle gerekeni yaz, yap
 ## Stitch
 - **Proje**: {AD} (ID: {STITCH_ID})
 
-## Obsidian
-- **Klasör**: {OBSIDIAN_PATH}
-
 ## Projeye Özel
 {KULLANICININ VERDIĞI EKSTRA BILGILER}
 ```
@@ -206,14 +201,6 @@ Solo MCP ile proje oluşturma tool'u var mı test et. Yoksa kullanıcıya Solo U
 
 `mcp__stitch__create_project` ile oluştur, ID'yi CLAUDE.local.md'ye yaz.
 
-#### Obsidian (seçildiyse)
-
-Obsidian MCP ile klasör oluştur:
-```
-Default: "Local/Projeler/{PROJE_ADI}" (kişisel asistan CLAUDE.md'deki yapıya benzer)
-```
-Path'i CLAUDE.local.md'ye yaz.
-
 ### 7. Mevcut Proje Modu
 
 Projede **bazı dosyalar zaten varsa**:
@@ -236,7 +223,6 @@ Skill bitince kısa bir özet:
 ✅ Entegrasyonlar:
   - Vikunja: Proje "X" oluşturuldu (ID: 42)
   - Stitch: Proje "X" oluşturuldu (ID: 9876)
-  - Obsidian: "Local/Projeler/X" klasörü açıldı
 
 📝 Sonraki adımlar:
   - solo.yml process'lerini doldur
