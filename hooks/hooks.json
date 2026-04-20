@@ -32,7 +32,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v mempalace >/dev/null 2>&1 && mempalace hook run --hook session-start --harness claude-code || exit 0",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/ensure-mempalace-yaml.sh",
+            "statusMessage": "MemPalace proje config hazirlaniyor..."
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/mempalace-wakeup.sh",
             "statusMessage": "MemPalace hafiza yukleniyor..."
           }
         ]
@@ -40,8 +49,8 @@
       {
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "Oturum basladi. init-check script sonucunu oku. INIT_MISSING varsa eksikleri kullaniciya bildir ve /project-init onerisi sun. INIT_OK ise sessizce devam et."
+            "type": "command",
+            "command": "echo 'Oturum basladi. init-check script sonucunu oku. INIT_MISSING varsa eksikleri kullaniciya bildir ve /project-init onerisi sun. INIT_OK ise sessizce devam et.'"
           }
         ]
       }

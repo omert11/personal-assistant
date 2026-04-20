@@ -181,6 +181,52 @@ def section_mempalace():
         with console.status(f"[yellow]mempalace init {PALACE}[/yellow]"):
             run(f"mempalace init {PALACE} --yes --lang en,tr")
         ok(f"Palace oluşturuldu: {PALACE}")
+    _setup_identity()
+
+
+def _setup_identity():
+    """Interactive identity.txt builder for mempalace wake-up L0."""
+    id_path = PALACE / "identity.txt"
+    if id_path.exists() and id_path.read_text().strip():
+        skip(f"identity.txt dolu ({id_path})")
+        return
+
+    console.print(Panel(
+        "[bold]Identity yapılandırması[/bold]\n"
+        "Bu bilgi her [cyan]mempalace wake-up[/cyan] çıktısında L0 katmanı olarak yüklenir\n"
+        "ve yeni oturumlarda Claude'a sen kimsin öğretir.\n"
+        "Boş geçebilirsin — sonra ~/.mempalace/identity.txt elle düzenlenebilir.",
+        border_style="cyan",
+    ))
+
+    name   = Prompt.ask("  Ad Soyad",         default="")
+    email  = Prompt.ask("  E-posta",          default="")
+    github = Prompt.ask("  GitHub kullanıcı", default="")
+    role   = Prompt.ask("  Rol / ünvan",      default="Developer")
+    lang   = Prompt.ask("  Tercih dil",       default="Türkçe")
+    tools  = Prompt.ask("  Kullandığın ana araçlar (virgülle)", default="Claude Code, uv, Solo, Zed")
+    style  = Prompt.ask("  Claude'dan beklediğin stil",         default="kısa, teknik, onaylı commit")
+    notes  = Prompt.ask("  Ekstra (opsiyonel)",                 default="")
+
+    lines = []
+    if name:   lines.append(name)
+    if email or github:
+        meta = []
+        if github: meta.append(f"GitHub: {github}")
+        if email:  meta.append(f"Email: {email}")
+        lines.append(" / ".join(meta))
+    if role:   lines.append(f"Rol: {role}")
+    if lang:   lines.append(f"Dil: {lang}")
+    if tools:  lines.append(f"Araçlar: {tools}")
+    if style:  lines.append(f"Stil: {style}")
+    if notes:  lines.append(notes)
+
+    if not lines:
+        warn("Identity boş bırakıldı — atlandı")
+        return
+
+    id_path.write_text("\n".join(lines) + "\n")
+    ok(f"identity.txt yazıldı: {id_path}")
 
 
 # ── settings merge ────────────────────────────────────────
