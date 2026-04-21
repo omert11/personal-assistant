@@ -32,47 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/ensure-mempalace-yaml.sh",
-            "statusMessage": "MemPalace proje config hazirlaniyor..."
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/mempalace-wakeup.sh",
-            "statusMessage": "MemPalace hafiza yukleniyor..."
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
             "command": "echo 'Oturum basladi. init-check script sonucunu oku. INIT_MISSING varsa eksikleri kullaniciya bildir ve /project-init onerisi sun. INIT_OK ise sessizce devam et.'"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "agent",
-            "timeout": 60,
-            "prompt": "Hook event input: $ARGUMENTS\n\nGörevin: son asistan turunu ve kullanıcı mesajını MemPalace'e kaydet. Sessiz ve bağımsız çalış — main conversation'a hiçbir feedback gönderme.\n\n1. mempalace_diary_write(agent_name=\"claude-code\", entry=<AAAK özeti>, topic=<konu>) — AAAK format: pipe-separated, pipe'la ayrılmış key=value alanları, ISO tarih, ★-★★★★★ önem.\n\n2. Eğer turda verbatim değerli içerik varsa (karar, kod snippet, teknik öğrenim, credential not): mempalace_add_drawer(wing=<cwd basename>, room=<konu-uygun>, content=<verbatim>).\n   Drawer için wing: eğer cwd ~/Desktop/Git/* altındaysa o klasörün basename'i, değilse 'general'.\n   Room örnekleri: decisions, setup, hooks, secrets, debug, code, conversations.\n\n3. Yapısal ilişki varsa (X projede çalıştı, Y kararı alındı, Z tamamlandı): mempalace_kg_add(subject, predicate, object, valid_from=<YYYY-MM-DD>).\n\nKurallar:\n- Değersiz turlarda (kısa selam, mekanik cevap) hiçbir şey yazma, sessizce çık.\n- Duplicate kontrol: add_drawer öncesi mempalace_check_duplicate ile benzer içerik var mı bak.\n- Credential'ı KG'ye koyma (sadece drawer).\n- Çıktın main Claude'a yansımayacak — raporlamaya çalışma, sadece MCP çağrılarını yap ve bitir."
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "command -v mempalace >/dev/null 2>&1 && mempalace hook run --hook precompact --harness claude-code || exit 0",
-            "timeout": 30
           }
         ]
       }

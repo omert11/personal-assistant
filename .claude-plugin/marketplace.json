@@ -4,13 +4,13 @@
     "name": "Omer Faruk Yigin"
   },
   "metadata": {
-    "description": "Kisisel asistan plugin'i — init kontrolleri, MemPalace hafiza, oturum yonetimi",
+    "description": "Kisisel asistan plugin'i — init kontrolleri, oturum yonetimi",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "personal-assistant",
-      "description": "Init kontrolleri, MemPalace hafiza entegrasyonu ve oturum yonetimi",
+      "description": "Init kontrolleri ve oturum yonetimi",
       "source": "./"
     }
   ]

@@ -38,7 +38,6 @@ CLAUDE_DIR = HOME / ".claude"
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 LOCAL_DIR = HOME / "Desktop" / "local"
 MCP_DIR = HOME / "Desktop" / "Git" / "MCP"
-PALACE = HOME / ".mempalace"
 
 
 # ── UI ────────────────────────────────────────────────────
@@ -156,77 +155,6 @@ def ensure_python_venv(path: Path) -> bool:
     with console.status(f"[yellow]uv venv + pip install {path.name}[/yellow]"):
         run(f"cd {path} && uv venv && (uv pip install -r requirements.txt 2>/dev/null || uv pip install -e .)")
     return (path / ".venv").exists()
-
-
-# ── MemPalace ─────────────────────────────────────────────
-
-def mempalace_python() -> Path:
-    r = run("uv tool dir")
-    tool_dir = (r.stdout or "").strip()
-    if tool_dir:
-        return Path(tool_dir) / "mempalace" / "bin" / "python"
-    return HOME / ".local/share/uv/tools/mempalace/bin/python"
-
-def section_mempalace():
-    section("MemPalace")
-    if have("mempalace"):
-        skip("mempalace CLI")
-    else:
-        with console.status("[yellow]uv tool install mempalace[/yellow]"):
-            run("uv tool install mempalace")
-        ok("mempalace kuruldu")
-    if (PALACE / "mempalace.yaml").exists():
-        skip(f"Palace: {PALACE}")
-    else:
-        with console.status(f"[yellow]mempalace init {PALACE}[/yellow]"):
-            run(f"mempalace init {PALACE} --yes --lang en,tr")
-        ok(f"Palace oluşturuldu: {PALACE}")
-    _setup_identity()
-
-
-def _setup_identity():
-    """Interactive identity.txt builder for mempalace wake-up L0."""
-    id_path = PALACE / "identity.txt"
-    if id_path.exists() and id_path.read_text().strip():
-        skip(f"identity.txt dolu ({id_path})")
-        return
-
-    console.print(Panel(
-        "[bold]Identity yapılandırması[/bold]\n"
-        "Bu bilgi her [cyan]mempalace wake-up[/cyan] çıktısında L0 katmanı olarak yüklenir\n"
-        "ve yeni oturumlarda Claude'a sen kimsin öğretir.\n"
-        "Boş geçebilirsin — sonra ~/.mempalace/identity.txt elle düzenlenebilir.",
-        border_style="cyan",
-    ))
-
-    name   = Prompt.ask("  Ad Soyad",         default="")
-    email  = Prompt.ask("  E-posta",          default="")
-    github = Prompt.ask("  GitHub kullanıcı", default="")
-    role   = Prompt.ask("  Rol / ünvan",      default="Developer")
-    lang   = Prompt.ask("  Tercih dil",       default="Türkçe")
-    tools  = Prompt.ask("  Kullandığın ana araçlar (virgülle)", default="Claude Code, uv, Solo, Zed")
-    style  = Prompt.ask("  Claude'dan beklediğin stil",         default="kısa, teknik, onaylı commit")
-    notes  = Prompt.ask("  Ekstra (opsiyonel)",                 default="")
-
-    lines = []
-    if name:   lines.append(name)
-    if email or github:
-        meta = []
-        if github: meta.append(f"GitHub: {github}")
-        if email:  meta.append(f"Email: {email}")
-        lines.append(" / ".join(meta))
-    if role:   lines.append(f"Rol: {role}")
-    if lang:   lines.append(f"Dil: {lang}")
-    if tools:  lines.append(f"Araçlar: {tools}")
-    if style:  lines.append(f"Stil: {style}")
-    if notes:  lines.append(notes)
-
-    if not lines:
-        warn("Identity boş bırakıldı — atlandı")
-        return
-
-    id_path.write_text("\n".join(lines) + "\n")
-    ok(f"identity.txt yazıldı: {id_path}")
 
 
 # ── settings merge ────────────────────────────────────────
@@ -412,7 +340,6 @@ def section_register_mcps():
     section("Claude Code MCP servers (user scope)")
     mcp_list(refresh=True)  # prime cache once
     uv = HOME / ".local" / "bin" / "uv"
-    mpy = mempalace_python()
     vpy = LOCAL_DIR / "vikunja-mcp-new" / ".venv" / "bin" / "python"
 
     tasks = [
@@ -420,7 +347,6 @@ def section_register_mcps():
         ("whatsapp",  lambda: mcp_add_stdio("whatsapp",  f"{uv} --directory {LOCAL_DIR}/whatsapp-mcp/whatsapp-mcp-server run main.py")),
         ("zammad",    lambda: mcp_add_stdio("zammad",    f"{uv} --directory {LOCAL_DIR}/zammad-mcp run main.py")),
         ("vikunja",   lambda: mcp_add_stdio("vikunja",   f"{vpy} {LOCAL_DIR}/vikunja-mcp-new/server.py")),
-        ("mempalace", lambda: mcp_add_stdio("mempalace", f"{mpy} -m mempalace.mcp_server --palace {PALACE}")),
         ("context7",  lambda: mcp_add_http("context7",   "https://mcp.context7.com/mcp")),
     ]
     with_progress("MCP register", tasks)
@@ -485,7 +411,6 @@ def main():
     section_prereq()
     section_apps()
     section_local_mcps()
-    section_mempalace()
     section_caveman()
     section_settings()
     section_statusline()
