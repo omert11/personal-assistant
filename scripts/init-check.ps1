@@ -14,7 +14,6 @@ if (-not (Test-Path "CLAUDE.local.md")) {
     $content = Get-Content "CLAUDE.local.md" -Raw
     if ($content -notmatch "Vikunja") { $Missing += "Vikunja ID" }
     if ($content -notmatch "Solo") { $Missing += "Solo ID" }
-    if ($content -notmatch "Stitch") { $Missing += "Stitch ID" }
 }
 
 # Sonuc

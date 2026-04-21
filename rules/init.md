@@ -6,9 +6,8 @@ Her konuşmanın ilk mesajında, ne sorulursa sorulsun, önce şunları kontrol 
 2. `CLAUDE.local.md` mevcut mu
 3. `CLAUDE.local.md` içinde Vikunja proje ID tanımlı mı
 4. `CLAUDE.local.md` içinde Solo proje ID tanımlı mı
-5. `CLAUDE.local.md` içinde Stitch proje ID tanımlı mı
 
-Bu 5 maddenin herhangi biri eksikse, ilk çıktının sonuna ayrı bir bölüm olarak ekle:
+Bu 4 maddenin herhangi biri eksikse, ilk çıktının sonuna ayrı bir bölüm olarak ekle:
 
 > ⚠️ **Eksik Yapılandırma**: Eksikleri tamamlamak için `/project-init` komutunu çalıştırabilirsiniz.
 

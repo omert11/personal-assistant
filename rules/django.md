@@ -36,6 +36,4 @@ uv python pin 3.13 && uv venv && uv pip install -r requirements.txt && uv pip in
 - Ortak kullanıcı: `<admin-user>` / `<admin-pass>`
 - NOT: Bu user genel olarak tüm projelerde ortak, ekli olabilir
 - Panel (admin) template: **SmartAdmin** (Bootstrap 5, jQuery-free)
-- Stitch proje: SmartAdmin Dashboard (ID: `15595809980387860496`)
-- NOT: Admin panel UI tasarımları için Stitch üzerinden bu proje kullanılır
 - B2C projelerde URL yapısı: Django Admin → `superadmin/`, Panel sayfaları → `admin/`

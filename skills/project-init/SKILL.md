@@ -38,7 +38,6 @@ IS_GIT=$([ -d ".git" ] && echo true || echo false)
 # CLAUDE.local.md içinde ID'ler var mı
 VIKUNJA_ID=$(grep -oE "Vikunja.*ID:\s*\K[0-9]+" CLAUDE.local.md 2>/dev/null || echo "")
 SOLO_ID=$(grep -oE "Solo.*ID:\s*\K[0-9]+" CLAUDE.local.md 2>/dev/null || echo "")
-STITCH_ID=$(grep -oE "Stitch.*ID:\s*\K[0-9]+" CLAUDE.local.md 2>/dev/null || echo "")
 ```
 
 ### 2. Stack Tespiti
@@ -65,7 +64,6 @@ Hangi işlemler gerekli:
 - `.gitignore` yok veya `CLAUDE.local.md` içinde yok mu → eklenecek
 - Vikunja ID yok mu → proje oluşturulacak (sorulacak)
 - Solo ID yok mu → oluşturulacak (sorulacak)
-- Stitch ID yok mu → sorulacak
 - Projeye özel bilgiler → sorulacak
 
 ### 4. Toplu Soru Bloğu
@@ -82,7 +80,6 @@ Hangi işlemler gerekli:
 
 - **Vikunja**: header "Vikunja", question "Vikunja'da proje oluşturayım mı?", options ["Evet, oluştur", "Mevcut projeyi seç", "Hayır"]
 - **Solo**: header "Solo", question "Solo projesi oluşturayım mı?", options ["Evet (boş solo.yml)", "Hayır"]
-- **Stitch**: header "Stitch", question "Stitch (UI tasarım) projesi oluşturayım mı?", options ["Evet", "Hayır"]
 
 **Soru Grubu 3 — Projeye Özel**
 
@@ -119,7 +116,7 @@ Cevaplara göre sessizce:
 Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 
 ## Kullanılabilir MCP Araçları
-{PROJEYE UYGUN MCP'LER — örneğin Django projesiyse vikunja, solo, context7, github; Flutter ise + stitch}
+{PROJEYE UYGUN MCP'LER — örneğin Django projesiyse vikunja, solo, context7, github}
 
 ## Kod Konvansiyonları
 {STACK'E ÖZEL — örn Django: pre-commit + black + isort + dijilint; Go: golangci-lint; Rust: clippy}
@@ -143,9 +140,6 @@ Gereksiz bölümleri atlama: kullanıcının verdiği bilgiyle gerekeni yaz, yap
 
 ## Solo
 - **Proje**: {AD} (ID: {SOLO_ID})
-
-## Stitch
-- **Proje**: {AD} (ID: {STITCH_ID})
 
 ## Projeye Özel
 {KULLANICININ VERDIĞI EKSTRA BILGILER}
@@ -197,10 +191,6 @@ Seçileni CLAUDE.local.md'ye yaz
 
 Solo MCP ile proje oluşturma tool'u var mı test et. Yoksa kullanıcıya Solo UI'dan manuel eklemesini söyle ve ID'yi bekle (soru sor).
 
-#### Stitch (seçildiyse)
-
-`mcp__stitch__create_project` ile oluştur, ID'yi CLAUDE.local.md'ye yaz.
-
 ### 7. Mevcut Proje Modu
 
 Projede **bazı dosyalar zaten varsa**:
@@ -222,7 +212,6 @@ Skill bitince kısa bir özet:
 
 ✅ Entegrasyonlar:
   - Vikunja: Proje "X" oluşturuldu (ID: 42)
-  - Stitch: Proje "X" oluşturuldu (ID: 9876)
 
 📝 Sonraki adımlar:
   - solo.yml process'lerini doldur

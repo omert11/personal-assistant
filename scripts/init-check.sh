@@ -14,7 +14,6 @@ if [ ! -f "CLAUDE.local.md" ]; then
 else
   grep -q "Vikunja" CLAUDE.local.md 2>/dev/null || MISSING+=("Vikunja ID")
   grep -q "Solo" CLAUDE.local.md 2>/dev/null || MISSING+=("Solo ID")
-  grep -q "Stitch" CLAUDE.local.md 2>/dev/null || MISSING+=("Stitch ID")
 fi
 
 # Sonuc
