@@ -14,6 +14,7 @@ if [ ! -f "CLAUDE.local.md" ]; then
 else
   grep -q "Vikunja" CLAUDE.local.md 2>/dev/null || MISSING+=("Vikunja ID")
   grep -q "Solo" CLAUDE.local.md 2>/dev/null || MISSING+=("Solo ID")
+  grep -q "Obsidian Folder" CLAUDE.local.md 2>/dev/null || MISSING+=("Obsidian Folder")
 fi
 
 # Sonuc

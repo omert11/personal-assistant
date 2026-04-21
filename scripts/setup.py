@@ -100,13 +100,18 @@ def ensure_brew_cask(cask: str, app_path: Optional[str] = None) -> bool:
     if app_path and Path(app_path).exists():
         skip(f"{cask}")
         return True
-    r = run(f"brew list --cask {cask} 2>/dev/null")
-    if r.returncode == 0:
-        skip(f"{cask}")
-        return True
     if not have("brew"):
         err("brew yok")
         return False
+    cask_installed = run(f"brew list --cask {cask} 2>/dev/null").returncode == 0
+    if cask_installed and app_path and not Path(app_path).exists():
+        with console.status(f"[yellow]brew reinstall --cask {cask} (link eksik)[/yellow]"):
+            run(f"brew reinstall --cask {cask}")
+        ok(f"{cask} yeniden linklendi")
+        return True
+    if cask_installed:
+        skip(f"{cask}")
+        return True
     with console.status(f"[yellow]brew install --cask {cask}[/yellow]"):
         run(f"brew install --cask {cask}")
     ok(f"{cask} kuruldu")
@@ -291,6 +296,7 @@ def section_apps():
     section("Apps & Tools")
     tasks = [
         ("Zed editor", lambda: ensure_brew_cask("zed", "/Applications/Zed.app")),
+        ("Obsidian", lambda: ensure_brew_cask("obsidian", "/Applications/Obsidian.app")),
         ("Claude Code CLI", lambda: (skip("claude CLI") if have("claude") else run("npm install -g @anthropic-ai/claude-code", live=False) and ok("claude CLI kuruldu"))),
     ]
     with_progress("Uygulamalar", tasks)
@@ -300,6 +306,64 @@ def section_apps():
 
     if not have("docker") and Confirm.ask("Docker Desktop kurulsun mu?", default=True):
         ensure_brew_cask("docker", "/Applications/Docker.app")
+
+    section_obsidian_vault()
+
+
+def section_obsidian_vault():
+    if not Path("/Applications/Obsidian.app").exists():
+        return
+    section("Obsidian Vault")
+    default_vault = HOME / "Documents" / "ObsidianVault"
+    vault_str = Prompt.ask("Vault path", default=str(default_vault))
+    vault = Path(vault_str).expanduser()
+    if not vault.exists():
+        if not Confirm.ask(f"[yellow]{vault}[/yellow] yok. Olustursun mu?", default=True):
+            skip("vault olusturulmadi")
+            return
+        vault.mkdir(parents=True, exist_ok=True)
+        ok(f"vault olusturuldu: {vault}")
+    else:
+        skip(f"vault mevcut: {vault}")
+    if Confirm.ask(f"Obsidian [cyan]{vault.name}[/cyan] vault ile acilsin mi?", default=True):
+        run(f'open -a Obsidian "{vault}"')
+        ok("Obsidian acildi")
+
+    section_obsidian_mcp()
+
+
+def section_obsidian_mcp():
+    section("Obsidian MCP (mcp-obsidian)")
+    if mcp_has("obsidian"):
+        skip("obsidian MCP zaten register")
+        return
+    console.print(Panel(
+        "[bold]Local REST API[/bold] community plugin gerekli.\n"
+        "Adimlar:\n"
+        "  1. Obsidian -> Settings -> Community plugins -> Browse\n"
+        "  2. 'Local REST API' ara, kur, enable et\n"
+        "  3. Plugin ayarlarindan API Key kopyala",
+        border_style="cyan",
+        title="Plugin Kurulumu",
+    ))
+    if not Confirm.ask("Plugin kuruldu ve API key hazir mi?", default=False):
+        skip("obsidian MCP atlandi - plugin kurulmadi")
+        return
+    api_key = Prompt.ask("Obsidian API Key", password=True)
+    if not api_key:
+        warn("API key bos - obsidian MCP atlandi")
+        return
+    host = Prompt.ask("Host", default="127.0.0.1")
+    port = Prompt.ask("Port", default="27124")
+    with console.status("[yellow]mcp add obsidian[/yellow]"):
+        run(
+            f'claude mcp add --scope user obsidian '
+            f'--env OBSIDIAN_API_KEY={api_key} '
+            f'--env OBSIDIAN_HOST={host} '
+            f'--env OBSIDIAN_PORT={port} '
+            f'-- uvx mcp-obsidian'
+        )
+    ok("obsidian MCP eklendi")
 
 
 def section_caveman():

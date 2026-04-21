@@ -2,7 +2,7 @@
 name: commit
 description: Kod degisikliklerini commit etmeden once kalite kontrol akisi uygular ve sonunda kullaniciya teslimat secenekleri sunar. Bu skill'i su durumlarda kullan kullanici "commit", "commit at", "push et", "PR olustur", "branch ac", "degisiklikleri kaydet", "kodu gonder", "/commit" dediginde. Kodla ilgili herhangi bir teslimat/kaydetme isteginde bu skill tetiklenmeli.
 disable-model-invocation: false
-allowed-tools: Bash(git *), Bash(gh *), Bash(wt *), Read, Grep, Glob, AskUserQuestion
+allowed-tools: Bash(git *), Bash(gh *), Bash(wt *), Read, Grep, Glob, AskUserQuestion, Task
 ---
 
 # Commit Skill
@@ -73,6 +73,13 @@ Yapılan değişikliklerle uyuşan bir görev var mı tespit et:
 - **Var**: ID'sini sakla (sonra kapat)
 - **Yok**: bulgu olarak işaretle (yeni görev önerisi için)
 
+#### 3g. Obsidian Kayıt İhtiyacı
+`CLAUDE.local.md`'de `Obsidian Folder` varsa bu commit'te kaydedilmesi kayda değer bir şey var mı tespit et:
+- Yeni API key, sunucu bilgisi, teknik karar, kalıcı komut, tekrar eden pattern
+- Büyük mimari değişiklik (commit mesajı `feat:` veya `refactor:` başlıklı + >100 satır diff)
+
+Varsa bulgu olarak işaretle. Yoksa sessiz geç.
+
 ### 4. Toplu Soru Bloğu
 
 Bütün bulguları **tek `AskUserQuestion` çağrısında** sun (max 4 soru, gerekirse art arda blok). Sıra:
@@ -93,6 +100,12 @@ Bütün bulguları **tek `AskUserQuestion` çağrısında** sun (max 4 soru, ger
 **Soru 3 — Vikunja**
 - Görev varsa: header "Vikunja", question "Görev #X'i kapatayım mı?", options ["Evet kapat (DONE)", "Açık bırak"]
 - Görev yoksa: question "Bu değişiklik için Vikunja'da görev oluşturayım mı (DONE olarak)?", options ["Evet", "Hayır"]
+
+**Soru 3b — Obsidian (sadece 3g bulgusu varsa)**
+- header: "Obsidian"
+- question: "Bu commit'te kayda değer bilgi var. Obsidian klasörüne not ekleyeyim mi?"
+- options: ["Evet, obsidian-writer ile ekle", "Hayır, geç"]
+- Evet seçilirse commit sonrası `Task` ile `obsidian-writer MODE: append` çağır (TARGET: `~/Documents/ObsidianVault/<folder>`, content: bulgu özeti, topic: commit subject'inden türet).
 
 **Soru 4 — Commit Mesajı**
 - header: "Commit"

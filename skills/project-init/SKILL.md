@@ -38,6 +38,7 @@ IS_GIT=$([ -d ".git" ] && echo true || echo false)
 # CLAUDE.local.md içinde ID'ler var mı
 VIKUNJA_ID=$(grep -oE "Vikunja.*ID:\s*\K[0-9]+" CLAUDE.local.md 2>/dev/null || echo "")
 SOLO_ID=$(grep -oE "Solo.*ID:\s*\K[0-9]+" CLAUDE.local.md 2>/dev/null || echo "")
+OBSIDIAN_FOLDER=$(grep -oE "Obsidian Folder:\s*\K.+" CLAUDE.local.md 2>/dev/null || echo "")
 ```
 
 ### 2. Stack Tespiti
@@ -64,6 +65,7 @@ Hangi işlemler gerekli:
 - `.gitignore` yok veya `CLAUDE.local.md` içinde yok mu → eklenecek
 - Vikunja ID yok mu → proje oluşturulacak (sorulacak)
 - Solo ID yok mu → oluşturulacak (sorulacak)
+- Obsidian Folder yok mu → vault içinde klasör oluşturulacak (sorulacak)
 - Projeye özel bilgiler → sorulacak
 
 ### 4. Toplu Soru Bloğu
@@ -80,6 +82,7 @@ Hangi işlemler gerekli:
 
 - **Vikunja**: header "Vikunja", question "Vikunja'da proje oluşturayım mı?", options ["Evet, oluştur", "Mevcut projeyi seç", "Hayır"]
 - **Solo**: header "Solo", question "Solo projesi oluşturayım mı?", options ["Evet (boş solo.yml)", "Hayır"]
+- **Obsidian**: header "Obsidian", question "Obsidian vault içinde proje klasörü oluşturayım mı?", options ["Evet, oluştur", "Mevcut klasörü seç", "Hayır"]
 
 **Soru Grubu 3 — Projeye Özel**
 
@@ -141,6 +144,11 @@ Gereksiz bölümleri atlama: kullanıcının verdiği bilgiyle gerekeni yaz, yap
 ## Solo
 - **Proje**: {AD} (ID: {SOLO_ID})
 
+## Obsidian
+- **Obsidian Folder**: {OBSIDIAN_FOLDER}
+
+> NOT: `Obsidian Folder: <isim>` satırı init-check regex tarafından aranır. Formatı koru.
+
 ## Projeye Özel
 {KULLANICININ VERDIĞI EKSTRA BILGILER}
 ```
@@ -190,6 +198,35 @@ Seçileni CLAUDE.local.md'ye yaz
 #### Solo (seçildiyse)
 
 Solo MCP ile proje oluşturma tool'u var mı test et. Yoksa kullanıcıya Solo UI'dan manuel eklemesini söyle ve ID'yi bekle (soru sor).
+
+#### Obsidian (seçildiyse)
+
+Vault root: `~/Documents/ObsidianVault` (default).
+
+**Evet, oluştur:**
+```bash
+VAULT="$HOME/Documents/ObsidianVault"
+FOLDER="$VAULT/$PROJECT_NAME"
+mkdir -p "$FOLDER"
+# Opsiyonel: ilk not
+touch "$FOLDER/index.md"
+```
+`CLAUDE.local.md`'ye `Obsidian Folder: <PROJECT_NAME>` yaz.
+
+**Mevcut klasörü seç:**
+```bash
+ls -1 "$HOME/Documents/ObsidianVault"
+```
+Listele, `AskUserQuestion` ile seçtir. Seçileni `Obsidian Folder:` olarak yaz.
+
+**Sonrasında:**
+
+- **Yeni klasör oluşturulduysa** → Obsidian klasörü boş, doğrudan `obsidian-init` skill'ini / `obsidian-initializer` agent'ını **otomatik çağır** (sormadan). Rapor sonunda yazılan dosyaları göster.
+- **Mevcut klasör seçildiyse** → İçinde dosyalar olabilir, `AskUserQuestion` ile sor:
+  - header: "Obsidian"
+  - question: "Mevcut klasöre proje belleği (MOC + wikilinks) eklensin mi? (Çakışan dosyalar atlanır)"
+  - options: ["Evet, obsidian-init çalıştır", "Hayır, dokunma"]
+  - Evet seçilirse agent'ı çağır.
 
 ### 7. Mevcut Proje Modu
 
