@@ -252,6 +252,20 @@ def section_settings():
             err("settings.json bozuk — manual düzelt")
             return
 
+    extra_marketplaces = {
+        "personal-assistant": {
+            "source": {"source": "directory", "path": str(PLUGIN_ROOT)}
+        }
+    }
+    enabled_plugins = {"personal-assistant@personal-assistant": True}
+
+    caveman_path = LOCAL_DIR / "caveman"
+    if caveman_path.exists():
+        extra_marketplaces["caveman"] = {
+            "source": {"source": "directory", "path": str(caveman_path)}
+        }
+        enabled_plugins["caveman@caveman"] = True
+
     desired = {
         "env": {"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"},
         "statusLine": {
@@ -259,12 +273,8 @@ def section_settings():
             "command": "bash ~/.claude/scripts/statusline.sh",
             "padding": 0,
         },
-        "extraKnownMarketplaces": {
-            "personal-assistant": {
-                "source": {"source": "directory", "path": str(PLUGIN_ROOT)}
-            }
-        },
-        "enabledPlugins": {"personal-assistant@personal-assistant": True},
+        "extraKnownMarketplaces": extra_marketplaces,
+        "enabledPlugins": enabled_plugins,
         "language": "Türkçe",
         "alwaysThinkingEnabled": False,
     }
@@ -364,6 +374,23 @@ def section_apps():
         ensure_brew_cask("docker", "/Applications/Docker.app")
 
 
+def section_caveman():
+    section("Caveman plugin (opsiyonel)")
+    target = LOCAL_DIR / "caveman"
+    if target.exists():
+        skip(f"caveman zaten var: {target}")
+        return
+    if not Confirm.ask(
+        "[cyan]caveman[/cyan] plugin'i kurulsun mu? (output token'larını ~75% azaltan Claude Code skill'i)",
+        default=True,
+    ):
+        skip("caveman atlandı")
+        return
+    if ensure_repo("JuliusBrussee/caveman", target):
+        ok(f"caveman clone'landı: {target}")
+        info("settings.json'a marketplace + enabledPlugins eklenecek (sonraki adımda)")
+
+
 def section_local_mcps():
     section("Local MCP repos (omert11)")
     repos = [
@@ -395,7 +422,6 @@ def section_register_mcps():
         ("vikunja",   lambda: mcp_add_stdio("vikunja",   f"{vpy} {LOCAL_DIR}/vikunja-mcp-new/server.py")),
         ("mempalace", lambda: mcp_add_stdio("mempalace", f"{mpy} -m mempalace.mcp_server --palace {PALACE}")),
         ("context7",  lambda: mcp_add_http("context7",   "https://mcp.context7.com/mcp")),
-        ("stitch",    lambda: mcp_add_http("stitch",     "https://stitch.googleapis.com/mcp")),
     ]
     with_progress("MCP register", tasks)
 
@@ -460,6 +486,7 @@ def main():
     section_apps()
     section_local_mcps()
     section_mempalace()
+    section_caveman()
     section_settings()
     section_statusline()
     section_register_mcps()
