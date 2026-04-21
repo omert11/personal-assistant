@@ -2,7 +2,7 @@
 name: commit
 description: Kod degisikliklerini commit etmeden once kalite kontrol akisi uygular ve sonunda kullaniciya teslimat secenekleri sunar. Bu skill'i su durumlarda kullan kullanici "commit", "commit at", "push et", "PR olustur", "branch ac", "degisiklikleri kaydet", "kodu gonder", "/commit" dediginde. Kodla ilgili herhangi bir teslimat/kaydetme isteginde bu skill tetiklenmeli.
 disable-model-invocation: false
-allowed-tools: Bash(git *), Bash(gh *), Bash(wt *), Read, Grep, Glob, AskUserQuestion, Task
+allowed-tools: Bash(git *), Bash(gh *), Read, Grep, Glob, AskUserQuestion, Task
 ---
 
 # Commit Skill

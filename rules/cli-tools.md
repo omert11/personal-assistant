@@ -24,20 +24,6 @@
 - `uv pip freeze` - freeze
 - `uv run <komut>` - venv içinde komut çalıştır
 
-## wt (Git Worktree Manager)
-- `wt init` - proje kök dizininde `.wtconfig` oluştur
-- `wt new <isim> [base]` - yeni worktree oluştur (base opsiyonel, interaktif seçim)
-- `wt go <isim>` / `wt g <isim>` - worktree dizinine geç
-- `wt claude <isim>` / `wt c <isim>` - worktree'ye geçip Claude aç
-- `wt top` - ana repo dizinine dön
-- `wt list` - worktree listesi
-- `wt remove` - worktree sil
-- `wt merge` - PR oluştur + merge + temizle (base branch otomatik)
-- `wt status` - tüm worktree durumları
-- `wt config` - yapılandırma yönetimi
-- Kaynak: `~/Desktop/Git/shell/wt/`
-- NOT: `go`, `claude`, `top` komutları shell wrapper gerektirir (eval)
-
 ## rsvg-convert
 - `rsvg-convert -w 512 -h 512 input.svg -o output.png` - SVG'yi PNG'ye dönüştür (boyut belirterek)
 - `rsvg-convert input.svg -o output.pdf` - SVG'yi PDF'e dönüştür
