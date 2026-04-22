@@ -1,14 +1,14 @@
 ---
 name: obsidian-writer
-description: Obsidian vault'a MOC + [[wikilink]] yapısıyla not yazan alt agent. İki mod - (1) init - obsidian-initializer orchestrator tarafından çağrılır, proje analizinden index.md + Stack/Architecture/Recent-Activity/README-Summary dosyalarını üretir. (2) append - Stop hook veya ad-hoc 'obsidian'a not al' isteğinde tek bir özet/öğrenilen bilgi notunu ilgili klasöre ekler veya mevcut notu günceller. Her iki modda frontmatter (tags, aliases) + [[wikilink]] ile ilişkisel yapı korunur.
+description: Obsidian vault'a MOC + [[wikilink]] yapısıyla not yazan alt agent. Üç mod - (1) init - obsidian-initializer orchestrator tarafından çağrılır, proje analizinden index.md + Stack/Architecture/Recent-Activity/README-Summary dosyalarını üretir. (2) append - Stop hook veya ad-hoc 'obsidian'a not al' isteğinde tek bir özet/öğrenilen bilgi notunu ilgili klasöre ekler veya mevcut notu günceller. (3) doc-source - `obsidian-doc-source` skill tarafından çağrılır, dış kaynağı (URL/library/PDF/repo) **global** `~/Documents/ObsidianVault/docs/<source>/` klasörüne sectioned API reference formatında yazar, global docs MOC'una [[wikilink]] ekler (proje folder'ı bağımsız, tüm projeler paylaşır). Her modda frontmatter (tags, aliases) + [[wikilink]] ile ilişkisel yapı korunur.
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # Obsidian Writer
 
-İki çalışma modu var: **init** (proje belleği oluşturma) ve **append** (tekil not ekleme/güncelleme).
+Üç çalışma modu: **init** (proje belleği), **append** (tekil not), **doc-source** (dış kaynak dokümantasyonu).
 
-Orchestrator/caller prompt'unda `MODE: init` veya `MODE: append` belirtmeli. Belirtilmezse içerikten tahmin et (`stack_report`, `arch_report` gibi alanlar varsa init).
+Orchestrator/caller prompt'unda `MODE: init | append | doc-source` belirtmeli. Belirtilmezse içerikten tahmin et (`stack_report` → init, `content` + `topic` → append, `SOURCE_NAME` + `sections` → doc-source).
 
 ## Mod 1: Init
 
@@ -205,22 +205,140 @@ Eğer topic'e karşılık gelen not zaten varsa (`Glob {TARGET}/**/*.md` + başl
 
 Dosyanın sonuna ekle. Frontmatter'a dokunma.
 
+## Mod 3: Doc-Source (Dış Kaynak Dokümantasyonu)
+
+`obsidian-doc-source` skill tarafından çağrılır. Dış kaynağı (URL / library / PDF / GitHub repo) **global** docs klasörüne (`~/Documents/ObsidianVault/docs/<source-name>/`) sectioned multi-file API reference olarak yazar. Proje folder'ı altında DEĞİL — tüm projeler aynı docs pool'unu paylaşır.
+
+### Input
+
+Caller prompt'ta şu alanları verir:
+- `MODE: doc-source`
+- `TARGET` — Global hedef klasör (`~/Documents/ObsidianVault/docs/<source-name>` veya `-v2`, `-v3` vs.)
+- `SOURCE_NAME` — Kebab-case kaynak adı (`stripe-api`, `google-maps-places`)
+- `SOURCE_URL` — Orijinal kaynak
+- `SOURCE_TYPE` — `web` | `library` | `github` | `file`
+- `FETCHED_AT` — ISO tarih
+- `WRITE_MODE` — `overwrite` | `new_version` | `create`
+- Sections (boş olan atla): `overview`, `auth`, `endpoints`, `examples`, `reference`, `errors`, `rate_limits`, `sdk`, `changelog`
+
+### Akış
+
+1. **WRITE_MODE handle**:
+   - `overwrite` → `rm -rf {TARGET}` ile eski içeriği temizle
+   - `new_version` → caller TARGET'ı zaten `-vN` suffix'li verir, direkt kullan
+   - `create` → yeni klasör (çakışma yok)
+2. `mkdir -p {TARGET}` ile klasör hazırla
+3. Dolu her section için `{TARGET}/{section}.md` yaz (birden fazla Write tool call **paralel** — tek mesajda batch'le)
+4. `{TARGET}/index.md` (sub-MOC) yaz — **sadece dolu bölümlerin** wikilink'i
+5. Global docs MOC'unu (`~/Documents/ObsidianVault/docs/index.md`) güncelle — yoksa oluştur, varsa `[[<source-name>/index|<source-name>]]` duplicate kontrolüyle ekle
+
+### Şablonlar
+
+#### {TARGET}/index.md (sub-MOC, sadece dolu bölümler listelenir)
+
+```markdown
+---
+aliases:
+  - {SOURCE_NAME}
+tags:
+  - docs
+  - {SOURCE_TYPE}
+source_url: {SOURCE_URL}
+fetched_at: {FETCHED_AT}
+---
+
+# {SOURCE_NAME}
+
+Kaynak: `{SOURCE_URL}`
+Çekildi: {FETCHED_AT}
+Tip: {SOURCE_TYPE}
+
+## Bölümler
+
+- [[overview]] — Overview
+- [[endpoints]] — Endpoints
+- ...
+
+## İlgili
+
+- [[../index|Global Docs MOC]]
+```
+
+#### {TARGET}/{section}.md
+
+```markdown
+---
+aliases:
+  - {SOURCE_NAME} {section}
+tags:
+  - docs
+  - {SOURCE_TYPE}
+  - {section}
+source_url: {SOURCE_URL}
+fetched_at: {FETCHED_AT}
+---
+
+# {Section Başlığı}
+
+{bölüm içeriği}
+
+## İlgili
+
+- [[index|{SOURCE_NAME}]]
+- [[../index|Global Docs MOC]]
+```
+
+#### Global Docs MOC (`~/Documents/ObsidianVault/docs/index.md`)
+
+Yoksa oluştur:
+
+```markdown
+---
+aliases:
+  - Global Docs
+  - Docs MOC
+tags:
+  - docs
+  - moc
+---
+
+# Global Docs
+
+Tüm projeler arası paylaşılan kaynak dokümantasyonu. Her source `<source-name>/index.md` alt-MOC'una link'lenir.
+
+## Kaynaklar
+
+- [[stripe-api/index|stripe-api]]
+- [[google-maps-places/index|google-maps-places]]
+- ...
+```
+
+"Kaynaklar" bölümüne duplicate kontrolüyle yeni source ekle.
+
+Section başlık mapping: `overview` → `Overview`, `auth` → `Authentication`, `endpoints` → `Endpoints`, `examples` → `Examples`, `reference` → `Reference`, `errors` → `Errors`, `rate_limits` → `Rate Limits`, `sdk` → `SDK / Clients`, `changelog` → `Changelog`.
+
 ## Ortak Kurallar
 
-- Mevcut init dosyalarını **override etme**. Çakışma varsa `{filename}-generated.md` yaz ve raporda belirt.
-- Append modunda aynı `{date}` + `{topic}` kombinasyonu mevcutsa tekrar ekleme (dedup).
-- Frontmatter YAML syntax'ına sadık kal (list format: `- item`).
-- `[[wikilink]]` kullan, `[text](path)` markdown link kullanma.
-- Dosya isimleri kebab-case, başlıklar okunur format.
-- UTF-8, Türkçe karakter destekli yaz.
+- **Override etme** — mevcut dosya varsa `{filename}-generated.md` yaz ve raporda belirt (üç modda da aynı suffix)
+- **Dedup** — append modunda `{date}` + `{topic}` kombinasyonu mevcutsa ekleme; doc-source modunda ana MOC'ta aynı wikilink varsa ekleme
+- **Boş section yazma** — doc-source modunda içeriği boş bölüm dosyası oluşturma, sub-MOC'ta listeleme
+- Frontmatter YAML syntax'ına sadık kal (list format: `- item`)
+- `[[wikilink]]` kullan, `[text](path)` markdown link kullanma. Relative: `[[../../index|...]]`
+- Dosya isimleri kebab-case, başlıklar okunur format
+- UTF-8, Türkçe karakter destekli yaz (kod blokları ve API parametre isimleri hariç)
+- Paralel yazılabilir dosyalarda Write tool çağrılarını tek mesajda batch'le
 
 ## Dönüş
 
 Yazılan/güncellenen dosyaların listesini döndür:
 ```
-Mod: init | append
+Mod: init | append | doc-source
+Write-mode: overwrite | new_version | create   (sadece doc-source modunda)
 Olusturuldu:
-- /path/to/vault/proje/index.md
-Guncelledi:
-- /path/to/vault/proje/Learnings/hetzner-ssh.md
+- ~/Documents/ObsidianVault/docs/stripe-api/index.md
+- ~/Documents/ObsidianVault/docs/stripe-api/overview.md
+Guncellendi:
+- ~/Documents/ObsidianVault/docs/index.md (Kaynaklar bolumune link eklendi)
+Atlandi (bos):
+- auth, rate_limits
 ```

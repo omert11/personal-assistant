@@ -1,10 +1,10 @@
 {
   "name": "personal-assistant",
-  "version": "1.22.0",
-  "description": "Kisisel asistan plugin'i — init kontrolleri, oturum yonetimi, extension builder, commit, project-init, worktree, global rules",
+  "version": "1.23.0",
+  "description": "Kisisel asistan plugin'i — init kontrolleri, oturum yonetimi, extension builder, commit, project-init, worktree, obsidian docs, global rules",
   "author": {
     "name": "Omer Faruk Yigin"
   },
   "license": "MIT",
-  "keywords": ["personal", "assistant", "init", "hooks", "extension-builder", "commit", "obsidian", "obsidian-init", "obsidian-note", "knowledge-base", "worktree", "git-worktree"]
+  "keywords": ["personal", "assistant", "init", "hooks", "extension-builder", "commit", "obsidian", "obsidian-init", "obsidian-note", "obsidian-doc-source", "knowledge-base", "worktree", "git-worktree"]
 }
