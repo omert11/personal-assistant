@@ -96,6 +96,25 @@ def ensure_brew(pkg: str, cmd: Optional[str] = None) -> bool:
     ok(f"{pkg} kuruldu") if have(name) else err(f"{pkg} kurulamadı")
     return have(name)
 
+def ensure_uv_tool(pkg: str, cmd: Optional[str] = None, extras: Optional[str] = None) -> bool:
+    """Install a Python CLI via `uv tool install`. Idempotent."""
+    name = cmd or pkg
+    if have(name):
+        skip(f"{pkg}")
+        return True
+    if not have("uv"):
+        err("uv yok — uv tool install atlandı")
+        return False
+    spec = f"{pkg}[{extras}]" if extras else pkg
+    with console.status(f"[yellow]uv tool install {spec}[/yellow]"):
+        run(f"uv tool install '{spec}'")
+    if have(name):
+        ok(f"{pkg} kuruldu")
+        return True
+    err(f"{pkg} kurulamadı")
+    return False
+
+
 def ensure_brew_cask(cask: str, app_path: Optional[str] = None) -> bool:
     if app_path and Path(app_path).exists():
         skip(f"{cask}")
@@ -290,6 +309,12 @@ def section_prereq():
         warn("docker yok — github-mcp-server çalışmayacak. Kurulum: https://www.docker.com/products/docker-desktop/")
     else:
         skip("docker")
+
+    section("Python CLI tools (uv tool)")
+    uv_tools = [
+        ("markitdown", lambda: ensure_uv_tool("markitdown", extras="all")),
+    ]
+    with_progress("uv tool install", uv_tools)
 
 
 def section_apps():

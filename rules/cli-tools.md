@@ -29,3 +29,13 @@
 - `rsvg-convert input.svg -o output.pdf` - SVG'yi PDF'e dönüştür
 - `rsvg-convert -z 2 input.svg -o output.png` - 2x zoom ile dönüştür
 - Kurulum: `brew install librsvg`
+
+## markitdown
+- `markitdown dosya.pdf > cikti.md` - dosyayı markdown'a çevir (stdout)
+- `markitdown dosya.pdf -o cikti.md` - dosyayı markdown'a çevir (dosyaya)
+- `cat dosya.pdf | markitdown` - stdin'den oku
+- `markitdown --list-plugins` - yüklü pluginleri listele
+- `markitdown --use-plugins dosya.pdf` - pluginleri aktif ederek çevir
+- Desteklenen: PDF, Word, Excel, PowerPoint, HTML, CSV, JSON, XML, ZIP, EPUB, ses (transcription), görsel (OCR), YouTube URL
+- Kurulum: `uv tool install 'markitdown[all]'` (tüm format desteği)
+- NOT: `[all]` extras paketi PDF/Office/audio/youtube transcription dahil tüm backend'leri getirir
