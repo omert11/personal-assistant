@@ -1,3 +1,5 @@
 local-rules/
 claude.local.md
+CLAUDE.local.md
+.claude/settings.local.json
 .DS_Store

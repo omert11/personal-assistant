@@ -1,0 +1,8 @@
+name: personal-assistant
+icon: null
+processes:
+  # Plugin repo — çalışan process yok.
+  # Gerekirse buraya ekle, örnek:
+  # test:
+  #   command: bash scripts/init-check.sh
+  #   auto_start: false
