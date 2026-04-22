@@ -1,34 +1,62 @@
 ---
 name: worktree
-description: Git worktree yönetimi. Claude Code'un native --worktree/-w flag'i ve subagent isolation: worktree desteği ile uyumlu. Bu skill'i şu durumlarda kullan — kullanıcı "worktree aç", "worktree oluştur", "yeni worktree", "paralel çalışalım", "izole branch'te çalış", "worktree'leri listele", "worktree sil", "worktree temizle", "bu feature için ayrı worktree", "subagent'ları paralel worktree'de çalıştır", "worktree'den PR aç", "/worktree" dediğinde. Yeni feature/bugfix/experiment izolasyonu, paralel subagent koordinasyonu, .worktreeinclude + .gitignore kurulumu, merged worktree temizliği, worktree durumu raporlama için.
+description: Git worktree yönetimi. Claude Code native --worktree/-w flag, --tmux, subagent isolation: worktree, EnterWorktree/ExitWorktree tool ve .worktreeinclude desteği ile uyumlu. Bu skill'i şu durumlarda kullan — kullanıcı "worktree aç", "worktree oluştur", "yeni worktree", "worktree'ye gir", "worktree'den çık", "paralel çalışalım", "izole branch'te çalış", "worktree'leri listele", "worktree sil", "worktree temizle", "bu feature için ayrı worktree", "subagent'ları paralel worktree'de çalıştır", "worktree'den PR aç", "/worktree" dediğinde. Yeni feature/bugfix/experiment izolasyonu, paralel subagent koordinasyonu, .worktreeinclude + .gitignore kurulumu, merged worktree temizliği, worktree durumu raporlama için.
 disable-model-invocation: false
-allowed-tools: Bash(git *), Bash(gh *), Read, Write, Edit, Grep, Glob, AskUserQuestion, Task
+allowed-tools: Bash(git *), Bash(gh *), Bash(claude *), Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, EnterWorktree, ExitWorktree
 ---
 
 # Worktree Skill
 
-Git worktree'ler ile paralel/izole çalışma. Claude Code'un native mekanizmasına uyumlu:
+Claude Code native `--worktree` mekanizmasına **delege eden** wrapper. Session içi izolasyon `EnterWorktree`/`ExitWorktree` tool'larıyla yapılır. Toplu yönetim, paralel subagent koordinasyonu, PR akışı için.
 
 - Dizin: `<repo>/.claude/worktrees/<isim>/`
 - Branch: `worktree-<isim>`
-- Base: `origin/HEAD` (default remote branch)
-- `.worktreeinclude` destekli
-- Subagent `isolation: worktree` frontmatter uyumlu
+- Base: `HEAD` (EnterWorktree default) veya `origin/HEAD` (`claude -w` CLI flag default)
+- Native uyum: `claude --worktree`, `EnterWorktree`, `ExitWorktree`, `isolation: worktree` (subagent), `.worktreeinclude`, `cleanupPeriodDays`
 
 ## Komut Seti
 
 Argüman yoksa `AskUserQuestion` ile alt komut sor.
 
-### `new <isim> [base]`
+### `new <isim>` — Session içinde worktree'ye gir
 
-```bash
-REPO_ROOT=$(git rev-parse --show-toplevel)
-BASE=${BASE:-$(git symbolic-ref refs/remotes/origin/HEAD --short | sed 's|origin/||')}
-WT_PATH="$REPO_ROOT/.claude/worktrees/<isim>"
-git worktree add "$WT_PATH" -b "worktree-<isim>" "origin/$BASE"
+**Native tool delege** — `EnterWorktree` çağır:
+
+```
+EnterWorktree({ name: "<isim>" })
 ```
 
-Sonra `.worktreeinclude` pattern'lerini kopyala (aşağı bak).
+- İsim verilmezse random
+- Mevcut worktree'ye girmek için: `EnterWorktree({ path: "<mevcut-path>" })` (path `git worktree list`'de olmalı)
+- Session cwd otomatik worktree'ye geçer
+- Çıkış: `ExitWorktree({ action: "keep" | "remove" })`
+
+Yeni bir session'da worktree açmak için (bu session'ı kilitlemeden):
+
+```
+claude --worktree <isim>           # yeni session, izole worktree
+claude --worktree <isim> --tmux    # tmux session (iTerm2 native panes veya --tmux=classic)
+```
+
+### `enter <isim-veya-path>` — Mevcut worktree'ye gir
+
+```
+EnterWorktree({ path: "<repo>/.claude/worktrees/<isim>" })
+```
+
+Manuel `git worktree add` ile oluşturulmuş worktree'ler için `path` kullan.
+
+### `exit [keep|remove]`
+
+```
+ExitWorktree({ action: "keep" })
+# veya temiz ise:
+ExitWorktree({ action: "remove" })
+# dirty/commits varsa remove için:
+ExitWorktree({ action: "remove", discard_changes: true })
+```
+
+Sadece `EnterWorktree` ile girilmiş worktree'yi etkiler. Manuel `git worktree add` ile oluşturulanlara dokunmaz.
 
 ### `list` / `status`
 
@@ -48,7 +76,7 @@ Worktree'den PR aç:
 
 1. `git -C <worktree-path> push -u origin worktree-<isim>`
 2. Base branch'i `git -C <path> config --get branch.worktree-<isim>.merge` ile veya `origin/HEAD`'den al
-3. Commit akışı için `commit` skill'ine delege et (pre-commit hook, commit message formatı orada)
+3. Commit akışı için `commit` skill'ine delege et
 4. `gh pr create --base <base> --head worktree-<isim>`
 
 PR açıldıktan sonra kullanıcıya sor: merge sonrası worktree otomatik silinsin mi → evet ise `clean --merged` öner.
@@ -57,7 +85,7 @@ PR açıldıktan sonra kullanıcıya sor: merge sonrası worktree otomatik silin
 
 - `--merged`: PR'ı merge olmuş worktree'leri bul (`gh pr list --state merged`), tek tek `AskUserQuestion` ile onay
 - `<isim>`: Spesifik worktree sil (dirty ise uyar)
-- `--all`: Tüm safe-to-remove worktree'leri sil (aşağı bak)
+- `--all`: Tüm safe-to-remove worktree'leri sil
 
 ```bash
 git worktree remove <path>
@@ -66,6 +94,8 @@ git branch -D worktree-<isim>
 
 Dirty worktree için ASLA otomatik silme.
 
+**Native auto-sweep:** Claude Code `cleanupPeriodDays` setting ile orphan **subagent** worktree'lerini otomatik temizler (uncommitted yok + untracked yok + unpushed yok koşuluyla). `--worktree` veya `EnterWorktree` ile açılanları silmez. Manuel cleanup bunun yanında çalışır.
+
 ### `setup`
 
 Proje ilk kurulum (idempotent):
@@ -73,7 +103,8 @@ Proje ilk kurulum (idempotent):
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
 
-# .worktreeinclude (append-if-missing)
+# .worktreeinclude (gitignore syntax — NATIVE)
+# Sadece gitignore'da olan + pattern match dosyalar kopyalanır
 cat > "$REPO_ROOT/.worktreeinclude" <<'EOF'
 .env
 .env.local
@@ -104,54 +135,94 @@ Task({
 
 Her agent izole kopyada çalışır. Değişiklik yoksa Claude otomatik temizler.
 
-## `.worktreeinclude` Kopyalama
+## Native Tool & Flag Referansı
 
-Single-pass, null-safe:
+### Session içi tools
 
-```bash
-REPO_ROOT=$(git rev-parse --show-toplevel)
-INCLUDE="$REPO_ROOT/.worktreeinclude"
-[ -f "$INCLUDE" ] || exit 0
+| Tool | İş |
+|---|---|
+| `EnterWorktree({ name })` | Yeni worktree oluştur + session cwd'yi içine al. Base = `HEAD`. İsim verilmezse random |
+| `EnterWorktree({ path })` | Mevcut worktree'ye gir (path `git worktree list`'de olmalı) |
+| `ExitWorktree({ action: "keep" })` | Worktree'den çık, directory+branch korunur |
+| `ExitWorktree({ action: "remove" })` | Worktree'den çık, directory+branch silinir. Dirty ise `discard_changes: true` gerekir |
 
-# Yorum ve boş satırları çıkar, pattern listesi üret
-PATTERNS=$(grep -Ev '^\s*(#|$)' "$INCLUDE")
-[ -z "$PATTERNS" ] && exit 0
+Kısıt: `EnterWorktree` sadece **git repo içinde** VEYA `WorktreeCreate/WorktreeRemove` hook yapılandırıldığında çalışır. Zaten worktree'deyken çağrılamaz. `ExitWorktree` sadece aynı session'daki `EnterWorktree`'yi geri alır — dışarıdan oluşturulan worktree'lere dokunmaz.
 
-# Tek git ls-files çağrısı, null-delimited stream
-git -C "$REPO_ROOT" ls-files -z --others --ignored --exclude-standard \
-  | while IFS= read -r -d '' file; do
-      if echo "$PATTERNS" | grep -qE -- "$(echo "$file" | sed 's/[.[\*^$]/\\&/g')"; then
-        mkdir -p "$WT_PATH/$(dirname "$file")"
-        cp "$REPO_ROOT/$file" "$WT_PATH/$file"
-      fi
-    done
+### CLI flags (yeni session açarken)
+
+| Flag | İş |
+|---|---|
+| `claude --worktree <isim>` / `-w <isim>` | Izole worktree + session başlat. Base = `origin/HEAD`. İsim verilmezse random |
+| `claude --worktree --tmux` | Tmux session. `--tmux=classic` traditional tmux, default iTerm2 native panes |
+
+### Subagent frontmatter
+
+```yaml
+---
+isolation: worktree
+---
 ```
 
-NOT: Pattern gitignore-glob değil regex olarak eşleşir (basit isimler için yeterli; kompleks glob'lar için `fnmatch` gerekir).
+Agent kendi worktree'sinde çalışır, değişiklik yoksa auto-remove.
+
+## `.worktreeinclude` (NATIVE SYNTAX)
+
+`.gitignore` syntax — glob/pattern eşleşir. Sadece **gitignore'da olan + pattern match** dosyalar kopyalanır. Tracked dosyalar asla duplike olmaz.
+
+```
+.env
+.env.local
+config/secrets.json
+**/*.key
+```
+
+`--worktree`, `EnterWorktree`, subagent worktree, desktop app parallel sessions hepsine uygulanır.
 
 ## Base Branch Tespit
 
-Öncelik:
-1. Kullanıcı açıkça verdi → onu kullan
-2. `git symbolic-ref refs/remotes/origin/HEAD --short` → `origin/main` / `origin/master`
-3. Çıkmazsa: `git -C "$REPO_ROOT" remote set-head origin -a` (idempotent), tekrar dene
-4. Hâlâ çıkmazsa: `AskUserQuestion` ile branch listesi sun
+Hangi tool kullanıldığına göre farklı:
 
-## Cleanup Semantic (Claude native ile tutarlı)
+- **`EnterWorktree`** → `HEAD` (mevcut branch tip'i)
+- **`claude --worktree` / `-w`** → `origin/HEAD` (remote default branch)
 
-Safe-to-remove tek komutla:
+`origin/HEAD` yanlışsa remote default'u local'e senkronla (idempotent):
 
 ```bash
-# Upstream varsa unpushed commit sayısı, yoksa -1 (unsafe say)
+git remote set-head origin -a
+```
+
+Farklı branch sabit base olsun istiyorsan:
+
+```bash
+git remote set-head origin your-branch-name
+```
+
+## Cleanup Semantic
+
+Native davranış:
+- **No changes** (uncommitted yok + untracked yok + commit yok) → auto-remove
+- **Changes/commits var** → kullanıcıya sor (keep/remove)
+- **Subagent worktree orphan** → `cleanupPeriodDays` eşiğinden eski + temiz ise auto-sweep
+- **`--worktree` / `EnterWorktree` ile açılanlar** → sweep'e dahil değil
+
+Skill tarafı safe-to-remove check:
+
+```bash
 UNPUSHED=$(git -C <path> rev-list --count @{u}..HEAD 2>/dev/null || echo -1)
 DIRTY=$(git -C <path> status --porcelain)
 
 [ -z "$DIRTY" ] && [ "$UNPUSHED" = "0" ] && echo "safe-to-remove"
 ```
 
-Herhangi biri fail → kullanıcıya sor, asla zorlama.
+Upstream yoksa unsafe say, kullanıcıya sor.
 
-Upstream tanımlı değilse → unsafe say, kullanıcıya sor.
+## Session Picker Worktree Entegrasyonu
+
+Native `/resume` davranışı:
+- Default: mevcut worktree session'larını gösterir
+- `Ctrl+W`: repo'nun tüm worktree'leri
+- `Ctrl+A`: tüm projeler
+- `claude --resume <name>`: worktree'ler arası isim çözümlemesi
 
 ## Çıktı Formatı
 
@@ -167,13 +238,15 @@ worktree-bugfix-123       .claude/worktrees/bugfix-123             clean    +0/-
 
 1. Argüman parse et, yoksa `AskUserQuestion` ile alt komut sor
 2. Git repo kontrol → değilse hata ver
-3. Alt komut adımlarını uygula
+3. Alt komut adımlarını uygula (session içi işler için `EnterWorktree`/`ExitWorktree` kullan)
 4. Özet göster
-5. Takip komutu öner (örn. `new` sonrası: `claude --worktree <isim>` veya `cd <path> && claude`)
+5. Takip komutu öner
 
 ## Entegrasyon Notları
 
-- **Native Claude uyum**: Dizin + branch konvansiyonu, `.worktreeinclude` davranışı, cleanup semantic Claude'un `--worktree` flag'i ile birebir aynı
-- **Session geçişi**: Bu session worktree'ye cd yapmaz (tool call'lar arası persist etmez). Kullanıcıya `claude --worktree <isim>` öner
+- **Session içi izolasyon**: `EnterWorktree` bu session'ı worktree'ye taşır (cwd değişir). `ExitWorktree` geri döndürür. Yeni session için `claude -w <isim>` öner
+- **Dışarıdan oluşturulmuş worktree'ye girmek için**: `EnterWorktree({ path: "..." })` — path `git worktree list`'te olmalı
+- **Base branch farkı**: `EnterWorktree` = `HEAD`, `claude -w` = `origin/HEAD`. Kullanıcı ne istediğini netleştir
+- **.worktreeinclude syntax**: gitignore glob (regex değil)
 - **Commit delege**: `pr` akışı commit mantığını `commit` skill'ine bırakır (DRY)
-- **Auto-cleanup**: Native Claude sweep `cleanupPeriodDays` ile orphan subagent worktree'leri temizler — bu skill onu bozmaz
+- **Auto-cleanup**: Native Claude sweep `cleanupPeriodDays` ile orphan subagent worktree'leri temizler — skill bunu tamamlar
