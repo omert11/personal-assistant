@@ -19,3 +19,16 @@ Eğer kullanıcı bir sorun/hata/görev bildiriyorsa ve `CLAUDE.local.md`'de Vik
 1. Vikunja'da bu sorunla ilgili mevcut bir görev var mı kontrol et
 2. Görev varsa: görevi referans al ve üzerinden ilerle
 3. Görev yoksa: `AskUserQuestion` ile sor (header: "Vikunja", question: "Bu sorun için Vikunja'da görev bulunamadı. Oluşturayım mı?", options: ["Evet", "Hayır"])
+
+## Obsidian Learnings Ön Arama
+
+Kullanıcı oturumda **ilk somut görevi** verdiğinde (sorun bildir, değişiklik iste, bug çöz, feature ekle, refactor vb.) ve `CLAUDE.local.md`'de `Obsidian Folder: <isim>` tanımlıysa, göreve başlamadan önce ilgili Learnings notlarını ara:
+
+1. **MOC'tan başla**: `obsidian_get_file_contents("<folder>/index.md")` oku. Learnings başlığı altında göreve ilişkili [[wikilink]] varsa → `obsidian_get_file_contents("<folder>/Learnings/<link>.md")` ile **tamamını detaylıca** oku.
+2. **Match yoksa search**: `obsidian_simple_search(query)` çağır. Query için görevden çıkarılmış 2-3 anahtar terim kullan (örn. "SMS provider", "payment 3D Secure", "elastic reindex"). İlk 3-5 match'i oku.
+3. **Sinonim dene**: İlk search boş dönerse yeniden ifade et (örn. "ödeme" → "payment" → "3ds").
+4. **Bulduğun bilgiyi bağlam olarak kullan**: Kullanıcıya "şu Learnings notu ilgili görünüyor" diye kısaca belirt, sonra göreve başla.
+
+**Tetiklenmediği durumlar**: Selamlaşma, kavramsal soru ("X nedir?"), dosya listeleme gibi trivial istekler — arama yapılmaz.
+
+**Amaç**: Daha önce yazılmış proje-spesifik kuralları (DB şifresi, bilinen sorun, tasarım kararı) tekrar sormadan kullanmak.
