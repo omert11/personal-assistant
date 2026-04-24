@@ -280,6 +280,48 @@ def mcp_add_http(name: str, url: str):
     ok(f"mcp {name} eklendi (http)")
 
 
+# ── plugin register ───────────────────────────────────────
+
+_plugin_cache: Optional[str] = None
+_marketplace_cache: Optional[str] = None
+
+def plugin_list(refresh=False) -> str:
+    global _plugin_cache
+    if _plugin_cache is None or refresh:
+        _plugin_cache = run("claude plugin list 2>/dev/null").stdout or ""
+    return _plugin_cache
+
+def marketplace_list(refresh=False) -> str:
+    global _marketplace_cache
+    if _marketplace_cache is None or refresh:
+        _marketplace_cache = run("claude plugin marketplace list 2>/dev/null").stdout or ""
+    return _marketplace_cache
+
+def plugin_has(name: str) -> bool:
+    return f"{name}@" in plugin_list()
+
+def marketplace_has(name: str) -> bool:
+    return f"❯ {name}" in marketplace_list() or f"> {name}" in marketplace_list()
+
+def plugin_install_from_github(plugin_name: str, marketplace_name: str, source: str):
+    """Install a Claude Code plugin from a GitHub marketplace. Idempotent."""
+    if not marketplace_has(marketplace_name):
+        with console.status(f"[yellow]marketplace add {source}[/yellow]"):
+            run(f"claude plugin marketplace add {source}")
+        ok(f"marketplace {marketplace_name} eklendi")
+        marketplace_list(refresh=True)
+    else:
+        skip(f"marketplace {marketplace_name}")
+
+    if not plugin_has(plugin_name):
+        with console.status(f"[yellow]plugin install {plugin_name}[/yellow]"):
+            run(f"claude plugin install {plugin_name}@{marketplace_name}")
+        ok(f"plugin {plugin_name} kuruldu")
+        plugin_list(refresh=True)
+    else:
+        skip(f"plugin {plugin_name}")
+
+
 # ── progress-based sections ───────────────────────────────
 
 def with_progress(title: str, tasks: list[tuple[str, callable]]):
@@ -425,6 +467,16 @@ def section_local_mcps():
     with_progress("Repo clone + build", tasks)
 
 
+def section_app_store_mcp():
+    section("app-store-mcp plugin (omert11)")
+    plugin_install_from_github(
+        plugin_name="app-store-mcp",
+        marketplace_name="app-store-mcp",
+        source="omert11/app-store-mcp",
+    )
+    info("Fastlane gerekli — eksikse: brew install fastlane")
+
+
 def section_register_mcps():
     section("Claude Code MCP servers (user scope)")
     mcp_list(refresh=True)  # prime cache once
@@ -501,6 +553,7 @@ def main():
     section_apps()
     section_local_mcps()
     section_caveman()
+    section_app_store_mcp()
     section_settings()
     section_statusline()
     section_register_mcps()
