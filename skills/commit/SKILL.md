@@ -45,17 +45,22 @@ git diff --cached --stat  # staged varsa
 git diff
 ```
 
-#### 3b. /simplify Çalıştır
-Değişen kod üzerinde `/simplify` skill'ini çalıştır. Çıktıyı bulgu olarak topla.
+#### 3b. /simplify Çalıştır — ZORUNLU (kod değişikliği varsa)
 
-#### 3c. /review Çalıştır
-Aynı kod üzerinde `/review` skill'ini çalıştır. Çıktıyı topla.
+**Kural kesin**: `git diff --stat` çıktısında herhangi bir **kod dosyası** (`.py`, `.js`, `.ts`, `.tsx`, `.jsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.dart`, `.rb`, `.php`, `.c`, `.cpp`, `.cs`, `.sh`, `.vue`, `.svelte`) değişmişse `/simplify` skill'i **mutlaka** çalıştırılır.
 
-#### 3d. Test Kontrolü
+- **Atlanamaz**, **ertelenemez**, **koşula bağlanamaz**.
+- Kullanıcı "commit at hadi", "hızlıca commit", "direkt commit" dese bile önce `/simplify` çalışır.
+- Sadece **non-kod dosyaları** (`.md`, `.json`, `.yml`, `.txt`, asset'ler) değişmişse atlanabilir.
+- Skip sadece kullanıcı **açıkça** "simplify atla" / "skip simplify" / "simplify çalıştırma" derse mümkün — bu durumda bulgu olarak "kullanıcı explicit skip istedi" diye işaretle.
+
+Çıktıyı bulgu olarak topla. Simplify değişiklik önerdiyse Soru 1'e dahil et.
+
+#### 3c. Test Kontrolü
 - Değişen dosyaların test'i var mı? (`*.test.*`, `*_test.*`, `tests/`, `__tests__/`)
 - Yoksa **bulgu olarak işaretle** (sormak için bekle)
 
-#### 3e. Rules Uyum Kontrolü
+#### 3d. Rules Uyum Kontrolü
 `~/.claude/rules/` altındaki kuralları gözden geçir:
 - `coding.md` — TODO yorumları, error wrapping, dil ayrımı (Türkçe iletişim, İngilizce kod)
 - `python.md` — uv kullanımı (pip değil)
@@ -64,7 +69,7 @@ Aynı kod üzerinde `/review` skill'ini çalıştır. Çıktıyı topla.
 
 İhlal varsa bulgu olarak topla.
 
-#### 3f. Vikunja Görev Bağlantısı
+#### 3e. Vikunja Görev Bağlantısı
 `CLAUDE.local.md`'de Vikunja proje ID varsa:
 ```
 mcp__vikunja__vikunja_list_tasks ile aktif görevleri getir
@@ -73,47 +78,75 @@ Yapılan değişikliklerle uyuşan bir görev var mı tespit et:
 - **Var**: ID'sini sakla (sonra kapat)
 - **Yok**: bulgu olarak işaretle (yeni görev önerisi için)
 
-#### 3g. Obsidian Kayıt İhtiyacı
+#### 3f. Obsidian Kayıt İhtiyacı
 `CLAUDE.local.md`'de `Obsidian Folder` varsa bu commit'te kaydedilmesi kayda değer bir şey var mı tespit et:
 - Yeni API key, sunucu bilgisi, teknik karar, kalıcı komut, tekrar eden pattern
 - Büyük mimari değişiklik (commit mesajı `feat:` veya `refactor:` başlıklı + >100 satır diff)
 
 Varsa bulgu olarak işaretle. Yoksa sessiz geç.
 
-### 4. Toplu Soru Bloğu
+### 4. Toplu Soru Bloğu — Olabildiğince Tek Seferde
 
-Bütün bulguları **tek `AskUserQuestion` çağrısında** sun (max 4 soru, gerekirse art arda blok). Sıra:
+**Temel Kural**: Tüm bulgular + teslimat seçimi **önceden toplu sorulur**. Kesik kesik soru yasak. Max 4 soru/blok; 4'ten fazla soru varsa art arda (2. faz) blok.
 
-**Soru 1 — Tespit Edilen Sorunlar (varsa)**
+**Commit mesajı otomatik türetilir — SORULMAZ.** Conventional commit format (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`) tercih edilir. Diff özeti + branch ismi + değişen dosyalardan türet.
+
+#### Faz 1 — Ana Blok (≤4 soru)
+
+Aktif olanları (koşul sağlanan) sıraya koy, ilk 4'ünü tek blokta sor:
+
+**S1 — Tespit Edilen Sorunlar** (varsa)
 - header: "Sorunlar"
-- question: "Şu bulgular var: [/simplify: X, /review: Y, rules ihlal: Z]. Düzelteyim mi?"
-- options:
-  - "Evet, düzelt" (Recommended)
-  - "Sadece kritikleri düzelt"
-  - "Geçiştir, commit et"
+- question: "Şu bulgular var: [/simplify: X, rules ihlal: Z]. Düzelteyim mi?"
+- options: ["Evet, düzelt" (Recommended), "Sadece kritikleri düzelt", "Geçiştir, commit et"]
 
-**Soru 2 — Test Eksikse**
+**S2 — Test Eksikse** (3c bulgusu varsa)
 - header: "Test"
 - question: "Test yazılmamış: [dosyalar]. Ne yapalım?"
 - options: ["Test yaz", "Testsiz devam et"]
 
-**Soru 3 — Vikunja**
+**S3 — Vikunja** (proje ID varsa)
 - Görev varsa: header "Vikunja", question "Görev #X'i kapatayım mı?", options ["Evet kapat (DONE)", "Açık bırak"]
 - Görev yoksa: question "Bu değişiklik için Vikunja'da görev oluşturayım mı (DONE olarak)?", options ["Evet", "Hayır"]
 
-**Soru 3b — Obsidian (sadece 3g bulgusu varsa)**
+**S4 — Teslimat** (branch'e göre değişir)
+
+Ana branch'te (main/master):
+- header: "Teslimat"
+- question: "Commit sonrası ne yapayım?"
+- options:
+  - "PR + Merge + Clean" (Recommended) — branch aç, push, PR, merge, cleanup
+  - "Branch + PR" — branch aç, push, PR (merge etme)
+  - "Push et" — direkt `git push` (risky)
+  - "Sadece commit" — local bırak
+
+Feature branch'te:
+- header: "Teslimat"
+- question: "Commit sonrası ne yapayım?"
+- options:
+  - "PR + Merge + Clean" (Recommended) — push, PR, merge, cleanup
+  - "PR oluştur" — push, PR (merge etme)
+  - "Push et" — sadece `git push`
+  - "Sadece commit" — local bırak
+
+#### Faz 2 — Ek Blok (koşullu, ≤4 soru)
+
+Faz 1'de yer kalmayan veya koşullu sorular:
+
+**S5 — Obsidian** (3f bulgusu varsa)
 - header: "Obsidian"
 - question: "Bu commit'te kayda değer bilgi var. Obsidian klasörüne not ekleyeyim mi?"
 - options: ["Evet, obsidian-writer ile ekle", "Hayır, geç"]
-- Evet seçilirse commit sonrası `Task` ile `obsidian-writer MODE: append` çağır (TARGET: `~/Documents/ObsidianVault/<folder>`, content: bulgu özeti, topic: commit subject'inden türet).
+- Evet seçilirse commit sonrası `Task` ile `obsidian-writer MODE: append` çağır.
 
-**Soru 4 — Commit Mesajı**
-- header: "Commit"
-- question: "Commit mesajı: '<önerilen mesaj>'. Onaylıyor musun?"
-- options: ["Evet", "Düzenle", "İptal"]
-- Format: Conventional commit (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`) **tercih edilir** ama zorunlu değil. Otomatik öner ama kullanıcı düzenleyebilsin.
+**S6 — Worktree** (worktree'deyse)
+- header: "Worktree"
+- question: "Worktree'desin. `worktree` skill'i çalıştırayım mı (PR + merge + cleanup)?"
+- options: ["Evet, worktree skill çalıştır", "Hayır, sadece commit"]
 
-Sorunlar düzeltildikten sonra **son bir analiz** yap: "Atladığım bir şey var mı?" diye kendi kendine kontrol et. Yeni bulgu varsa kullanıcıya bildir.
+**Kural**: Faz 2 sadece gerçekten ek soru varsa tetiklenir. Yoksa Faz 1 sonrası direkt commit + teslimat.
+
+Sorunlar düzeltildikten sonra **son bir analiz** yap: "Atladığım bir şey var mı?" Yeni bulgu varsa tek ek blok ile sor.
 
 ### 5. Commit
 
@@ -141,31 +174,13 @@ EOF
 
 **Asla `--no-verify` kullanma.**
 
-### 7. Teslimat Seçenekleri
+### 7. Teslimat Uygulama
 
-Branch'a göre `AskUserQuestion`:
-
-#### Ana Branch'te (main/master)
-- header: "Teslimat"
-- question: "Commit atıldı. Sonra ne yapayım?"
-- options:
-  - "Push et" — `git push`
-  - "Branch + PR" — feat/<konu> branch oluştur, push, `gh pr create`
-  - "PR + Merge + Clean" — PR aç, merge et, branch temizle (Recommended)
-
-#### Feature Branch'te
-- header: "Teslimat"
-- question: "Commit atıldı. Sonra ne yapayım?"
-- options:
-  - "Push et" — `git push`
-  - "PR oluştur" — `gh pr create`
-  - "PR + Merge + Clean" — PR aç, merge et, branch temizle (Recommended)
-
-#### Worktree'deyse
-Yukarıdaki seçimden bağımsız olarak en sonda ek soru:
-- header: "Worktree"
-- question: "Worktree'desin. `worktree` skill'i çalıştırayım mı (PR + merge + cleanup)?"
-- options: ["Evet, worktree skill çalıştır", "Hayır, sadece commit"]
+Teslimat seçimi **Faz 1 S4**'te alındı. Commit sonrası seçime göre uygula:
+- "PR + Merge + Clean" → branch aç (gerekirse), push, PR, merge, cleanup
+- "Branch + PR" / "PR oluştur" → branch aç (gerekirse), push, PR
+- "Push et" → `git push`
+- "Sadece commit" → hiçbir şey yapma
 
 ### 8. Branch İsmi
 
