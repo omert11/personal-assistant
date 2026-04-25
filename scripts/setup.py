@@ -484,16 +484,15 @@ def section_register_mcps():
     vpy = LOCAL_DIR / "vikunja-mcp-new" / ".venv" / "bin" / "python"
 
     tasks = [
-        ("po-mcp",    lambda: mcp_add_stdio("po-mcp",    f"node {MCP_DIR}/po-mcp/dist/index.js")),
-        ("whatsapp",  lambda: mcp_add_stdio("whatsapp",  f"{uv} --directory {LOCAL_DIR}/whatsapp-mcp/whatsapp-mcp-server run main.py")),
-        ("zammad",    lambda: mcp_add_stdio("zammad",    f"{uv} --directory {LOCAL_DIR}/zammad-mcp run main.py")),
-        ("vikunja",   lambda: mcp_add_stdio("vikunja",   f"{vpy} {LOCAL_DIR}/vikunja-mcp-new/server.py")),
-        ("context7",  lambda: mcp_add_http("context7",   "https://mcp.context7.com/mcp")),
+        ("po-mcp",     lambda: mcp_add_stdio("po-mcp",     f"node {MCP_DIR}/po-mcp/dist/index.js")),
+        ("whatsapp",   lambda: mcp_add_stdio("whatsapp",   f"{uv} --directory {LOCAL_DIR}/whatsapp-mcp/whatsapp-mcp-server run main.py")),
+        ("zammad",     lambda: mcp_add_stdio("zammad",     f"{uv} --directory {LOCAL_DIR}/zammad-mcp run main.py")),
+        ("vikunja",    lambda: mcp_add_stdio("vikunja",    f"{vpy} {LOCAL_DIR}/vikunja-mcp-new/server.py")),
+        ("context7",   lambda: mcp_add_http("context7",    "https://mcp.context7.com/mcp")),
+        ("playwright", lambda: mcp_add_stdio("playwright", "npx -y @playwright/mcp@latest")),
+        ("solo",       lambda: mcp_add_http("solo",        "http://localhost:45678/")),
     ]
     with_progress("MCP register", tasks)
-
-    if not mcp_has("solo") and Confirm.ask("solo MCP eklensin mi? (Solo app localhost:45678'de çalışıyor olmalı)", default=True):
-        mcp_add_http("solo", "http://localhost:45678/")
 
 
 def section_credentials():
