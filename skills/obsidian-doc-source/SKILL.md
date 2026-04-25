@@ -1,8 +1,8 @@
 ---
 name: obsidian-doc-source
-description: Verilen bir kaynağı (URL, library adı, PDF, local markdown, GitHub repo) profesyonel API reference formatında analiz edip **global** Obsidian vault'un `~/Documents/ObsidianVault/docs/<kaynak-adı>/` klasörüne sectioned (overview + auth + endpoints + examples + reference + errors + rate_limits + sdk + changelog) çoklu dosya olarak dokümante eder (proje folder'ı altında DEĞİL, tüm projeler ortak kullanır). Kullanıcı "bu kaynağı dokümante et", "obsidian docs'a ekle", "API'yi dokümante et", "kütüphaneyi kaydet", "/obsidian-doc-source <kaynak>" dediğinde tetiklenir. Web URL için önce WebFetch dener, multi-page docs gerektiğinde `/crawl2md` skill'ine eskale eder. Library için Context7 MCP, PDF/Office için markitdown, GitHub için gh CLI kullanır. Aynı source zaten varsa kullanıcıya sorar (üstüne yaz / yeni sürüm / iptal). Yazım için `obsidian-writer` agent'ını `MODE: doc-source` ile çağırır.
+description: Verilen bir kaynağı (URL, library adı, PDF, local markdown, GitHub repo) profesyonel API reference formatında analiz edip **global** Obsidian vault'un `~/Documents/ObsidianVault/docs/<kaynak-adı>/` klasörüne sectioned (overview + auth + endpoints + examples + reference + errors + rate_limits + sdk + changelog) çoklu dosya olarak dokümante eder (proje folder'ı altında DEĞİL, tüm projeler ortak kullanır). Kullanıcı "bu kaynağı dokümante et", "obsidian docs'a ekle", "API'yi dokümante et", "kütüphaneyi kaydet", "/obsidian-doc-source <kaynak>" dediğinde tetiklenir. Web URL için önce WebFetch dener, multi-page docs gerektiğinde `/crawl2md` skill'ine eskale eder. Library için `ctx7` CLI, PDF/Office için markitdown, GitHub için gh CLI kullanır. Aynı source zaten varsa kullanıcıya sorar (üstüne yaz / yeni sürüm / iptal). Yazım için `obsidian-writer` agent'ını `MODE: doc-source` ile çağırır.
 argument-hint: <url-veya-library-veya-dosya>
-allowed-tools: Task, Skill, Read, Write, Edit, Bash, Glob, Grep, WebFetch, mcp__context7__resolve-library-id, mcp__context7__query-docs
+allowed-tools: Task, Skill, Read, Write, Edit, Bash, Glob, Grep, WebFetch
 ---
 
 # Obsidian Doc Source
@@ -27,7 +27,7 @@ Dış kaynağı profesyonel sectioned API reference olarak **global docs klasör
 | `http(s)://github.com/<owner>/<repo>` | GitHub | `gh api repos/<owner>/<repo>/readme` + contents/docs |
 | `http(s)://` (tek sayfa veya küçük docs) | Web | `WebFetch` (default) |
 | `http(s)://` (multi-page docs sitesi) | Web (crawl) | `/crawl2md` delege |
-| Çıplak isim (`react`, `stripe-node`) | Library | Context7 MCP |
+| Çıplak isim (`react`, `stripe-node`) | Library | `ctx7` CLI |
 | `.pdf` / `.docx` / `.html` / `.epub` local | Binary | `markitdown <file>` (rules/cli-tools.md ref) |
 | `.md` local | Markdown | `Read` |
 
@@ -85,7 +85,7 @@ Eski `fetched_at` bilgisini `docs/<source-name>/index.md` frontmatter'ından oku
 - **Web (WebFetch)**: Sayfa sonundaki "next page" / pagination link'lerini takip et. Tek WebFetch yetmiyorsa follow-up çağrıları yap
 - **crawl2md çıktısı**: `Glob <OUT_DIR>/**/*.md` ile tüm dosyaları bul, hepsini Read et (paralel batch — tek mesajda çoklu Read tool call)
 - **GitHub**: README + `docs/` klasörünün tüm `.md` dosyalarını `gh api` ile çek
-- **Context7**: `query-docs` çağrısını en az 3 farklı query ile yap (overview, API reference, examples) ki tüm doc coverage gelsin
+- **Context7 (`ctx7` CLI)**: `npx ctx7@latest library <name> "<query>"` ile ID al, sonra `npx ctx7@latest docs <libraryId> "<query>"` çağrısını en az 3 farklı query ile yap (overview, API reference, examples) ki tüm doc coverage gelsin
 - **Local file**: markitdown'un tam çıktısını Read et, parçalama
 
 #### 4b) İçeriği Düzenle (Clean Pass)

@@ -157,6 +157,6 @@ Detaylı URL haritası: [references/INDEX.md](references/INDEX.md)
 
 ## Kütüphane Dokümanı (Claude Code Dışı)
 
-Kullanıcı Claude Code dışı bir library/framework için yardım isterse (React, Next.js, vb.), WebFetch yerine **Context7 MCP** kullan:
-- `mcp__context7__resolve-library-id` → ID al
-- `mcp__context7__query-docs` → Dokümana sorgu at
+Kullanıcı Claude Code dışı bir library/framework için yardım isterse (React, Next.js, vb.), WebFetch yerine **`ctx7` CLI** kullan:
+- `npx ctx7@latest library <name> "<query>"` → `/org/project` formatında ID al
+- `npx ctx7@latest docs <libraryId> "<query>"` → Dokümana sorgu at

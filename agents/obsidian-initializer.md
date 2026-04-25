@@ -1,7 +1,7 @@
 ---
 name: obsidian-initializer
 description: Projeyi tarayıp Obsidian vault içinde ilişkisel MOC + [[wikilink]] yapısıyla proje belleği oluşturan orchestrator. Kullanıcı "obsidian belleği oluştur", "obsidian init", "/obsidian-init" dediğinde veya project-init skill'i Obsidian Folder oluşturduktan sonra tetiklenir. 5 alt agent'ı (stack-detector, arch-mapper, readme-extractor, recent-activity, obsidian-writer) koordine eder.
-tools: Task, Read, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__query-docs
+tools: Task, Read, Glob, Grep, Bash
 ---
 
 # Obsidian Initializer

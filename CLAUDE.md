@@ -18,14 +18,14 @@ Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 - `.claude-plugin/plugin.json`, `marketplace.json` — plugin ve marketplace tanımları
 - `hooks/hooks.json` — SessionStart hook'ları (kural yükleme, init-check, caveman)
 - `rules/` — 13 kural dosyası (oturum başı `~/.claude/rules/` altına materialise edilir)
-- `skills/` — `commit`, `extension-builder`, `project-init`, `obsidian-init`, `obsidian-note`, `worktree`
+- `skills/` — `commit`, `extension-builder`, `project-init`, `obsidian-init`, `obsidian-note`, `obsidian-audit`, `obsidian-recall`, `obsidian-doc-source`, `crawl2md`, `worktree`
 - `agents/` — alt agent'lar (obsidian-initializer, stack-detector, arch-mapper vb.)
 - `scripts/` — `load-rules.sh`, `init-check.sh`, `init-check.ps1`, `setup.py`
 - `commands/`, `bin/` — ek genişletme noktaları
 
 ## Kullanılabilir MCP Araçları
 
-- `vikunja` — görev/proje yönetimi (CLAUDE.local.md'de proje ID tanımlı)
+- `vikunja-cli` — görev/proje yönetimi (CLI binary; CLAUDE.local.md'de proje ID, env'de `VIKUNJA_API_URL`/`VIKUNJA_API_TOKEN`)
 - `solo` — process yönetimi (bu plugin için aktif değil)
 - `obsidian` — vault okuma/yazma (proje belleği)
 - `context7` — kütüphane dokümantasyonu

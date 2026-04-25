@@ -18,9 +18,11 @@ personal-assistant setup — tek komutla stack kurulumu.
 """
 import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -135,6 +137,116 @@ def ensure_brew_cask(cask: str, app_path: Optional[str] = None) -> bool:
         run(f"brew install --cask {cask}")
     ok(f"{cask} kuruldu")
     return True
+
+RUST_TARGET_TRIPLE_MAP = {
+    ("darwin", "arm64"):   "aarch64-apple-darwin",
+    ("darwin", "x86_64"):  "x86_64-apple-darwin",
+    ("linux",  "aarch64"): "aarch64-unknown-linux-gnu",
+    ("linux",  "x86_64"):  "x86_64-unknown-linux-gnu",
+}
+
+
+def rust_target_triple() -> Optional[str]:
+    return RUST_TARGET_TRIPLE_MAP.get((platform.system().lower(), platform.machine()))
+
+
+def ensure_rust_cli_release(name: str, owner_repo: str) -> bool:
+    """Download a Rust CLI tarball from a GitHub release into ~/.local/bin."""
+    bin_dst = HOME / ".local" / "bin" / name
+    if have(name) or bin_dst.exists():
+        skip(f"{name} kurulu")
+        return True
+    target = rust_target_triple()
+    if not target:
+        warn(f"{name} — desteklenmeyen platform: {platform.system()}/{platform.machine()}")
+        return False
+
+    url = f"https://github.com/{owner_repo}/releases/latest/download/{name}-{target}.tar.gz"
+    bin_dst.parent.mkdir(parents=True, exist_ok=True)
+    with console.status(f"[yellow]{name} indir ({target})[/yellow]"):
+        run(
+            f"curl -sL '{url}' -o /tmp/{name}.tar.gz "
+            f"&& tar xzf /tmp/{name}.tar.gz -C /tmp "
+            f"&& mv /tmp/{name} {bin_dst} "
+            f"&& chmod +x {bin_dst}"
+        )
+    if bin_dst.exists():
+        ok(f"{name} kuruldu: {bin_dst}")
+        return True
+    err(f"{name} indirilemedi")
+    return False
+
+
+def ensure_skill_from_repo(name: str, owner_repo: str) -> bool:
+    """Copy a SKILL.md from owner/repo:skills/<name>/ into ~/.claude/skills/."""
+    skill_dst = CLAUDE_DIR / "skills" / name
+    if (skill_dst / "SKILL.md").exists():
+        skip(f"{name} skill kurulu")
+        return True
+    skill_dst.mkdir(parents=True, exist_ok=True)
+    with console.status(f"[yellow]{name} SKILL.md indir[/yellow]"):
+        run(
+            f"gh api repos/{owner_repo}/contents/skills/{name}/SKILL.md "
+            f"--jq '.content' | base64 -d > {skill_dst}/SKILL.md"
+        )
+    if (skill_dst / "SKILL.md").stat().st_size > 0:
+        ok(f"{name} skill kuruldu: {skill_dst}")
+        return True
+    warn(f"{name} skill indirilemedi")
+    return False
+
+
+def ensure_env_vars(label: str, prompts: list[tuple[str, str, bool]], comment: str) -> bool:
+    """Sync env vars to ~/.zshrc and ~/.claude/settings.json.
+
+    prompts: list of (var_name, prompt_text, is_password) tuples.
+    Asks user once, writes to both targets if either is missing.
+    """
+    rc = HOME / ".zshrc"
+    settings_path = CLAUDE_DIR / "settings.json"
+    primary_var = prompts[0][0]
+
+    has_rc = rc.exists() and primary_var in rc.read_text()
+    has_claude = False
+    if settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text())
+            has_claude = primary_var in settings.get("env", {})
+        except json.JSONDecodeError:
+            pass
+
+    if has_rc and has_claude:
+        skip(f"{label} env aktif (rc + Claude)")
+        return True
+
+    if not Confirm.ask(f"{label} env vars'ı şimdi yapılandırayım mı?", default=True):
+        return False
+
+    values: dict[str, str] = {}
+    for var_name, prompt_text, is_password in prompts:
+        v = Prompt.ask(prompt_text, default="", show_default=False, password=is_password)
+        if not v:
+            warn(f"{var_name} boş — env yapılandırılmadı")
+            return False
+        values[var_name] = v
+
+    if not has_rc:
+        with rc.open("a") as f:
+            f.write(f"\n# {comment}\n")
+            for k, v in values.items():
+                f.write(f'export {k}="{v}"\n')
+        ok("~/.zshrc'ye eklendi")
+
+    if not has_claude and settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text())
+            settings.setdefault("env", {}).update(values)
+            settings_path.write_text(json.dumps(settings, indent=2) + "\n")
+            ok("settings.json env güncellendi")
+        except (json.JSONDecodeError, OSError) as e:
+            warn(f"settings.json güncellenemedi: {e}")
+    return True
+
 
 def ensure_repo(owner_repo: str, target: Path) -> bool:
     if (target / ".git").exists():
@@ -348,7 +460,7 @@ def section_prereq():
     pkgs = [("uv", "uv"), ("node", "node"), ("gh", "gh"), ("jq", "jq")]
     with_progress("Brew paketleri", [(p, (lambda p=p, c=c: ensure_brew(p, c))) for p, c in pkgs])
     if not have("docker"):
-        warn("docker yok — github-mcp-server çalışmayacak. Kurulum: https://www.docker.com/products/docker-desktop/")
+        warn("docker yok — Vikunja vb. dependency'ler için gerekli. Kurulum: https://www.docker.com/products/docker-desktop/")
     else:
         skip("docker")
 
@@ -396,41 +508,30 @@ def section_obsidian_vault():
         run(f'open -a Obsidian "{vault}"')
         ok("Obsidian acildi")
 
-    section_obsidian_mcp()
+    section_obsidian_cli()
 
 
-def section_obsidian_mcp():
-    section("Obsidian MCP (mcp-obsidian)")
-    if mcp_has("obsidian"):
-        skip("obsidian MCP zaten register")
-        return
-    console.print(Panel(
-        "[bold]Local REST API[/bold] community plugin gerekli.\n"
-        "Adimlar:\n"
-        "  1. Obsidian -> Settings -> Community plugins -> Browse\n"
-        "  2. 'Local REST API' ara, kur, enable et\n"
-        "  3. Plugin ayarlarindan API Key kopyala",
-        border_style="cyan",
-        title="Plugin Kurulumu",
-    ))
-    if not Confirm.ask("Plugin kuruldu ve API key hazir mi?", default=False):
-        skip("obsidian MCP atlandi - plugin kurulmadi")
-        return
-    api_key = Prompt.ask("Obsidian API Key", password=True)
-    if not api_key:
-        warn("API key bos - obsidian MCP atlandi")
-        return
-    host = Prompt.ask("Host", default="127.0.0.1")
-    port = Prompt.ask("Port", default="27124")
-    with console.status("[yellow]mcp add obsidian[/yellow]"):
-        run(
-            f'claude mcp add --scope user obsidian '
-            f'--env OBSIDIAN_API_KEY={api_key} '
-            f'--env OBSIDIAN_HOST={host} '
-            f'--env OBSIDIAN_PORT={port} '
-            f'-- uvx mcp-obsidian'
+def section_obsidian_cli():
+    """Verify Obsidian's official CLI is enabled.
+
+    Replaces the legacy mcp-obsidian (REST API) integration. The CLI ships
+    with the Obsidian app — user must toggle it on once via Settings.
+    """
+    section("Obsidian CLI")
+    if not have("obsidian"):
+        warn(
+            "obsidian CLI yok. Aktif et:\n"
+            "  Obsidian -> Settings -> General -> Advanced -> Command line interface (toggle on)"
         )
-    ok("obsidian MCP eklendi")
+        return
+    r = run("obsidian --help 2>&1")
+    if "Command line interface is not enabled" in (r.stdout or ""):
+        warn(
+            "obsidian binary var ama disabled.\n"
+            "  Obsidian -> Settings -> General -> Advanced -> Command line interface'i aç"
+        )
+        return
+    ok("obsidian CLI hazır")
 
 
 def section_caveman():
@@ -453,10 +554,7 @@ def section_caveman():
 def section_local_mcps():
     section("Local MCP repos (omert11)")
     repos = [
-        ("po-mcp",       "omert11/po-mcp",       MCP_DIR / "po-mcp",         lambda p: ensure_node_build(p)),
         ("whatsapp-mcp", "omert11/whatsapp-mcp", LOCAL_DIR / "whatsapp-mcp", lambda p: ensure_uv_sync(p / "whatsapp-mcp-server") if (p / "whatsapp-mcp-server").exists() else True),
-        ("zammad-mcp",   "omert11/zammad-mcp",   LOCAL_DIR / "zammad-mcp",   lambda p: ensure_uv_sync(p)),
-        ("vikunja-mcp",  "omert11/vikunja-mcp",  LOCAL_DIR / "vikunja-mcp-new", lambda p: ensure_python_venv(p)),
     ]
     tasks = []
     for label, owner_repo, target, build_fn in repos:
@@ -477,19 +575,140 @@ def section_app_store_mcp():
     info("Fastlane gerekli — eksikse: brew install fastlane")
 
 
+def section_vikunja_cli():
+    """Install vikunja-cli + skill, replacing legacy vikunja-mcp."""
+    section("vikunja-cli (Vikunja task management)")
+    if not ensure_rust_cli_release("vikunja-cli", "omert11/vikunja-cli"):
+        return
+    ensure_skill_from_repo("vikunja-cli", "omert11/vikunja-cli")
+    ensure_env_vars(
+        "VIKUNJA",
+        [
+            ("VIKUNJA_API_URL", "VIKUNJA_API_URL", False),
+            ("VIKUNJA_API_TOKEN", "VIKUNJA_API_TOKEN", True),
+        ],
+        "Vikunja CLI (replaces vikunja-mcp)",
+    )
+
+
+def section_zammad_cli():
+    """Install zammad-cli + skill, replacing legacy zammad-mcp."""
+    section("zammad-cli (Zammad helpdesk)")
+    if not ensure_rust_cli_release("zammad-cli", "omert11/zammad-cli"):
+        return
+    ensure_skill_from_repo("zammad-cli", "omert11/zammad-cli")
+    ensure_env_vars(
+        "ZAMMAD",
+        [
+            ("ZAMMAD_URL", "ZAMMAD_URL (örn. https://support.example.com)", False),
+            ("ZAMMAD_TOKEN", "ZAMMAD_TOKEN", True),
+        ],
+        "Zammad CLI (replaces zammad-mcp)",
+    )
+
+
+def section_po_cli():
+    """Install po-cli + skill, replacing legacy po-mcp."""
+    section("po-cli (Django gettext)")
+    if not ensure_rust_cli_release("po-cli", "omert11/po-cli"):
+        return
+    ensure_skill_from_repo("po-cli", "omert11/po-cli")
+
+
+def section_playwright_cli():
+    """Install @playwright/cli globally and copy skills to user-level.
+
+    Replaces the legacy @playwright/mcp transport. CLI is token-efficient and
+    Microsoft's officially recommended path for coding agents.
+    """
+    section("Playwright CLI (@playwright/cli)")
+    if have("playwright-cli"):
+        skip("playwright-cli kurulu")
+    else:
+        if not have("npm"):
+            err("npm yok — playwright-cli atlandı")
+            return
+        with console.status("[yellow]npm install -g @playwright/cli@latest[/yellow]"):
+            run("npm install -g @playwright/cli@latest")
+        if have("playwright-cli"):
+            ok("playwright-cli kuruldu")
+        else:
+            err("playwright-cli kurulamadı")
+            return
+
+    skill_dst = CLAUDE_DIR / "skills" / "playwright-cli"
+    if (skill_dst / "SKILL.md").exists():
+        skip("playwright-cli skill kurulu")
+        return
+
+    # `playwright-cli install --skills` writes to ./.claude/skills/, so install
+    # in a temp workspace then move to user-level for cross-project access.
+    with tempfile.TemporaryDirectory() as tmp:
+        with console.status("[yellow]playwright-cli install --skills[/yellow]"):
+            run(f"cd {tmp} && playwright-cli install --skills")
+        src = Path(tmp) / ".claude" / "skills" / "playwright-cli"
+        if src.exists():
+            skill_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src), str(skill_dst))
+            ok(f"playwright-cli skill kuruldu: {skill_dst}")
+        else:
+            warn("playwright-cli skill bulunamadı — manuel: playwright-cli install --skills")
+
+
+def section_context7_cli():
+    """Install ctx7 CLI globally and configure Claude Code in CLI+Skills mode.
+
+    Replaces the legacy MCP HTTP transport. CLI mode keeps the MCP slot free
+    while still giving the agent live docs via `ctx7 library` / `ctx7 docs`.
+    """
+    section("Context7 CLI (ctx7)")
+    if have("ctx7"):
+        skip("ctx7 CLI kurulu")
+    else:
+        if not have("npm"):
+            err("npm yok — node prerequisite atlandı, ctx7 atlanıyor")
+            return
+        with console.status("[yellow]npm install -g ctx7[/yellow]"):
+            run("npm install -g ctx7")
+        if have("ctx7"):
+            ok("ctx7 CLI kuruldu")
+        else:
+            err("ctx7 kurulamadı")
+            return
+
+    # Skill + rule already present? `ctx7 setup` is idempotent but we skip
+    # the prompt when the marker file is in place to keep reruns silent.
+    skill_marker = CLAUDE_DIR / "skills" / "find-docs" / "SKILL.md"
+    if skill_marker.exists():
+        skip("find-docs skill kurulu")
+        return
+
+    console.print(Panel(
+        "[bold]Context7 CLI mode[/bold]\n"
+        "API key context7.com/dashboard'dan alınır. Boş geç → anonymous rate limit.",
+        border_style="cyan",
+    ))
+    api_key = Prompt.ask("Context7 API Key", default="", show_default=False, password=True)
+    args = "--claude --cli --yes"
+    if api_key:
+        args += f" --api-key {api_key}"
+    else:
+        args += " --oauth"
+    with console.status("[yellow]ctx7 setup --claude --cli[/yellow]"):
+        run(f"ctx7 setup {args}")
+    if skill_marker.exists():
+        ok("find-docs skill ve rule kuruldu")
+    else:
+        warn("ctx7 setup tamamlanmadı — manuel: ctx7 setup --claude --cli")
+
+
 def section_register_mcps():
     section("Claude Code MCP servers (user scope)")
     mcp_list(refresh=True)  # prime cache once
     uv = HOME / ".local" / "bin" / "uv"
-    vpy = LOCAL_DIR / "vikunja-mcp-new" / ".venv" / "bin" / "python"
 
     tasks = [
-        ("po-mcp",     lambda: mcp_add_stdio("po-mcp",     f"node {MCP_DIR}/po-mcp/dist/index.js")),
         ("whatsapp",   lambda: mcp_add_stdio("whatsapp",   f"{uv} --directory {LOCAL_DIR}/whatsapp-mcp/whatsapp-mcp-server run main.py")),
-        ("zammad",     lambda: mcp_add_stdio("zammad",     f"{uv} --directory {LOCAL_DIR}/zammad-mcp run main.py")),
-        ("vikunja",    lambda: mcp_add_stdio("vikunja",    f"{vpy} {LOCAL_DIR}/vikunja-mcp-new/server.py")),
-        ("context7",   lambda: mcp_add_http("context7",    "https://mcp.context7.com/mcp")),
-        ("playwright", lambda: mcp_add_stdio("playwright", "npx -y @playwright/mcp@latest")),
         ("solo",       lambda: mcp_add_http("solo",        "http://localhost:45678/")),
     ]
     with_progress("MCP register", tasks)
@@ -498,29 +717,23 @@ def section_register_mcps():
 def section_credentials():
     section("Credentials (interactive)")
 
-    # GitHub PAT
-    console.print(Panel(
-        "[bold]GitHub MCP[/bold] (docker) için token gerekli.\n"
-        "Oluştur: [link]https://github.com/settings/tokens/new?scopes=repo,workflow,read:org[/link]\n"
-        "Boş geç → atla.",
-        border_style="cyan",
-    ))
-    tok = Prompt.ask("GitHub PAT", default="", show_default=False)
-    if tok and not mcp_has("github-mcp-server"):
-        if have("docker"):
-            cmd = f"docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN={tok} ghcr.io/github/github-mcp-server"
-            run(f'claude mcp add --scope user github-mcp-server -- {cmd}')
-            ok("github-mcp-server eklendi")
+    # GitHub: gh CLI kullanılıyor, MCP yok
+    if have("gh"):
+        gh_status = run("gh auth status 2>&1").stdout or ""
+        if "Logged in" in gh_status:
+            ok("gh CLI authenticated")
         else:
-            warn("docker yok — GitHub MCP atlandı")
+            info("gh CLI auth gerekli: gh auth login")
+    else:
+        warn("gh yok — brew install gh")
 
     # Credential rehberi
-    guide = Table(title="Diğer MCP'ler için credential rehberi", show_header=True, border_style="dim")
+    guide = Table(title="MCP'ler için credential rehberi", show_header=True, border_style="dim")
     guide.add_column("MCP", style="cyan")
     guide.add_column("Yapılacak")
     guide.add_row("WhatsApp", "github.com/omert11/whatsapp-mcp README — QR okut, bridge başlat")
-    guide.add_row("Zammad",   f"{LOCAL_DIR}/zammad-mcp/.env → ZAMMAD_URL + ZAMMAD_TOKEN")
-    guide.add_row("Vikunja",  f"{LOCAL_DIR}/vikunja-mcp-new/.env → VIKUNJA_URL + VIKUNJA_TOKEN")
+    guide.add_row("Zammad",   "~/.zshrc → ZAMMAD_URL + ZAMMAD_TOKEN (zammad-cli kullanır)")
+    guide.add_row("Vikunja",  "~/.zshrc → VIKUNJA_API_URL + VIKUNJA_API_TOKEN (vikunja-cli kullanır)")
     guide.add_row("Google",   "Claude Code → /mcp → claude.ai servisi seç → Authenticate")
     console.print(guide)
 
@@ -553,6 +766,11 @@ def main():
     section_local_mcps()
     section_caveman()
     section_app_store_mcp()
+    section_context7_cli()
+    section_playwright_cli()
+    section_po_cli()
+    section_vikunja_cli()
+    section_zammad_cli()
     section_settings()
     section_statusline()
     section_register_mcps()

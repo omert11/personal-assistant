@@ -184,13 +184,13 @@ Duplicate eklememek için önce grep ile kontrol et.
 
 **Evet, oluştur:**
 ```
-mcp__vikunja__vikunja_create_project ile yeni proje oluştur
+vikunja-cli project create --title "<isim>" --json ile yeni proje oluştur
 ID'yi al, CLAUDE.local.md'ye yaz
 ```
 
 **Mevcut projeyi seç:**
 ```
-mcp__vikunja__vikunja_list_projects ile listele
+vikunja-cli project list --json ile listele
 AskUserQuestion ile seçtir (options olarak projeleri göster)
 Seçileni CLAUDE.local.md'ye yaz
 ```

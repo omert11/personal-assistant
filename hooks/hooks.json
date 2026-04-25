@@ -44,6 +44,15 @@
             "statusMessage": "Obsidian MOC yukleniyor..."
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/session-obsidian-daily.sh",
+            "statusMessage": "Obsidian daily yukleniyor..."
+          }
+        ]
       }
     ],
     "Stop": [
@@ -52,6 +61,14 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/stop-obsidian-remind.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/stop-obsidian-daily.sh"
           }
         ]
       }

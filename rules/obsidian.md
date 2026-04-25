@@ -1,39 +1,47 @@
 ## Obsidian Bellek Kullanımı
 
-Proje `CLAUDE.local.md`'de `Obsidian Folder: <isim>` tanımlıysa, vault `~/Documents/ObsidianVault/<isim>/` altında MOC + [[wikilink]] yapısı vardır. mcp-obsidian araçları (`mcp__obsidian__*`) ile oku/yaz/ara.
+Proje `CLAUDE.local.md`'de `Obsidian Folder: <isim>` tanımlıysa, vault `~/Documents/ObsidianVault/<isim>/` altında MOC + [[wikilink]] yapısı vardır. **Resmi Obsidian CLI** (`obsidian` komutu, Settings → General → Advanced → Command line interface ile aktifleşir) ile oku/yaz/ara. Komutlar Obsidian app açıkken çalışır.
 
-## MCP Araçları
+## CLI Komutları (Bash tool ile çağır)
 
-- `obsidian_list_files_in_dir(dirpath)` — Klasör içeriği
-- `obsidian_get_file_contents(filepath)` — Tek dosya oku
-- `obsidian_batch_get_file_contents(filepaths)` — Birden fazla dosya tek çağrıda oku
-- `obsidian_simple_search(query, context_length=100)` — **Full-text** search (substring/BM25, **semantic DEĞİL**)
-- `obsidian_complex_search(query)` — JsonLogic filter (path/content/tag)
-- `obsidian_patch_content(filepath, ...)` — Heading/block/frontmatter'a göre içerik ekle
-- `obsidian_append_content(filepath, content)` — Dosya sonuna ekle
-- `obsidian_delete_file(filepath)` — Sil (dikkat)
-- `obsidian_get_recent_changes(limit, days)` — Son değişen notlar
-- `obsidian_get_periodic_note(period)` — daily/weekly/monthly/quarterly/yearly note
+- `obsidian read path=<folder/note.md>` — Tek dosya oku (vault root'a göre relative path)
+- `obsidian files folder=<folder>` — Klasör içeriği listele
+- `obsidian search query="<text>" format=json` — Full-text search (Obsidian index, BM25)
+- `obsidian search:context query="<text>" format=json` — Match satırı + context ile
+- `obsidian append path=<folder/note.md> content="<text>"` — Dosya sonuna ekle
+- `obsidian prepend path=<folder/note.md> content="<text>"` — Dosya başına ekle
+- `obsidian create name=<note> path=<folder/> content="<text>"` — Yeni dosya
+- `obsidian delete path=<folder/note.md>` — Sil (dikkat — `permanent` flag çöpü atlar)
+- `obsidian recents` — Son açılan dosyalar
+- `obsidian daily:read` / `daily:append content="<text>"` — Daily note
+- `obsidian outline path=<folder/note.md> format=json` — Heading listesi
+- `obsidian properties path=<folder/note.md>` — Frontmatter property'leri
+- `obsidian property:set name=<key> value=<v> path=<folder/note.md>` — Property güncelle
+- `obsidian backlinks path=<folder/note.md>` — Bağlantılar
+- `obsidian tags counts format=json` — Vault tag listesi
+
+> Vault seçimi: tek vault varsa otomatik. Çoklu vault için `vault="<name>"` flag'i ekle. Komutların tamamı: `obsidian help`.
 
 ## Önce MOC, Sonra Search
 
 SessionStart hook'u `index.md`'nin başlıklarını kontext'e yükler. Bir bilgi ararken:
 
-1. **MOC'ta [[wikilink]] varsa**: Direkt `obsidian_get_file_contents("<folder>/<link>.md")` çağır. Search yapma.
-2. **MOC'ta yoksa**: `obsidian_list_files_in_dir("<folder>")` veya alt klasörleri (`Learnings/`, `Journal/`) tara. Dosya adı bulursan oku.
-3. **Hala bulamazsan**: `obsidian_simple_search("<query>")` kullan. Match listesinden ilgiliyi oku.
+1. **MOC'ta [[wikilink]] varsa**: Direkt `obsidian read path=<folder>/<link>.md` çağır. Search yapma.
+2. **MOC'ta yoksa**: `obsidian files folder=<folder>` ile listele (alt klasörler `Learnings/`, `Journal/`). Dosya adı bulursan oku.
+3. **Hala bulamazsan**: `obsidian search query="<query>" format=json`. Match listesinden ilgiliyi oku.
 
-## Search Kurallari
+## Search Kuralları
 
-- **Full-text**: Sorgu kelimesi notta **literal** geçiyor olmalı. "SSH" ararken "remote access" bulunmaz.
-- **Sinonim/yeniden ifade dene**: İlk query boş dönerse 2-3 alternatif terimle tekrar (örn: "Hetzner" → "ssh key" → "credential").
-- **Path prefix**: Query'ye `Learnings/` veya `Journal/` ekleme. Search tüm vault'u tarar, filter için `complex_search` kullan.
+- **Full-text + BM25**: Obsidian'ın native search index'i. Sorgu kelimesi notta literal geçiyor olmalı.
+- **Sinonim dene**: İlk query boş dönerse 2-3 alternatif terimle tekrar (örn: "Hetzner" → "ssh key" → "credential").
+- **Path filter**: `path=<folder>` parametresiyle alt klasöre kısıtla (örn. `path=Learnings`).
 - **Vector search yok**. Kavramsal sorular için önce MOC'a bak, sonra search'i keyword varyantlarıyla yinele.
-- **Limit**: Search sonucu çok gelirse `context_length` düşür (default 100). İlk 3-5 match'e bak.
+- **Limit**: `limit=<n>` ile match sayısını sınırla. İlk 3-5 match'e bak.
+- **JSON format**: `format=json` ile parse edilebilir çıktı al, default text okunur ama parse zor.
 
-## Yazma Kurallari
+## Yazma Kuralları
 
-- **Direkt write yapma**. Append/patch için `obsidian-writer` agent'ını `MODE: append` ile çağır (`Task` tool). Agent MOC index.md'yi günceller, dedup eder, frontmatter doğru yazar.
+- **Direkt CLI write yapma** (ad-hoc append hariç). Yapısal yazımlar için `obsidian-writer` agent'ını `MODE: append` ile çağır (`Task` tool). Agent MOC index.md'yi günceller, dedup eder, frontmatter doğru yazar.
 - **Ad-hoc "not al" isteklerinde**: `/obsidian-note` skill tetikle veya `obsidian-writer` agent'ı çağır.
 - **Stop hook otomatik tetiklenir**: Kullanıcı paylaştığı kayda değer bilgi (API key, sunucu, karar) varsa oturum sonunda main agent'tan writer'ı çağırması istenir.
 
@@ -41,9 +49,9 @@ SessionStart hook'u `index.md`'nin başlıklarını kontext'e yükler. Bir bilgi
 
 Aynı konuda mevcut not varsa `obsidian-writer` onu bulur ve `## {date}` başlığıyla append eder. Manuel yapman gerekirse:
 
-1. `obsidian_simple_search(topic)` ile bul
-2. `obsidian_patch_content(filepath, operation="append", target_type="heading", target="{date}")` veya
-3. `obsidian_append_content(filepath, content)` ile sona ekle
+1. `obsidian search query="<topic>" format=json` ile bul
+2. `obsidian append path=<folder/note.md> content="\n## {date}\n<text>"` ile sona ekle
+3. Heading altına spesifik insert için: `obsidian outline path=<...>` ile heading listesini al, sonra `Edit` tool ile dosyayı düzenle
 
 ## Klasör Konvansiyonu
 
@@ -57,3 +65,10 @@ Aynı konuda mevcut not varsa `obsidian-writer` onu bulur ve `## {date}` başlı
 - **Obsidian** → Proje-spesifik kalıcı bilgi (bu projenin DB şifresi, bu projenin mimari kararı)
 - **`~/.claude/memory/`** → Kullanıcı profili, genel feedback, cross-project referanslar
 - **`~/.claude/rules/`** → Tüm projelerde geçerli kurallar (bu dosya gibi)
+
+## Fallback (Obsidian Kapalıysa)
+
+CLI komutları Obsidian app açık değilse hata verir (`No active vault`). Bu durumda:
+
+- **Read-only erişim**: `Read`, `Glob`, `Grep` tool'ları ile vault dosyalarına direkt filesystem üzerinden eriş (`~/Documents/ObsidianVault/<folder>/...`)
+- **Write**: Obsidian'ı aç (`open -a Obsidian`) sonra CLI komutu çalıştır

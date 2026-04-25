@@ -162,15 +162,19 @@ Caller şu alanları prompt'ta verir:
 - `content` — kaydedilecek bilgi/özet (ham metin)
 - `topic` — kısa başlık (opsiyonel, verilmezse içerikten üret)
 - `date` — ISO tarih (verilmezse `date +%Y-%m-%d` kullan)
+- `category` — kategori etiketi (opsiyonel; one of: `api-key`, `server`, `decision`, `bug`, `command`, `pattern`, `deprecated`). Verilmezse içerikten tahmin et
+- `confidence` — `high` | `medium` | `low` (opsiyonel, default `medium`)
+- `source` — bilginin kaynağı (opsiyonel, örn. "kullanıcı paylaşımı", "deneme", "official docs URL")
 
 ### Akış
 
-1. `TARGET/index.md` var mı kontrol et. Yoksa uyarı ver: "index.md yok, once /obsidian-init çalıştır" ve çık.
-2. Bilginin tipini tespit et:
+1. **Vault aktif mi**: `obsidian vault info=name 2>&1` çalıştır. Hata `Command line interface is not enabled` veya `No active vault` dönerse Bash filesystem (`Read/Write/Edit/Glob/Grep`) ile fallback yap.
+2. **Index check**: `TARGET/index.md` var mı kontrol et (Read veya `obsidian read path=<folder>/index.md`). Yoksa uyarı ver: "index.md yok, once /obsidian-init çalıştır" ve çık.
+3. **Bilginin tipini tespit et** (`category` verilmemişse):
    - **Kalıcı kural/bilgi** (API key, sunucu, teknik karar, kalıcı komut): yeni not oluştur → `Learnings/{topic-kebab}.md`
    - **Zamanlı log** (bugün yapılan özet): `Journal/{date}.md` varsa append, yoksa oluştur
-   - **Mevcut notu güncelleme**: Glob ile `TARGET/**/*.md` tara, başlık/topic match varsa ilgili dosyaya `## {date}` başlığıyla section ekle
-3. Yeni dosya oluşturulurken frontmatter:
+   - **Mevcut notu güncelleme**: önce `obsidian search query="<topic>" path=Learnings format=json` (CLI varsa) veya `Glob {TARGET}/**/*.md` + Grep ile tara. Başlık/topic match varsa o dosyaya `## {date}` başlığıyla section ekle.
+4. **Yeni dosya oluşturulurken frontmatter** (Learnings için):
 
 ```markdown
 ---
@@ -178,8 +182,12 @@ aliases:
   - {topic}
 tags:
   - {PROJECT_NAME}
-  - learning | journal
+  - learning
+  - {category}                    # api-key | server | decision | bug | command | pattern | deprecated
 date: {date}
+last_verified: {date}
+confidence: {confidence}          # high | medium | low
+source: {source}
 ---
 
 # {topic}
@@ -191,11 +199,21 @@ date: {date}
 - [[index]]
 ```
 
-4. `index.md` MOC'unu güncelle: "Learnings" veya "Journal" bölümü altına yeni `[[note-name]]` linki ekle (duplicate değilse).
+   Journal için tags: `[{PROJECT_NAME}, journal]`, frontmatter daha kısa (date + last_verified yeter).
+
+5. **MOC güncelle**: `index.md`'nin "Learnings" veya "Journal" bölümü altına yeni `[[note-name]]` linki ekle (duplicate değilse). Bölüm yoksa oluştur.
+
+6. **Frontmatter property auto-touch** (mevcut not güncellemesi durumunda):
+   - `obsidian property:set name=last_verified value={date} type=date path=<folder>/Learnings/{file}.md`
+   - CLI yoksa `Edit` ile frontmatter `last_verified:` satırını güncelle
+   - Bu, append yapılan notun "hala doğrulanmış" işaretini taze tutar
 
 ### Mevcut Notu Güncelleme
 
-Eğer topic'e karşılık gelen not zaten varsa (`Glob {TARGET}/**/*.md` + başlık match):
+Topic'e karşılık gelen not zaten varsa:
+
+1. **Bul**: `obsidian search query="<topic>" path=Learnings format=json` ile kesin match veya `Glob {TARGET}/Learnings/*.md` + Grep `# <topic>`
+2. **Section ekle**:
 
 ```markdown
 ## {date}
@@ -203,7 +221,24 @@ Eğer topic'e karşılık gelen not zaten varsa (`Glob {TARGET}/**/*.md` + başl
 {content}
 ```
 
-Dosyanın sonuna ekle. Frontmatter'a dokunma.
+   - CLI yolu: `obsidian append path=<folder>/Learnings/{file}.md content="\n## {date}\n\n{content}"`
+   - Fallback: `Edit` ile EOF append
+3. **last_verified güncelle** (yukarıdaki adım 6)
+4. **Frontmatter'a yeni tag varsa ekle**: `obsidian property:read name=tags ...` ile mevcut tags'i al, `category` listede yoksa `obsidian property:set name=tags value="[...,{category}]" type=list ...`
+
+### Tag Convention
+
+| Kategori | Tag | Tipik içerik |
+|---|---|---|
+| `api-key` | `#api-key` | API anahtarları, token'lar, credential'lar |
+| `server` | `#server` | SSH bilgileri, host'lar, port'lar |
+| `decision` | `#decision` | Mimari karar, teknoloji seçimi |
+| `bug` | `#bug` | Bilinen sorun, workaround |
+| `command` | `#command` | Tekrar eden CLI komutları, deploy script'leri |
+| `pattern` | `#pattern` | Kod pattern'i, naming convention |
+| `deprecated` | `#deprecated` | Artık kullanılmayan ama referans için kalan |
+
+Tag'ler frontmatter `tags:` listesine eklenir (proje tag'i + kategori tag'i).
 
 ## Mod 3: Doc-Source (Dış Kaynak Dokümantasyonu)
 

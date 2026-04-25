@@ -72,7 +72,7 @@ git diff
 #### 3e. Vikunja Görev Bağlantısı
 `CLAUDE.local.md`'de Vikunja proje ID varsa:
 ```
-mcp__vikunja__vikunja_list_tasks ile aktif görevleri getir
+vikunja-cli task list --filter "done = false" --json ile aktif görevleri getir
 ```
 Yapılan değişikliklerle uyuşan bir görev var mı tespit et:
 - **Var**: ID'sini sakla (sonra kapat)
@@ -213,12 +213,12 @@ EOF
 
 Soru 3'te "Evet kapat" seçildiyse:
 ```
-mcp__vikunja__vikunja_update_task ile status: done yap
+vikunja-cli task update <id> --done ile status: done yap
 ```
 
 Görev yoksa ve "Evet" seçildiyse:
 ```
-mcp__vikunja__vikunja_create_task ile yeni görev oluştur, status: done
+vikunja-cli task create --project-id <pid> --title "<özet>" --done ile yeni görev oluştur
 ```
 
 ## Kritik Kurallar

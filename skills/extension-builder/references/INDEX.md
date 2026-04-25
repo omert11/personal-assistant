@@ -81,6 +81,6 @@ Bilmediğin bir konu için önce buradan başla.
 ## Library/Framework Dökümanı (Claude Code dışı)
 
 Claude Code extension dışında bir kütüphaneye (React, Next.js, Prisma, vb.) ihtiyaç olursa:
-- WebFetch yerine **Context7 MCP** kullan
-- `mcp__context7__resolve-library-id` → `mcp__context7__query-docs`
+- WebFetch yerine **`ctx7` CLI** kullan
+- `npx ctx7@latest library <name> "<query>"` → `npx ctx7@latest docs <libraryId> "<query>"`
 - Context7 Claude Code dökümanı için **uygun değil**, sadece npm/library için
