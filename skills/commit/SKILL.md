@@ -61,13 +61,26 @@ git diff
 - Yoksa **bulgu olarak işaretle** (sormak için bekle)
 
 #### 3d. Rules Uyum Kontrolü
-`~/.claude/rules/` altındaki kuralları gözden geçir:
-- `coding.md` — TODO yorumları, error wrapping, dil ayrımı (Türkçe iletişim, İngilizce kod)
-- `python.md` — uv kullanımı (pip değil)
-- `django.md` — F7 çeviri, uv kurulum
-- `before-commit.md` — bu skill'in ana referansı
 
-İhlal varsa bulgu olarak topla.
+`~/.claude/rules/` altındaki **tüm** dosyaları dinamik tara:
+
+```bash
+ls ~/.claude/rules/*.md
+```
+
+Her dosyayı oku, değişen kodla alakalı kuralları bul. Sabit liste tutma — yeni rule eklendiğinde otomatik kapsansın. Örnek alaka eşlemeleri:
+
+- Kod dosyası değişti → `coding.md`, `ask-first.md`, dil-spesifik (`python.md`, `django.md`)
+- `.po` dosyası → `django.md` (F7 çeviri)
+- Shell/CI script → `cli-tools.md`, `soloterm.md`
+- Frontend test → `browser-testing.md`
+- Obsidian/vault dosyaları → `obsidian.md`, `learnings.md`
+- Yapılandırma (CLAUDE.md/local) → `init.md`
+- Workflow/agent değişiklikleri → `workflow.md`
+- Sunucu/production credential → `production.md`, `b2c-booking-log.md`
+- Genel her commit için → `before-commit.md` (zaten bu skill'in kapsamı)
+
+İhlal varsa bulgu olarak topla. Alakasız rule dosyası varsa atla.
 
 #### 3e. Vikunja Görev Bağlantısı
 `CLAUDE.local.md`'de Vikunja proje ID varsa:
