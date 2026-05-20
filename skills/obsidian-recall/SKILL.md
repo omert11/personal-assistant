@@ -1,6 +1,7 @@
 ---
 name: obsidian-recall
-description: Mevcut proje vault'undan rastgele veya filtreli bir Learnings notu okuyup özetler. Spaced repetition tarzı — eski bilgileri unutmamak için. Kullanıcı "obsidian'dan rastgele not", "eski öğrenilenler", "obsidian recall", "geçmişten bir bilgi", "/obsidian-recall" dediğinde tetiklenir. Resmi Obsidian CLI random:read komutunu kullanır.
+description: Proje vault'undan rastgele/filtreli Learnings notu okuyup özetler (spaced repetition).
+when_to_use: Trigger — "obsidian'dan rastgele not", "eski öğrenilenler", "obsidian recall", "geçmişten bir bilgi", "/obsidian-recall". Obsidian CLI random:read kullanır.
 disable-model-invocation: false
 allowed-tools: Bash, Read, AskUserQuestion
 argument-hint: [tag-veya-kategori]

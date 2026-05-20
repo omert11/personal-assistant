@@ -1,6 +1,7 @@
 ---
 name: obsidian-doc-source
-description: Verilen bir kaynağı (URL, library adı, PDF, local markdown, GitHub repo) profesyonel API reference formatında analiz edip **global** Obsidian vault'un `~/Documents/ObsidianVault/docs/<kaynak-adı>/` klasörüne sectioned (overview + auth + endpoints + examples + reference + errors + rate_limits + sdk + changelog) çoklu dosya olarak dokümante eder (proje folder'ı altında DEĞİL, tüm projeler ortak kullanır). Kullanıcı "bu kaynağı dokümante et", "obsidian docs'a ekle", "API'yi dokümante et", "kütüphaneyi kaydet", "/obsidian-doc-source <kaynak>" dediğinde tetiklenir. Web URL için önce WebFetch dener, multi-page docs gerektiğinde `/crawl2md` skill'ine eskale eder. Library için `ctx7` CLI, PDF/Office için markitdown, GitHub için gh CLI kullanır. Aynı source zaten varsa kullanıcıya sorar (üstüne yaz / yeni sürüm / iptal). Yazım için `obsidian-writer` agent'ını `MODE: doc-source` ile çağırır.
+description: Dış kaynağı (URL/library/PDF/repo) global Obsidian docs/ altına sectioned dokümante eder.
+when_to_use: Trigger — "bu kaynağı dokümante et", "obsidian docs'a ekle", "API'yi dokümante et", "kütüphaneyi kaydet", "/obsidian-doc-source <kaynak>". WebFetch/ctx7/markitdown/gh kullanır; çıktı `~/Documents/ObsidianVault/docs/<source>/` (proje bağımsız).
 argument-hint: <url-veya-library-veya-dosya>
 allowed-tools: Task, Skill, Read, Write, Edit, Bash, Glob, Grep, WebFetch
 ---

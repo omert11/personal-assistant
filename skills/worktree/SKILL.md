@@ -1,6 +1,7 @@
 ---
 name: worktree
-description: Git worktree yönetimi. Claude Code native --worktree/-w flag, --tmux, subagent isolation: worktree, EnterWorktree/ExitWorktree tool ve .worktreeinclude desteği ile uyumlu. Bu skill'i şu durumlarda kullan — kullanıcı "worktree aç", "worktree oluştur", "yeni worktree", "worktree'ye gir", "worktree'den çık", "paralel çalışalım", "izole branch'te çalış", "worktree'leri listele", "worktree sil", "worktree temizle", "bu feature için ayrı worktree", "subagent'ları paralel worktree'de çalıştır", "worktree'den PR aç", "/worktree" dediğinde. Yeni feature/bugfix/experiment izolasyonu, paralel subagent koordinasyonu, .worktreeinclude + .gitignore kurulumu, merged worktree temizliği, worktree durumu raporlama için.
+description: Git worktree yönetimi (Claude Code native --worktree/EnterWorktree wrapper).
+when_to_use: Trigger — "worktree aç", "worktree oluştur", "yeni worktree", "worktree'ye gir/çık", "paralel çalışalım", "izole branch'te çalış", "worktree'leri listele/sil/temizle", "subagent'ları paralel worktree'de", "worktree'den PR aç", "/worktree". Feature/bugfix izolasyon, paralel subagent, .worktreeinclude kurulum, merged temizlik, durum raporu.
 disable-model-invocation: false
 allowed-tools: Bash(git *), Bash(gh *), Bash(claude *), Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, EnterWorktree, ExitWorktree
 ---

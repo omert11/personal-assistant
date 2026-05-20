@@ -1,6 +1,7 @@
 ---
 name: extension-builder
-description: Claude Code için skill, plugin, agent, hook, MCP server, output style, channel veya marketplace yazma yardımcısı. Kullanıcı "skill yaz", "plugin oluştur", "hook ekle", "MCP server yap", "agent tanımla", "marketplace oluştur", "channel yaz", "output style ekle", "extension oluştur", "claude code'u genişlet" dediğinde tetiklenir. Resmi Claude Code dökümanını WebFetch ile çeker, kendi belleğinden schema uydurmaz.
+description: Claude Code için skill/plugin/agent/hook/MCP/output-style/channel/marketplace yazar.
+when_to_use: Trigger — "skill yaz", "plugin oluştur", "hook ekle", "MCP server yap", "agent tanımla", "marketplace oluştur", "channel yaz", "output style ekle", "extension oluştur", "claude code'u genişlet". Resmi dökümanı WebFetch ile çeker, schema uydurmaz.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, AskUserQuestion
 ---
 
@@ -68,6 +69,31 @@ WebFetch(
 2. **İsim**: kebab-case
 3. **Açıklama**: tetikleme örnekleriyle
 4. **İhtiyaç duyulan tool'lar / MCP'ler**
+
+### Adım 3.5: Frontmatter Karakter Limiti (ZORUNLU)
+
+Yeni skill yazarken:
+
+- `description` **max 75-100 karakter** — tek cümle, "ne yapar" anlatır
+- Trigger phrase listesi, koşul, "kullanıcı şunu derse" detayı **`when_to_use`** alanına yazılır (format: `Trigger — "...", "...". <ek koşul>`)
+- description'a trigger gömme — Claude'un skill listing budget'ı (1,536 char) içinde daha çok skill yer tutar
+
+Örnek doğru frontmatter:
+
+```yaml
+---
+name: my-skill
+description: Webhook gelen payload'ı parse edip Slack'e özetler.
+when_to_use: Trigger — "webhook gelirse", "payload özetle", "/my-skill". Sadece Slack entegrasyonu aktifse çalışır.
+allowed-tools: Read, Bash
+---
+```
+
+Yanlış (eski stil):
+
+```yaml
+description: Webhook gelen payload'ı parse edip Slack'e özetler. Kullanıcı "webhook gelirse", "payload özetle" veya "/my-skill" dediğinde tetiklenir. Sadece Slack entegrasyonu aktifse çalışır...
+```
 
 ### Adım 4: Dosya Yapısını Oluştur
 

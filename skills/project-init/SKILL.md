@@ -1,6 +1,7 @@
 ---
 name: project-init
-description: Yeni bir projede CLAUDE.md, CLAUDE.local.md, solo.yml dosyalarini kontrol edip eksikleri interaktif sekilde tamamlayan skill. Vikunja projesi olusturma, Solo proje baglama ve solo.yml yapilandirmasi dahil. Bu skill'i su durumlarda kullan - "projeyi kur", "init", "proje baslat", "yapilandirma", "setup", "CLAUDE.md olustur", "solo.yml ekle", "vikunja projesi ac". Ayrica her konusmanin basinda eksik yapilandirma tespit edildiginde otomatik olarak onerilerek tetiklenmeli.
+description: CLAUDE.md/CLAUDE.local.md/solo.yml eksiklerini interaktif tamamlar (Vikunja+Solo dahil).
+when_to_use: Trigger — "projeyi kur", "init", "proje baslat", "yapilandirma", "setup", "CLAUDE.md olustur", "solo.yml ekle", "vikunja projesi ac". Konusma basinda eksik yapilandirma tespit edilirse otomatik onerilir.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---

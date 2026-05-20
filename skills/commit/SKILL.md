@@ -1,6 +1,7 @@
 ---
 name: commit
-description: Kod degisikliklerini commit etmeden once kalite kontrol akisi uygular ve sonunda kullaniciya teslimat secenekleri sunar. Bu skill'i su durumlarda kullan kullanici "commit", "commit at", "push et", "PR olustur", "branch ac", "degisiklikleri kaydet", "kodu gonder", "/commit" dediginde. Kodla ilgili herhangi bir teslimat/kaydetme isteginde bu skill tetiklenmeli.
+description: Commit oncesi kalite kontrol + teslimat secenekleri (commit, push, PR, branch).
+when_to_use: Trigger — "commit", "commit at", "push et", "PR olustur", "branch ac", "degisiklikleri kaydet", "kodu gonder", "/commit". Her kod teslimat/kaydetme isteginde tetiklenir.
 disable-model-invocation: false
 allowed-tools: Bash(git *), Bash(gh *), Read, Grep, Glob, AskUserQuestion, Task
 ---

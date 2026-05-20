@@ -1,6 +1,7 @@
 ---
 name: obsidian-init
-description: Projeyi analiz edip Obsidian vault içinde MOC + [[wikilink]] yapısıyla proje belleği oluşturan skill. obsidian-initializer agent'ını tetikler (5 alt agent koordine eder - stack-detector, arch-mapper, readme-extractor, recent-activity, obsidian-writer). Kullanıcı "obsidian belleği oluştur", "obsidian init", "obsidian memory", "/obsidian-init" dediğinde tetiklenir.
+description: Projeyi Obsidian vault'a MOC + [[wikilink]] yapısıyla proje belleği olarak yazar.
+when_to_use: Trigger — "obsidian belleği oluştur", "obsidian init", "obsidian memory", "/obsidian-init". obsidian-initializer agent'ı (5 alt agent) koordine eder.
 disable-model-invocation: false
 allowed-tools: Task, Read, Bash, Grep
 ---

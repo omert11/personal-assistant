@@ -1,6 +1,7 @@
 ---
 name: obsidian-note
-description: Mevcut proje Obsidian klasörüne tekil bir not ekler veya mevcut notu günceller. Kullanıcı "bunu obsidian'a not al", "obsidian'a ekle", "obsidian'a yaz", "bunu kaydet", "/obsidian-note" dediğinde tetiklenir. obsidian-writer agent'ını MODE: append ile çağırır, MOC index.md'ye [[wikilink]] ekler. Frontmatter'a category + confidence + source + last_verified ekler.
+description: Proje Obsidian klasörüne tekil not ekler veya mevcut notu günceller.
+when_to_use: Trigger — "bunu obsidian'a not al", "obsidian'a ekle", "obsidian'a yaz", "bunu kaydet", "/obsidian-note". obsidian-writer MODE: append çağırır, MOC'a [[wikilink]] ekler, frontmatter category/confidence/source/last_verified yazar.
 disable-model-invocation: false
 allowed-tools: Task, Read, Grep, Bash, AskUserQuestion
 ---

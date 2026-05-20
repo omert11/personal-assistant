@@ -1,6 +1,7 @@
 ---
 name: crawl2md
-description: Bir web sitesini crawl edip markdown dosyalarına çeviren ve ardından web-scrape-cleaner agent ile temizleyen skill. crawl2md.py (markitdown[all] tabanlı) kullanır. Kullanıcı "siteyi crawl et", "URL'i markdown yap", "web scrape et", "siteyi indir markdown'a çevir", "/crawl2md <url> <dir>" dediğinde tetiklenir. İki aşama — (1) ham scrape, (2) temizleme. Kullanıcıya her aşamada onay sorar.
+description: Web sitesini markdown'a crawl eder + web-scrape-cleaner ile temizler.
+when_to_use: Trigger — "siteyi crawl et", "URL'i markdown yap", "web scrape et", "siteyi indir markdown'a çevir", "/crawl2md <url> <dir>". Iki aşama (ham scrape + temizleme), her aşamada onay sorar.
 argument-hint: <URL> <OUT_DIR> [--depth N] [--delay S] [--include-binary]
 disable-model-invocation: false
 allowed-tools: Bash, Read, Glob, Grep, Task

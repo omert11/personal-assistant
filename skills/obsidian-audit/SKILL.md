@@ -1,6 +1,7 @@
 ---
 name: obsidian-audit
-description: Obsidian vault'un sağlığını denetler. Unresolved [[wikilink]]'ler, orphan notlar, deadend notlar, eski last_verified property'li Learnings notlarını rapor eder. Kullanıcı "obsidian sağlık check", "vault audit", "obsidian denetle", "kırık linkleri bul", "/obsidian-audit" dediğinde tetiklenir. Resmi Obsidian CLI (`obsidian` komutu) gerekir; kapalıysa kullanıcıya açmasını söyler.
+description: Obsidian vault sağlık denetimi (kırık [[link]], orphan, deadend, eski Learnings).
+when_to_use: Trigger — "obsidian sağlık check", "vault audit", "obsidian denetle", "kırık linkleri bul", "/obsidian-audit". Obsidian CLI gerekli; kapalıysa kullanıcıya açmasını söyler.
 disable-model-invocation: false
 allowed-tools: Bash, Read, Grep, Glob, AskUserQuestion
 argument-hint: [folder]
