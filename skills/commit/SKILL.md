@@ -46,16 +46,16 @@ git diff --cached --stat  # staged varsa
 git diff
 ```
 
-#### 3b. /simplify Çalıştır — ZORUNLU (kod değişikliği varsa)
+#### 3b. /code-review Çalıştır — ZORUNLU (kod değişikliği varsa)
 
-**Kural kesin**: `git diff --stat` çıktısında herhangi bir **kod dosyası** (`.py`, `.js`, `.ts`, `.tsx`, `.jsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.dart`, `.rb`, `.php`, `.c`, `.cpp`, `.cs`, `.sh`, `.vue`, `.svelte`) değişmişse `/simplify` skill'i **mutlaka** çalıştırılır.
+**Kural kesin**: `git diff --stat` çıktısında herhangi bir **kod dosyası** (`.py`, `.js`, `.ts`, `.tsx`, `.jsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.dart`, `.rb`, `.php`, `.c`, `.cpp`, `.cs`, `.sh`, `.vue`, `.svelte`) değişmişse `/code-review` skill'i **mutlaka** çalıştırılır.
 
 - **Atlanamaz**, **ertelenemez**, **koşula bağlanamaz**.
-- Kullanıcı "commit at hadi", "hızlıca commit", "direkt commit" dese bile önce `/simplify` çalışır.
+- Kullanıcı "commit at hadi", "hızlıca commit", "direkt commit" dese bile önce `/code-review` çalışır.
 - Sadece **non-kod dosyaları** (`.md`, `.json`, `.yml`, `.txt`, asset'ler) değişmişse atlanabilir.
-- Skip sadece kullanıcı **açıkça** "simplify atla" / "skip simplify" / "simplify çalıştırma" derse mümkün — bu durumda bulgu olarak "kullanıcı explicit skip istedi" diye işaretle.
+- Skip sadece kullanıcı **açıkça** "code-review atla" / "skip code-review" / "code-review çalıştırma" derse mümkün — bu durumda bulgu olarak "kullanıcı explicit skip istedi" diye işaretle.
 
-Çıktıyı bulgu olarak topla. Simplify değişiklik önerdiyse Soru 1'e dahil et.
+Çıktıyı bulgu olarak topla. Code-review değişiklik önerdiyse Soru 1'e dahil et.
 
 #### 3c. Test Kontrolü
 - Değişen dosyaların test'i var mı? (`*.test.*`, `*_test.*`, `tests/`, `__tests__/`)
@@ -111,7 +111,7 @@ Aktif olanları (koşul sağlanan) sıraya koy, ilk 4'ünü tek blokta sor:
 
 **S1 — Tespit Edilen Sorunlar** (varsa)
 - header: "Sorunlar"
-- question: "Şu bulgular var: [/simplify: X, rules ihlal: Z]. Düzelteyim mi?"
+- question: "Şu bulgular var: [/code-review: X, rules ihlal: Z]. Düzelteyim mi?"
 - options: ["Evet, düzelt" (Recommended), "Sadece kritikleri düzelt", "Geçiştir, commit et"]
 
 **S2 — Test Eksikse** (3c bulgusu varsa)
