@@ -55,6 +55,25 @@ git diff
 - Sadece **non-kod dosyaları** (`.md`, `.json`, `.yml`, `.txt`, asset'ler) değişmişse atlanabilir.
 - Skip sadece kullanıcı **açıkça** "code-review atla" / "skip code-review" / "code-review çalıştırma" derse mümkün — bu durumda bulgu olarak "kullanıcı explicit skip istedi" diye işaretle.
 
+##### Dürüst Review — KESKİN KURAL
+
+**Kod bir kere review edilir, bir daha edilmeyecek.** Bu yüzden review **dürüst, eksiksiz ve kolaya kaçmadan** yapılmalı. Bulunan hiçbir bulgu **görmezden gelinemez** veya **atlanması gerekli görülemez**.
+
+**Yasaklar:**
+- Bulguları "küçük", "önemsiz", "stil meselesi" diye **filtrelemek yasak** — tüm bulgular Soru 1'e ham haliyle dahil edilir.
+- Review effort'unu **düşük tutmak yasak** — `/code-review` çağrısında effort en az `medium`, kod karmaşık/güvenlik-kritik/data-mutating ise `high` kullan.
+- Review'i **hızlandırmak için kısa kesmek yasak** — diff büyükse skill'in tam çalışmasını bekle, "muhtemelen sorun yok" diye atlama.
+- Bulguyu **kullanıcıya sunmadan elemek yasak** — false positive olduğunu düşünsen bile bulguyu listele, kullanıcı karar versin.
+- Bulguları **özetlerken yumuşatmak yasak** — "minor issue" yerine review'in dediği şiddet seviyesini aynen aktar.
+- "Zaten test geçiyor" / "küçük değişiklik" / "trivial" gibi gerekçelerle review **atlanamaz**.
+- Kullanıcı baskı yapsa bile ("hadi hızlı geç", "kabul et gitsin") bulguları **gizlemek yasak** — kullanıcı görsün, kullanıcı karar versin.
+
+**Pozitif gereklilikler:**
+- Review çıktısındaki **her bulgu** Soru 1'in `question` metnine **şiddet + dosya:satır + kısa açıklama** ile dahil edilir.
+- Bulgu sayısı >5 ise hepsini listele, "ilk 5 + ..." şeklinde özetleme.
+- Review crash / timeout olursa **sessizce geçme** — kullanıcıya raporla, tekrar dene veya açıkça skip onayı al.
+- Review'in `high` effort'la verdiği "uncertain" bulgular bile listelenir — kullanıcı false positive olduğuna karar verebilir, sen değil.
+
 Çıktıyı bulgu olarak topla. Code-review değişiklik önerdiyse Soru 1'e dahil et.
 
 #### 3c. Test Kontrolü
