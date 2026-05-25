@@ -5,7 +5,6 @@
 **Kural tek cümle:** Kullanıcıya herhangi bir soru / seçim / onay gerektiğinde **tek yol `AskUserQuestion` tool çağrısı**. Düz metin soru **yasak**.
 
 Bu kural **mutlaktır** ve aşağıdaki durumlarda dahi geçerlidir:
-- Caveman mode aktifken (lite/full/ultra dahil) — caveman sadece **narrative/text output**'u sıkıştırır, **tool kullanımını kaldırmaz**. `AskUserQuestion` tool çağrısı "filler" değildir, protokol zorunluluğudur.
 - Tek bir evet/hayır onayı istendiğinde bile — `"devam edeyim mi?"` gibi tek satır metin **yasak**, yerine `AskUserQuestion` ile `["Evet", "Hayır"]` çağır.
 - Kullanıcı kısa / terse yanıt istese bile — soru **yine tool ile** sorulur, sadece option label'ları kısa tutulur.
 - Commit / destructive / irreversible onaylarda — metinle "onaylıyor musun?" **yasak**, `AskUserQuestion` zorunlu.

@@ -323,13 +323,6 @@ def section_settings():
     }
     enabled_plugins = {"personal-assistant@personal-assistant": True}
 
-    caveman_path = LOCAL_DIR / "caveman"
-    if caveman_path.exists():
-        extra_marketplaces["caveman"] = {
-            "source": {"source": "directory", "path": str(caveman_path)}
-        }
-        enabled_plugins["caveman@caveman"] = True
-
     desired = {
         "env": {"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"},
         "statusLine": {
@@ -532,23 +525,6 @@ def section_obsidian_cli():
         )
         return
     ok("obsidian CLI hazır")
-
-
-def section_caveman():
-    section("Caveman plugin (opsiyonel)")
-    target = LOCAL_DIR / "caveman"
-    if target.exists():
-        skip(f"caveman zaten var: {target}")
-        return
-    if not Confirm.ask(
-        "[cyan]caveman[/cyan] plugin'i kurulsun mu? (output token'larını ~75% azaltan Claude Code skill'i)",
-        default=True,
-    ):
-        skip("caveman atlandı")
-        return
-    if ensure_repo("JuliusBrussee/caveman", target):
-        ok(f"caveman clone'landı: {target}")
-        info("settings.json'a marketplace + enabledPlugins eklenecek (sonraki adımda)")
 
 
 def section_local_mcps():
@@ -764,7 +740,6 @@ def main():
     section_prereq()
     section_apps()
     section_local_mcps()
-    section_caveman()
     section_app_store_mcp()
     section_context7_cli()
     section_playwright_cli()

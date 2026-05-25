@@ -16,7 +16,7 @@ Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 ## Yapı
 
 - `.claude-plugin/plugin.json`, `marketplace.json` — plugin ve marketplace tanımları
-- `hooks/hooks.json` — SessionStart hook'ları (kural yükleme, init-check, caveman)
+- `hooks/hooks.json` — SessionStart hook'ları (kural yükleme, init-check)
 - `rules/` — 13 kural dosyası (oturum başı `~/.claude/rules/` altına materialise edilir)
 - `skills/` — `commit`, `extension-builder`, `project-init`, `obsidian-init`, `obsidian-note`, `obsidian-audit`, `obsidian-recall`, `obsidian-doc-source`, `crawl2md`, `worktree`
 - `agents/` — alt agent'lar (obsidian-initializer, stack-detector, arch-mapper vb.)
