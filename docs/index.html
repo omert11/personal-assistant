@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>personal-assistant — Claude Code Plugin Sunumu</title>
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 13 kural, 8 hook, 12 skill, 8 agent. Her parça detaylıca anlatılan tam sunum." />
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0b0f;
+    --bg-soft: #12141c;
+    --bg-card: #161922;
+    --bg-card2: #1a1e29;
+    --border: #232734;
+    --border-soft: #1c202b;
+    --text: #e6e8ee;
+    --muted: #9aa3b2;
+    --faint: #6b7280;
+    --accent: #d97757;
+    --accent-soft: #e89b82;
+    --accent-glow: rgba(217,119,87,0.16);
+    --green: #5cc8a0;
+    --blue: #6ea8fe;
+    --purple: #a78bfa;
+    --radius: 14px;
+    --maxw: 880px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.7; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  a { color: var(--accent-soft); text-decoration: none; }
+  a:hover { color: var(--accent); }
+  code {
+    font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: 5px; padding: 0.08em 0.4em; font-size: 0.82em; color: var(--accent-soft);
+  }
+  .glow { position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 800px; height: 600px; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    pointer-events: none; z-index: 0; }
+
+  /* Progress bar */
+  #progress { position: fixed; top: 0; left: 0; height: 3px; width: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft)); z-index: 100; transition: width .1s; }
+
+  /* Top nav */
+  nav.top { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px);
+    background: rgba(10,11,15,0.82); border-bottom: 1px solid var(--border-soft); }
+  nav.top .inner { max-width: var(--maxw); margin: 0 auto; padding: 12px 24px;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  nav.top .brand { font-weight: 800; letter-spacing: -0.02em; margin-right: auto; display:flex; align-items:center; gap:8px; }
+  nav.top .brand svg { width: 18px; height: 18px; color: var(--accent); }
+  nav.top a.navlink { color: var(--muted); font-size: 0.88rem; font-weight: 500; }
+  nav.top a.navlink:hover { color: var(--text); }
+  @media (max-width: 640px){ nav.top a.navlink { display:none; } }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* Hero */
+  header.hero { text-align: center; padding: 90px 24px 64px; position: relative; z-index: 1; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 100px; padding: 6px 16px;
+    font-size: 0.8rem; color: var(--muted); margin-bottom: 26px; }
+  .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .hero h1 { font-size: clamp(2.3rem, 6.5vw, 3.7rem); font-weight: 800; letter-spacing: -0.03em;
+    line-height: 1.06; margin-bottom: 20px;
+    background: linear-gradient(180deg, #fff 0%, #b8bdcc 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero h1 .accent { background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p.lead { font-size: clamp(1.02rem, 2.3vw, 1.25rem); color: var(--muted);
+    max-width: 620px; margin: 0 auto 34px; }
+  .cta-row { display: flex; gap: 13px; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 9px; padding: 12px 24px;
+    border-radius: 10px; font-weight: 600; font-size: 0.95rem; transition: transform .15s, box-shadow .15s; }
+  .btn svg { width: 16px; height: 16px; }
+  .btn-primary { background: var(--accent); color: #1a0d08; box-shadow: 0 6px 24px var(--accent-glow); }
+  .btn-primary:hover { transform: translateY(-2px); color: #1a0d08; }
+  .btn-ghost { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { transform: translateY(-2px); border-color: var(--accent); color: var(--text); }
+  .hero-stats { display: flex; gap: 36px; justify-content: center; flex-wrap: wrap; margin-top: 52px; }
+  .stat { text-align: center; }
+  .stat .num { font-size: 1.9rem; font-weight: 800; color: var(--text); }
+  .stat .lbl { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* Section header */
+  section { padding: 56px 0 12px; position: relative; z-index: 1; }
+  .sec-head { margin-bottom: 28px; padding-top: 24px; border-top: 1px solid var(--border-soft); }
+  .sec-head .kicker { color: var(--accent); font-size: 0.78rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 9px; display:flex; align-items:center; gap:8px; }
+  .sec-head .kicker svg { width: 15px; height: 15px; }
+  .sec-head h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; letter-spacing: -0.02em; }
+  .sec-head p { color: var(--muted); margin-top: 9px; max-width: 620px; font-size: 0.98rem; }
+
+  /* Detail entry — her feature tek tek */
+  .entry { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px 26px; margin-bottom: 14px; transition: border-color .2s, background .2s; }
+  .entry:hover { border-color: var(--border); background: var(--bg-card2); }
+  .entry .ehead { display: flex; align-items: center; gap: 13px; margin-bottom: 4px; }
+  .entry .eicon { flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(145deg, var(--accent-glow), transparent);
+    border: 1px solid var(--border); display: grid; place-items: center; }
+  .entry .eicon svg { width: 20px; height: 20px; color: var(--accent-soft); stroke-width: 2; }
+  .entry .etitle { font-size: 1.12rem; font-weight: 700; letter-spacing: -0.01em; }
+  .entry .etitle .ev { font-family: "SF Mono", monospace; color: var(--accent-soft); font-size: 0.92em; }
+  .entry .emeta { font-size: 0.74rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+  .entry .ebody { margin-top: 14px; }
+  .entry .ebody > p { color: var(--muted); font-size: 0.95rem; margin-bottom: 12px; }
+  .entry .ebody > p:last-child { margin-bottom: 0; }
+  .entry .ebody strong { color: var(--text); font-weight: 600; }
+
+  /* Sub-block: Nasıl çalışır / Tetikleyici / Örnek */
+  .block { margin-top: 12px; padding: 13px 15px; background: var(--bg-soft);
+    border: 1px solid var(--border-soft); border-radius: 9px; }
+  .block .bt { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent); margin-bottom: 7px; display:flex; align-items:center; gap:6px; }
+  .block .bt svg { width: 13px; height: 13px; }
+  .block p, .block ul { font-size: 0.88rem; color: var(--muted); }
+  .block ul { padding-left: 18px; }
+  .block li { margin: 3px 0; }
+  .block.howto .bt { color: var(--blue); }
+  .block.trig .bt { color: var(--green); }
+  .block.example { background: #0c0d12; }
+  .block.example .bt { color: var(--purple); }
+  .block.example pre { overflow-x: auto; }
+  .block.example code { background: none; border: none; padding: 0; color: var(--green); font-size: 0.84rem; }
+
+  .tags { margin-top: 13px; }
+  .tag { display: inline-block; margin: 3px 5px 0 0; font-size: 0.72rem; color: var(--accent-soft);
+    background: var(--accent-glow); border-radius: 6px; padding: 3px 9px; }
+
+  /* Hero feature cards (öne çıkanlar) */
+  .features { display: flex; flex-direction: column; gap: 13px; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 22px 24px; display: flex; gap: 18px; align-items: flex-start; transition: border-color .2s, transform .2s, background .2s; }
+  .reveal .card, .reveal .entry { opacity: 0; transform: translateY(20px); transition: opacity .5s, transform .5s, border-color .2s, background .2s; }
+  .card.in, .entry.in { opacity: 1; transform: translateY(0); }
+  .card:hover { border-color: var(--accent); background: var(--bg-card2); }
+  .card .icon { flex-shrink: 0; width: 44px; height: 44px; border-radius: 11px;
+    background: linear-gradient(145deg, var(--accent-glow), transparent); border: 1px solid var(--border); display: grid; place-items: center; }
+  .card .icon svg { width: 21px; height: 21px; color: var(--accent-soft); stroke-width: 2; }
+  .card .body h3 { font-size: 1.08rem; font-weight: 700; margin-bottom: 5px; }
+  .card .body p { color: var(--muted); font-size: 0.93rem; }
+
+  /* Install */
+  .install { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 28px; }
+  .install ol { list-style: none; counter-reset: step; }
+  .install li { counter-increment: step; padding: 9px 0; padding-left: 42px; position: relative; color: var(--muted); }
+  .install li::before { content: counter(step); position: absolute; left: 0; top: 7px;
+    width: 27px; height: 27px; border-radius: 8px; background: var(--accent); color: #1a0d08;
+    display: grid; place-items: center; font-weight: 700; font-size: 0.82rem; }
+  .install pre { background: #0c0d12; border: 1px solid var(--border); border-radius: 8px;
+    padding: 11px 13px; margin-top: 5px; overflow-x: auto; }
+  .install pre code { background: none; border: none; padding: 0; color: var(--green); }
+
+  footer { padding: 52px 24px 66px; text-align: center; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 36px; position: relative; z-index: 1; }
+  footer .made { font-size: 0.84rem; margin-top: 10px; }
+  footer svg { width: 14px; height: 14px; vertical-align: -2px; }
+
+  @media (max-width: 560px){ .card, .entry .ehead { flex-direction: column; gap: 12px; align-items:flex-start; } }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div class="glow"></div>
+
+<nav class="top">
+  <div class="inner">
+    <span class="brand"><i data-lucide="sparkles"></i> personal-assistant</span>
+    <a class="navlink" href="#ozet">Öne Çıkanlar</a>
+    <a class="navlink" href="#rules">Kurallar</a>
+    <a class="navlink" href="#hooks">Hooks</a>
+    <a class="navlink" href="#skills">Skills</a>
+    <a class="navlink" href="#agents">Agents</a>
+    <a class="navlink" href="#deps">Bağımlılıklar</a>
+    <a class="navlink" href="#kurulum">Kurulum</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap">
+    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.37.0 · MIT</span>
+    <h1>Claude Code'a <span class="accent">hafıza, disiplin<br/>ve otomasyon</span> kazandıran plugin</h1>
+    <p class="lead">Her oturum başında global kuralları yükler, proje yapılandırmasını denetler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir. Aşağıda her parça tek tek anlatılıyor.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub</a>
+      <a class="btn btn-ghost" href="#ozet">Sunuma Başla <i data-lucide="arrow-down"></i></a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="num">13</div><div class="lbl">Kural</div></div>
+      <div class="stat"><div class="num">8</div><div class="lbl">Hook</div></div>
+      <div class="stat"><div class="num">12</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">8</div><div class="lbl">Agent</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ÖNE ÇIKANLAR -->
+<section id="ozet">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><i data-lucide="star"></i> Öne Çıkanlar</div>
+      <h2>Plugin ne yapar?</h2>
+      <p>Detaylara inmeden önce, plugin'in en güçlü yetenekleri.</p>
+    </div>
+    <div class="features">
+      <div class="card"><div class="icon"><i data-lucide="brain"></i></div><div class="body">
+        <h3>Obsidian Proje Belleği</h3>
+        <p>Her proje için vault'ta MOC + <code>[[wikilink]]</code> bilgi grafiği. 8 agent ve 5 skill besler — <code>obsidian-init</code> kurar, <code>obsidian-searcher</code> sorgu bazlı bulur ve sentezler, <code>obsidian-writer</code> 4 modda yazar. Öğrenilen bilgi tekrar sorulmadan geri çağrılır.</p></div></div>
+      <div class="card"><div class="icon"><i data-lucide="shield-check"></i></div><div class="body">
+        <h3>Commit Kalite Kapısı</h3>
+        <p><code>commit</code> skill, kod değişen her teslimatta <code>/code-review</code>'u <strong>zorunlu</strong> çalıştırır — "hızlıca commit" dense bile. Dürüst review, hiçbir bulgu gizlenemez; soruları biriktirip tek onayla teslim eder.</p></div></div>
+      <div class="card"><div class="icon"><i data-lucide="scroll-text"></i></div><div class="body">
+        <h3>Oturum Başı Kural Disiplini</h3>
+        <p>SessionStart'ta 13 global kural materialise edilir. Claude her oturumda tutarlı kurallarla çalışır: <code>uv</code> zorunlu, <code>AskUserQuestion</code> zorunlu, subagent'lar background, commit skill zorunlu.</p></div></div>
+      <div class="card"><div class="icon"><i data-lucide="wrench"></i></div><div class="body">
+        <h3>Extension Builder</h3>
+        <p>Claude Code'un 8 genişletme tipini (skill/plugin/agent/hook/MCP/output-style/channel/marketplace) resmi dökümanı <code>WebFetch</code> ile <em>canlı</em> çekerek üretir — schema uydurmaz.</p></div></div>
+      <div class="card"><div class="icon"><i data-lucide="refresh-cw"></i></div><div class="body">
+        <h3>Daily Continuity</h3>
+        <p>SessionStart'ta bugün+dün daily özeti yüklenir, Stop'ta oturum özeti tek satır eklenir (oturumda 1 kez). Dünden devam eden işler her yeni oturumda hatırlanır.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- RULES -->
+<section id="rules">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><i data-lucide="gavel"></i> Rules · 13 global kural</div>
+      <h2>Her oturumda yüklenen davranış disiplini</h2>
+      <p><code>load-rules.sh</code> hook'u bu kuralları <code>~/.claude/rules/</code> altına materialise eder. Her biri Claude'un nasıl davranacağını belirler.</p>
+    </div>
+
+    <!-- ask-first -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-circle-question"></i></div><div><div class="etitle">ask-first</div><div class="emeta">Önce Sor</div></div></div>
+      <div class="ebody">
+        <p><strong>Kullanıcıya yöneltilen her soru, seçim veya onay düz metinle değil, yalnızca <code>AskUserQuestion</code> tool çağrısıyla sorulur.</strong> Düz metin soru tamamen yasaktır.</p>
+        <p>Kural mutlaktır: tek bir evet/hayır onayı bile ("devam edeyim mi?" gibi tek satır metin yasak — yerine <code>["Evet","Hayır"]</code> tool çağrısı); commit/destructive/geri-alınamaz onaylarda metinle "onaylıyor musun?" yasak; çoklu seçenekte markdown <code>1. 2. 3.</code> liste yasak. Felsefe: varsayım = hata, sormak = kalite; çelişki görünce sor, bilgi eksikse tahmin etme.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="git-fork"></i> Self-Check</div><p>Metne <code>?</code> yazmadan önce dur: (1) kullanıcıya soru mu? → <code>AskUserQuestion</code>; (2) "A mı B mi?" fragment yasak; (3) "onaylıyor musun" formları hep tool. Önerilen seçenek ilk sırada <code>(Recommended)</code> etiketiyle.</p></div>
+      </div>
+    </div>
+
+    <!-- coding -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="code"></i></div><div><div class="etitle">coding</div><div class="emeta">Kod Disiplini</div></div></div>
+      <div class="ebody">
+        <p><strong>İletişim Türkçe, kod yorumları ve commit mesajları İngilizce.</strong> Küçük ihlaller sessizce düzeltilir, mimari ihlaller durdurularak raporlanır.</p>
+        <p>Proaktif hijyen: unused import, typo, formatting sessizce düzeltilir; mimari ihlal (güvenlik açığı, yanlış pattern) görülürse işlem DURDURULUR ve <code>AskUserQuestion</code> ile raporlanır. Otonom çözüm: hata verildiğinde yönlendirme beklenmez. Geçici çözüm (workaround) yerine doğru çözüm bulunur. Hatalar her zaman wrap edilir.</p>
+        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>Go:     fmt.Errorf(": %w", err)
+Python: raise X from err
+TODO:   # TODO: hard-coded değer, placeholder, eksik validasyon</code></pre></div>
+      </div>
+    </div>
+
+    <!-- python -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="container"></i></div><div><div class="etitle">python</div><div class="emeta">Paket Yönetimi</div></div></div>
+      <div class="ebody">
+        <p><strong>Paket yönetiminde her zaman <code>uv</code> kullanılır (pip değil), venv aktive edilerek çalışılır, <code>uv run</code> kullanılmaz.</strong></p>
+        <p><code>.venv</code> yoksa <code>uv venv</code> ile oluşturulur, bağımlılıklar <code>uv pip install</code> ile kurulur, sonra <code>source .venv/bin/activate</code> ile aktive edilip normal <code>python</code>/<code>pytest</code>/<code>manage.py</code> çalıştırılır.</p>
+        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>uv venv
+uv pip install -r requirements.txt
+source .venv/bin/activate
+python manage.py runserver</code></pre></div>
+      </div>
+    </div>
+
+    <!-- django -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="server-cog"></i></div><div><div class="etitle">django</div><div class="emeta">Diji Django Standartları</div></div></div>
+      <div class="ebody">
+        <p><strong>Diji'nin Django projelerine özgü çeviri domain'i (<code>djangof7</code>), proje yapısı, Elasticsearch reindex komutları ve admin konvansiyonlarını standartlaştırır.</strong></p>
+        <p>Standart <code>django</code>/<code>djangojs</code>'e ek olarak <code>djangof7</code> domain'i F7 framework çevirilerini yönetir. Mobil repo <code>./mobile/&lt;repo&gt;/</code>, loglar <code>server/logs/</code>, logolar <code>assets/app/</code> altında. Admin: <code><admin-user></code> kullanıcısı, SmartAdmin template; B2C'de Django Admin <code>superadmin/</code>, panel <code>admin/</code>.</p>
+        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Elasticsearch Reindex</div><pre><code>python manage.py elastic_reindex_hotel
+# _flight _car _transfer _bus _tour _ferry varyantları</code></pre></div>
+      </div>
+    </div>
+
+    <!-- workflow -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="users"></i></div><div><div class="etitle">workflow</div><div class="emeta">Subagent Kuralları</div></div></div>
+      <div class="ebody">
+        <p><strong>Sub-agent çağrısı kullanıcı onayı olmadan yasak; izin verilen agent çağrıları ise her zaman background modunda çalıştırılır.</strong></p>
+        <p>Kullanıcı "takım kur" derse <code>TeamCreate</code>. Subagent için açık izin yoksa önce <code>AskUserQuestion</code> sorulur ("hızlı olur/paralel" gerekçeleri geçersiz). İstisna: skill/agent-tanımı/hook akışının parçası olan çağrılar direkt yürür. Çalıştırma: bir subagent her zaman <code>run_in_background: true</code> ile başlatılır — foreground hiçbir koşulda kullanılmaz, sonucu beklemen gerekse bile <code>task-notification</code> beklenir.</p>
+      </div>
+    </div>
+
+    <!-- obsidian -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="network"></i></div><div><div class="etitle">obsidian</div><div class="emeta">Bellek Kullanımı</div></div></div>
+      <div class="ebody">
+        <p><strong>Proje-spesifik kalıcı bilgi resmi Obsidian CLI ile okunur/yazılır; aramada <code>obsidian-searcher</code>, yapısal yazımda <code>obsidian-writer</code> agent'ı kullanılır.</strong></p>
+        <p>Vault <code>~/Documents/ObsidianVault/&lt;isim&gt;/</code> altında MOC + wikilink yapısındadır. Arama elle yapılmaz — "önce MOC → files → BM25 search → context → oku → sentezle" akışını agent yürütür. BM25 literal arama (vector yok); tek/az terimle başla, TR↔EN sinonim dene, <code>path=</code> ile filtrele. Klasörler: <code>index.md</code>, <code>Learnings/</code>, <code>Journal/</code>.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Karar</div><p>Obsidian → proje-spesifik kalıcı bilgi · <code>~/.claude/memory/</code> → kullanıcı profili · <code>~/.claude/rules/</code> → tüm projeler.</p></div>
+      </div>
+    </div>
+
+    <!-- init -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="clipboard-check"></i></div><div><div class="etitle">init</div><div class="emeta">Oturum Başı Kontrol</div></div></div>
+      <div class="ebody">
+        <p><strong>Her konuşmanın ilk mesajında proje yapılandırması (CLAUDE.md/local + Vikunja/Solo/Obsidian ID'leri) denetlenir; sorun bildirilirse Vikunja görevi kontrol edilir ve geçmiş Learnings ön-aranır.</strong></p>
+        <p>5 madde kontrol edilir; eksikse "⚠️ Eksik Yapılandırma: <code>/project-init</code>" notu eklenir. Kullanıcı somut görev verince ve Obsidian Folder tanımlıysa, göreve başlamadan önce <code>obsidian-searcher</code> background çağrılarak geçmiş bilgi aranır (selamlaşma/kavramsal soruda tetiklenmez).</p>
+      </div>
+    </div>
+
+    <!-- learnings -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="lightbulb"></i></div><div><div class="etitle">learnings</div><div class="emeta">Bilgi Kalıcılaştırma</div></div></div>
+      <div class="ebody">
+        <p><strong>Kullanıcı tekrar eden bir komut/iş akışı/yapılandırma/bağlantı paylaştığında, bunu kural olarak kaydetmeyi <code>AskUserQuestion</code> ile teklif eder.</strong></p>
+        <p>Değerli tekrar kullanılabilir bilgilerin uçup gitmesini önleyip <code>/rule-manager</code> ile kalıcılaştırmak için — header "Kural", options ["Evet, kaydet", "Hayır"].</p>
+      </div>
+    </div>
+
+    <!-- before-commit -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="git-commit-horizontal"></i></div><div><div class="etitle">before-commit</div><div class="emeta">Teslimat Kapısı</div></div></div>
+      <div class="ebody">
+        <p><strong>Her commit/push/PR/branch teslimat isteğinde mutlaka <code>commit</code> skill'i çalıştırılır; manuel <code>git commit</code> yasaktır.</strong></p>
+        <p>Skill teslimat öncesi tüm kontrolleri (code-review, test, rules uyumu, Vikunja, son onay) zaten yürütür — böylece tutarlı kalite kapısı her teslimatta uygulanır.</p>
+      </div>
+    </div>
+
+    <!-- cli-tools -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="terminal-square"></i></div><div><div class="etitle">cli-tools</div><div class="emeta">CLI Referansı</div></div></div>
+      <div class="ebody">
+        <p><strong>Sık kullanılan CLI araçlarının (Zed, Tailscale, UV, rsvg-convert, markitdown) komut referansını standartlaştırır.</strong></p>
+        <p>Bir cheat-sheet kuralı: Zed dosya/satır/diff/<code>--wait</code>; Tailscale status/up/ping; UV venv/pin/install; rsvg-convert SVG→PNG/PDF; markitdown PDF/Office/ses/görsel/YouTube → markdown.</p>
+        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>rsvg-convert -w 512 -h 512 in.svg -o out.png
+markitdown dosya.pdf -o cikti.md
+zed --diff a.ts b.ts</code></pre></div>
+      </div>
+    </div>
+
+    <!-- browser-testing -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="globe"></i></div><div><div class="etitle">browser-testing</div><div class="emeta">Frontend Test</div></div></div>
+      <div class="ebody">
+        <p><strong>Tarayıcı otomasyonu ve frontend testi için MCP yerine Playwright CLI (<code>playwright-cli</code>) kullanılır.</strong></p>
+        <p>CLI token-efficient ve Microsoft'un coding agent'lar için önerdiği yol — MCP playwright kaldırıldı. Snapshot + ref tabanlı etkileşim (a11y tree token maliyeti yok). Test suite için ayrıca <code>@playwright/test</code>.</p>
+        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>playwright-cli open https://example.com
+playwright-cli snapshot
+playwright-cli click e15
+playwright-cli fill e20 "kullanici" --submit</code></pre></div>
+      </div>
+    </div>
+
+    <!-- b2c-booking-log -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-search"></i></div><div><div class="etitle">b2c-booking-log</div><div class="emeta">Domain Bilgisi</div></div></div>
+      <div class="ebody">
+        <p><strong>Diji B2C rezervasyon loglarının analizi için log dosyaları, DB modelleri, status akışı, logger hiyerarşisi ve bilinen sorunları haritalar.</strong></p>
+        <p>Loglar <code>server/logs/</code> (debug.log, diji.csv, modül csv'leri). Modeller: Booking, BookingItem, UserBookingBasket, AppLog. Status akışı: <code>READY → PREBOOKED → PAYPROCESSING → PROCESSING → SUCCESS</code> (hata: FAIL/CANCEL). Bilinen sorunlar: duplicate finalize race condition, PAYPROCESSING'de takılma, SMS NoneType hatası.</p>
+      </div>
+    </div>
+
+    <!-- soloterm -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="square-terminal"></i></div><div><div class="etitle">soloterm</div><div class="emeta">Process Yönetimi</div></div></div>
+      <div class="ebody">
+        <p><strong>Tekrar eden shell komutları için mutlaka <code>solo.yml</code> oluşturulur ve komutlar Solo MCP araçları üzerinden process olarak yönetilir.</strong></p>
+        <p>Bir komut ileride tekrar kullanılabilecekse önce <code>solo.yml</code> kontrol edilir; varsa Solo üzerinden çalıştırılır, yoksa önce eklenir. Solo komutları başlatılabilir, durdurulabilir, yeniden başlatılabilir, çıktıları takip edilebilir.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOOKS -->
+<section id="hooks">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><i data-lucide="zap"></i> Hooks · 8 hook, 3 event</div>
+      <h2>Oturum yaşam döngüsü otomasyonu</h2>
+      <p>SessionStart (6) · UserPromptSubmit (1) · Stop (1). Hepsi shell, bağımlılık minimal. Her hook ne yapıyor, nasıl çalışıyor ve ne kazandırıyor.</p>
+    </div>
+
+    <!-- load-rules -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="download"></i></div><div><div class="etitle">load-rules.sh</div><div class="emeta">SessionStart</div></div></div>
+      <div class="ebody">
+        <p><strong>Oturum başında plugin'in <code>rules/</code> klasöründeki tüm kural dosyalarını <code>~/.claude/rules/</code> altına materialise eder</strong> ve context'e ~19KB ham metin yerine yalnızca kısa bir indeks (dosya adı + tek satır özet) basar.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>set -e</code> fail-fast. Her <code>.md</code> için <code>copy_if_newer</code>: hedef yoksa veya kaynak daha yeniyse (<code>-nt</code> mtime) kopyalanır. Sonra "# Active Rules" başlığı + her kural için bir satır (ilk H2 → H1 → ilk satır, 80 char). Claude Code'un ~2KB hook preview truncation sınırını aşar.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Kurallar her oturumda güncel ve sabit yoldan erişilebilir; context bütçesi şişmez — Claude ilgili kuralı gerektiğinde <code>Read</code> ile açar.</p></div>
+      </div>
+    </div>
+
+    <!-- init-check -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="search-check"></i></div><div><div class="etitle">init-check.sh</div><div class="emeta">SessionStart · + .ps1</div></div></div>
+      <div class="ebody">
+        <p><strong>CLAUDE.md/CLAUDE.local.md varlığını ve Vikunja/Solo/Obsidian Folder tanımlarını denetleyip tek satırlık sonuç (<code>INIT_OK</code> / <code>INIT_MISSING</code> / <code>INIT_MALFORMED</code>) basar.</strong></p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>hook-state.sh</code> source edilip ortak <code>hook_obsidian_folder</code> yüklenir. Esnek pattern (<code>Obsidian.*Folder</code>) bitişik VE markdown-tablo formatını yakalar. Satır var ama değer çıkmıyorsa MALFORMED (sessiz tuzak yakalanır). Öncelik: eksik &gt; bozuk &gt; OK. Windows'ta <code>init-check.ps1</code> karşılığı.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Eksik/bozuk yapılandırma oturum başında yakalanır; entegrasyonlar sessizce devre dışı kalmaz, <code>/project-init</code> ile tamamlanır.</p></div>
+      </div>
+    </div>
+
+    <!-- obsidian-context -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="folder-tree"></i></div><div><div class="etitle">obsidian-context.sh</div><div class="emeta">SessionStart</div></div></div>
+      <div class="ebody">
+        <p><strong>Projenin Obsidian bellek klasöründeki <code>index.md</code> MOC'unun frontmatter'ını ve başlıklarını oturum başında context'e dump eder.</strong></p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>hook_obsidian_folder</code> ile klasör çıkarılır. <code>&lt;vault&gt;/&lt;folder&gt;/index.md</code> varsa <code>awk</code> ile frontmatter bloğu + <code>grep</code> ile tüm h1/h2/h3 başlıklar basılır, "detay için Read" notu eklenir.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Claude oturuma proje belleğinin haritasıyla başlar; tüm vault'u okumadan doğru <code>[[wikilink]]</code>'i açabilir.</p></div>
+      </div>
+    </div>
+
+    <!-- session-obsidian-daily -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="calendar-days"></i></div><div><div class="etitle">session-obsidian-daily.sh</div><div class="emeta">SessionStart</div></div></div>
+      <div class="ebody">
+        <p><strong>Bugünün ve dünün global daily note'larından kısa özet basar; oturumun gerçek başlangıç zamanını state tablosuna damgalar.</strong></p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>session_id</code> ile <code>session_start</code> damgalanır (Obsidian kapalı olsa bile — Stop hook'ların 5dk-yaş kontrolü buna bakar). IPC 2s timeout ile sarılır. <code>daily:read</code> kasıtlı çağrılmaz (boş dosya yaratıyordu) — dosya filesystem'den <code>Daily/</code>, <code>Daily Notes/</code>, root sırasıyla okunur, <code>head -100</code>.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Oturumlar arası süreklilik — kullanıcı kaldığı yerden devam eder; <code>session_start</code> damgası Stop hook'ların doğru çalışması için kritiktir.</p></div>
+      </div>
+    </div>
+
+    <!-- userprompt-obsidian-hint -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-square-text"></i></div><div><div class="etitle">userprompt-obsidian-hint.sh</div><div class="emeta">UserPromptSubmit</div></div></div>
+      <div class="ebody">
+        <p><strong>Her non-trivial prompt'a iki davranış enjekte eder: (1) ARAMA — araştırma gerekiyorsa önce <code>obsidian-searcher</code> ile vault'a bak; (2) KAYIT — cevap sonrası öğrenilen bilgiyi background kaydet.</strong></p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Klasör çıkarılır, prompt &lt;15 char ise skip. ARAMA her prompt'ta. KAYIT geciktirmeli: <code>last_learning_hook</code>'tan 5 dk geçmişse eklenir. HINT tek satır (jq <code>--arg</code> çok satırı escape etmez), <code>hookSpecificOutput.additionalContext</code> ile basılır. Eski <code>stop-obsidian-remind.sh</code>'in (block + "error" görünümü) yerini alır.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Sıfırdan uğraşmadan önce geçmiş bilgi hatırlanır; kayda değer yeni bilgi rahatsız etmeden çıktıyla beraber kalıcılaşır — hem hatırlama hem öğrenme prompt akışına gömülür.</p></div>
+      </div>
+    </div>
+
+    <!-- stop-obsidian-daily -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="pencil-line"></i></div><div><div class="etitle">stop-obsidian-daily.sh</div><div class="emeta">Stop</div></div></div>
+      <div class="ebody">
+        <p><strong>Oturum sonunda kayda değer aktivite varsa daily note'a proje-linkli tek satır özet append'ler.</strong> Sessiz çalışır, oturumda yalnızca 1 kez yazar.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Seyreltme: <code>last_daily_hook</code> doluysa atla. Oturum 5 dk'dan genç ise (<code>session_start</code>) atla. Son mesaj &lt;200 char ise skip. Özet önceliği: <code>customTitle</code> (/rename) → <code>aiTitle</code> → ilk 280 char. Satır: <code>- HH:MM [[folder/index|folder]]: özet — [transcript](file://...)</code>.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Her anlamlı oturum, aranabilir ve transcript-linkli günlük kaydı bırakır; kısa/boş oturumlar gürültü yapmaz.</p></div>
+      </div>
+    </div>
+
+    <!-- hook-state -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="database"></i></div><div><div class="etitle">hook-state.sh</div><div class="emeta">Altyapı · shared</div></div></div>
+      <div class="ebody">
+        <p><strong>Hook'ların oturum başına seyreltilmesi için TSV tabanlı state tablosu yönetir; tüm hook'ların paylaştığı <code>hook_obsidian_folder</code> çıkarım fonksiyonunu sağlar.</strong> (Hook değil, diğer scriptlerin source ettiği kütüphane.)</p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>State: <code>session_id ⇥ session_start ⇥ last_daily_hook ⇥ last_learning_hook</code>. Saf <code>awk</code> (jq/sqlite yok), <code>mkdir</code> tabanlı atomik kilit lost-update'i önler, 7 günden eski satırlar budanır. <code>hook_obsidian_folder</code> bitişik/düz/tablo formatını destekler, placeholder/quote satırlarını eler.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Tüm hook'lar tek kaynaktan (DRY) çalışır; harici bağımlılık olmadan macOS+Linux'ta güvenilir, kilitli, kendini temizleyen state mekanizması.</p></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 12 adet</div>
+      <h2>Tekrar eden işler için playbook'lar</h2>
+      <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır — ağır iş agent'lara delege edilir.</p>
+    </div>
+
+    <!-- commit -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="git-commit-horizontal"></i></div><div><div class="etitle">commit</div></div></div>
+      <div class="ebody">
+        <p><strong>Kod değişikliklerini commit etmeden önce kapsamlı kalite kapısı kurar.</strong> Tüm analizi (code-review, test, rules uyumu, Vikunja, Obsidian) sessizce yapar, bulguları biriktirir, tek toplu soru bloğunda sunar, onay sonrası seçilen teslimatı (commit/push/PR/merge) uygular.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"commit", "push et", "PR oluştur", "branch aç", <code>/commit</code>. <code>before-commit</code> kuralı gereği manuel <code>git commit</code> yerine zorunludur.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → branch tespit → <b>code-review (zorunlu)</b> → test → rules tara → Vikunja eşleştir → Obsidian → tek soru bloğu → dosyaları tek tek stage + Co-Authored-By commit → teslimat.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="shield-alert"></i> Öne çıkan</div><p>Code-review <strong>atlanamaz</strong> — "hızlıca commit" dense bile çalışır. Bulgular küçük diye filtrelenemez/yumuşatılamaz; uncertain bulgular bile listelenir, false-positive kararını kullanıcı verir. Asla <code>--amend</code>, asla force push, asla <code>git add -A</code>.</p></div>
+      </div>
+    </div>
+
+    <!-- extension-builder -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="wrench"></i></div><div><div class="etitle">extension-builder</div></div></div>
+      <div class="ebody">
+        <p><strong>Claude Code'u genişleten her bileşeni (skill/plugin/agent/hook/MCP/output-style/channel/marketplace) yazar.</strong> En kritik prensibi: schema/alan isimlerini bellekten asla uydurmaz — resmi dökümanı canlı çeker.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"skill yaz", "plugin oluştur", "hook ekle", "MCP server yap", "agent tanımla", "marketplace oluştur".</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Tip netleştir → <code>references/INDEX.md</code>'den resmi URL → <code>WebFetch</code> ile <code>code.claude.com/docs/...md</code> çek → detay topla → frontmatter limiti uygula → schema'ya birebir uyan dosya yapısı → versiyon bump.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>8 genişletme tipi, her biri için ayrı resmi URL. <strong>Schema uydurmama</strong> çekirdek kural. Mimari hatırlatmalar gömülü: klasörler <code>.claude-plugin/</code> dışında, hook tipleri, MCP transport, plugin içi agent kısıtları.</p></div>
+      </div>
+    </div>
+
+    <!-- project-init -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="folder-plus"></i></div><div><div class="etitle">project-init</div></div></div>
+      <div class="ebody">
+        <p><strong>Bir projeyi Claude Code ekosistemine entegre eder</strong> — CLAUDE.md/local, solo.yml, .gitignore eksiklerini tespit edip tamamlar, Vikunja/Solo/Obsidian entegrasyonlarını kurar.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"projeyi kur", "init", "setup", "CLAUDE.md oluştur". <code>init.md</code> oturum başı eksik tespit edince otomatik önerir.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Durum tespiti → manifest'ten stack çıkarımı → eksik listesi → toplu soru bloğu → stack'e uygun dosya üretimi → entegrasyon (vikunja project create, Solo, Obsidian klasör).</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Obsidian klasörü yeni oluşunca <code>obsidian-init</code> otomatik tetiklenir; mevcut seçilince önce sorar. Override etmez, sadece eksik doldurur. Stack belirsizse durur ve sorar.</p></div>
+      </div>
+    </div>
+
+    <!-- obsidian-init -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="brain-circuit"></i></div><div><div class="etitle">obsidian-init</div></div></div>
+      <div class="ebody">
+        <p><strong>Projeyi analiz edip vault'ta MOC + wikilink ilişkisel proje belleği oluşturur.</strong> Kendisi analiz yapmaz — <code>obsidian-initializer</code> orchestrator'ını çağırıp 5 alt agent'ı koordine ettirir.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"obsidian belleği oluştur", "obsidian init", <code>/obsidian-init</code> (<code>--force</code> ile yeniden üretir).</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Obsidian Folder kontrol → mevcut <code>index.md</code> varsa <code>--force</code> iste → <code>Task</code> ile orchestrator → yazılan dosyaları göster.</p></div>
+      </div>
+    </div>
+
+    <!-- obsidian-note -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-pen"></i></div><div><div class="etitle">obsidian-note</div></div></div>
+      <div class="ebody">
+        <p><strong>Tek seferlik bir bilgiyi (API key, sunucu, karar, komut, pattern) proje klasörüne kaydeder.</strong> <code>obsidian-writer MODE: append</code> çağırır — mevcut not varsa günceller, yoksa yeni Learnings notu.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"bunu obsidian'a not al", "obsidian'a ekle", "bunu kaydet", <code>/obsidian-note</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Folder + index kontrol → CLI durumu → içerik topla → <b>kategori tahmin et</b> (api-key/server/decision/bug/command/pattern) → <code>Task</code> writer append → frontmatter özetiyle raporla.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Frontmatter'a <code>category/confidence/source/last_verified</code> + MOC'a wikilink. CLI kapalıyken fonksiyon kaybı yok (Grep fallback).</p></div>
+      </div>
+    </div>
+
+    <!-- obsidian-audit -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="stethoscope"></i></div><div><div class="etitle">obsidian-audit</div></div></div>
+      <div class="ebody">
+        <p><strong>Vault sağlık denetimi</strong> — kırık wikilink, orphan, deadend notlar, eskimiş Learnings ve düşük güvenli bilgileri tespit edip raporlar.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"vault audit", "kırık linkleri bul", "obsidian denetle", <code>/obsidian-audit [folder]</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>CLI kontrol → hedef klasör → paralel <code>unresolved</code>/<code>orphans</code>/<code>deadends</code> → <b>last_verified audit</b> (30 gün+ stale) → confidence audit → markdown rapor + aksiyon önerisi.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Sadece yapıyı değil <strong>bilgi tazeliğini</strong> de denetler — 6 aylık API key'in hala geçerli olup olmadığını sordurur.</p></div>
+      </div>
+    </div>
+
+    <!-- obsidian-recall -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="dice-5"></i></div><div><div class="etitle">obsidian-recall</div></div></div>
+      <div class="ebody">
+        <p><strong>Learnings notlarından birini rastgele veya kategori-filtreli okur ve özetler</strong> (spaced repetition — eski bilgileri tekrar gündeme getirir).</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"rastgele not", "eski öğrenilenler", "geçmişten bir bilgi", <code>/obsidian-recall [tag]</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>CLI + folder → filtre varsa <code>obsidian tag</code> yoksa <code>random:read</code> → notu yapılandırılmış özetle (konu/kategori/last_verified/güven/özet) → aksiyon öner.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><code>obsidian-search</code>'ten farkı: <strong>rastgele</strong> (search hedefli). <code>/loop 4h /obsidian-recall</code> ile otomatikleştirilebilir — sabah ritüeli, key rotasyon kontrolü.</p></div>
+      </div>
+    </div>
+
+    <!-- obsidian-search -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="search"></i></div><div><div class="etitle">obsidian-search</div></div></div>
+      <div class="ebody">
+        <p><strong>Vault'ta sorgu bazlı hedefli arama</strong> — aranan konuyu bulur, notları okur, sentezlenmiş cevap + wikilink kaynak listesi döner. Asıl işi <code>obsidian-searcher</code> agent'ına delege eder.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"obsidian'da ara", "X hakkında ne not almışım", "Y sorununu nasıl çözmüştük", <code>/obsidian-search [sorgu]</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Sorgu al → Folder'ı path filtresi için çıkar → CLI durumu → <code>obsidian-searcher</code> <b>background</b> çağır (QUERY/FOLDER/VAULT/CLI_ACTIVE) → sentez + kaynakları sun → güncelleme istenirse writer'a delege.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Agent <strong>salt-okur</strong>; yazma gerekince writer'a delege. Workflow kuralı gereği searcher her zaman background.</p></div>
+      </div>
+    </div>
+
+    <!-- obsidian-doc-source -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="book-marked"></i></div><div><div class="etitle">obsidian-doc-source</div></div></div>
+      <div class="ebody">
+        <p><strong>Dış kaynağı (URL/kütüphane/PDF/repo) global docs klasörüne sectioned API reference olarak dokümante eder.</strong> Proje folder'ı altında DEĞİL — tüm projeler aynı docs havuzunu paylaşır.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"bu kaynağı dokümante et", "API'yi dokümante et", "kütüphaneyi kaydet", <code>/obsidian-doc-source &lt;kaynak&gt;</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Router ile tip tespit (GitHub→<code>gh</code>, web→WebFetch/crawl2md, library→<code>ctx7</code>, dosya→<code>markitdown</code>) → çakışma kontrol → <b>kaynağın tamamını oku</b> → temizle → bölümlere ayır (overview/auth/endpoints/...) → <code>writer MODE: doc-source</code>.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Çıktı <strong>proje-bağımsız global havuz</strong> — bir kez dokümante edilen Stripe API tüm projelerden erişilir. Library için Context7 zorunlu (bellekten yazmak yasak). Bounded extraction (&gt;50 dosya/&gt;500KB için sorar).</p></div>
+      </div>
+    </div>
+
+    <!-- crawl2md -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="waypoints"></i></div><div><div class="etitle">crawl2md</div></div></div>
+      <div class="ebody">
+        <p><strong>Bir web sitesini recursive crawl eder, içeriği markdown'a çevirir, <code>web-scrape-cleaner</code> ile temizler.</strong> İki aşamalı, her aşamada onay alır.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"siteyi crawl et", "URL'i markdown yap", <code>/crawl2md &lt;url&gt; &lt;dir&gt; [--depth N] [--delay S]</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>uv</code> kontrol → parametre parse → crawl onayı → <code>uv run --script</code> (PEP 723 inline deps, ephemeral venv) → rapor → temizleme onayı → cleaner agent.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Same-host kilidi</strong> — sadece aynı hosttaki linkleri izler. Delay zorunlu (rate-limit). Cleaner aggressive modda yedek önerir.</p></div>
+      </div>
+    </div>
+
+    <!-- worktree -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="git-branch"></i></div><div><div class="etitle">worktree</div></div></div>
+      <div class="ebody">
+        <p><strong>Git worktree yönetimi</strong> — Claude Code native <code>--worktree</code>/<code>EnterWorktree</code>'ye delege eden wrapper. İzolasyon, paralel subagent, <code>.worktreeinclude</code> kurulumu, merged temizlik, PR akışı.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"worktree aç", "paralel çalışalım", "izole branch'te çalış", "worktree'den PR aç", <code>/worktree</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Komutlar</div><ul>
+          <li><code>new/enter/exit</code> — worktree'ye gir/çık</li>
+          <li><code>list/status</code> — tablo (ahead/behind)</li>
+          <li><code>pr</code> — push + commit skill + <code>gh pr create</code></li>
+          <li><code>clean --merged</code> — merged'leri onaylı sil</li>
+          <li><code>setup</code> — <code>.worktreeinclude</code> kurulumu</li>
+          <li><code>parallel N görev</code> — N subagent izole kopyada</li>
+        </ul></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Native tool/flag üzerine ince koordinasyon. Dirty worktree asla otomatik silinmez. Commit mantığını DRY için commit skill'ine bırakır.</p></div>
+      </div>
+    </div>
+
+    <!-- user-message -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-square"></i></div><div><div class="etitle">user-message</div></div></div>
+      <div class="ebody">
+        <p><strong>Müşteri/acenta tarafına kanal-agnostik mesaj üretir</strong> (ticket/email/panel/WhatsApp/SMS/push). Stil rehberini her çalıştırmada okur, <code>zed --wait</code> ile onaya sunar, revize gelirse hem düzeltir hem stil dosyasına öğrenim işler.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"müşteri mesajı yaz", "acentaya mesaj", "zammad cevap", "duyuru yaz", "whatsapp mesajı", "sms yaz".</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Stil rehberini <b>oku</b> (yoksa dur) → kanal belirle → bağlam topla → mesaj üret (self-check: teknik terim/iç link sızdı mı, kanal uzunluğu) → <code>zed --wait</code> onay → revize ise yeniden üret + stil dosyasına ders ekle.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Stil dosyası <strong>tek doğruluk kaynağı</strong> (bellekten yazmaz). <strong>Revize = öğrenim</strong>: her düzeltme kalıcı ders olur, aynı hata tekrarlanmaz. Türkçe karakter ASCII karşılığı (s/sh) yasak.</p></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- AGENTS -->
+<section id="agents">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><i data-lucide="bot"></i> Agents · 8 adet</div>
+      <h2>İzole context'te çalışan uzman alt-agent'lar</h2>
+      <p>Mimari: skill'ler ince tetikleyici, ağır iş agent'lara delege. Obsidian ekosistemi merkezde.</p>
+    </div>
+
+    <!-- obsidian-writer -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-edit"></i></div><div><div class="etitle">obsidian-writer</div><div class="emeta">4 mod · merkezi yazma noktası</div></div></div>
+      <div class="ebody">
+        <p><strong>Vault'a MOC + wikilink yapısıyla not yazan merkezi agent.</strong> Tüm Obsidian yazma işlemlerinin tek noktasıdır; frontmatter, ilişkisel wikilink ve dedup kurallarını her modda korur. Tools: Read/Write/Edit/Bash/Glob/Grep.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="layers-3"></i> 4 Mod</div><ul>
+          <li><strong>init</strong> — orchestrator'dan; 4 alt agent çıktısından <code>index.md</code> MOC + Stack/Architecture/Recent-Activity/README-Summary üretir.</li>
+          <li><strong>append</strong> — Stop hook/ad-hoc; kalıcı bilgi → <code>Learnings/{topic}.md</code>, zamanlı → <code>Journal/{date}.md</code>; MOC'a wikilink + last_verified.</li>
+          <li><strong>doc-source</strong> — dış kaynağı global <code>docs/&lt;source&gt;/</code> altına multi-file API reference; global docs MOC'unun tek sahibi.</li>
+          <li><strong>update</strong> — mevcut dosyada hedefli düzenleme (madde işaretle, section güncelle); "override etme"nin kasıtlı istisnası, vault-içi + .md güvenlik sınırı, en-az-değişiklik ilkesi.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- obsidian-initializer -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="workflow"></i></div><div><div class="etitle">obsidian-initializer</div><div class="emeta">orchestrator</div></div></div>
+      <div class="ebody">
+        <p><strong>Projeyi tarayıp vault'ta MOC + wikilink proje belleği oluşturan orchestrator.</strong> Kendisi içerik üretmez — 5 alt agent'ı koordine eder. Tools: Task/Read/Glob/Grep/Bash.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Hedef klasör hazırla → 4 alt agent'ı (<code>stack-detector</code>, <code>arch-mapper</code>, <code>readme-extractor</code>, <code>recent-activity</code>) <b>tek mesajda paralel</b> <code>Task</code> ile çağır → raporları <code>writer MODE: init</code>'e ver → sonuç raporu.</p></div>
+      </div>
+    </div>
+
+    <!-- obsidian-searcher -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="scan-search"></i></div><div><div class="etitle">obsidian-searcher</div><div class="emeta">salt-okur arama</div></div></div>
+      <div class="ebody">
+        <p><strong>Vault'ta sorgu bazlı arama yapan salt-okur agent.</strong> Aranan konuyu bulur, notları okur, sentezler, wikilink kaynaklarıyla bağlar. Hiçbir şey yazmaz. Tools: Bash/Read/Grep/Glob.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="route"></i> MOC → search → context → sentez</div><ul>
+          <li><strong>0. CLI ön-kontrol</strong> — kapalıysa filesystem fallback.</li>
+          <li><strong>1. Önce MOC</strong> — <code>index.md</code>'de eşleşen wikilink varsa notu direkt oku.</li>
+          <li><strong>2. BM25 search</strong> — tek/az terim (çok kelime AND'lenip boş döner), TR↔EN sinonim, path filtresi.</li>
+          <li><strong>3. Context</strong> — <code>search:context</code> ile eşleşen satır + çevresi.</li>
+          <li><strong>4. Oku + sentezle</strong> — 1-3 notu tam oku, backlinks keşfet, birleştir.</li>
+        </ul></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Çıktı</div><p>Sentezlenmiş paragraf (kod yolu/sayı/prosedür) + <code>### Kaynaklar</code> wikilink listesi. Her iddia bir wikilink'e dayanmalı (uydurma yok); bulunamazsa dürüstçe söyler.</p></div>
+      </div>
+    </div>
+
+    <!-- stack-detector -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="layers"></i></div><div><div class="etitle">stack-detector</div></div></div>
+      <div class="ebody">
+        <p><strong>Tech stack tespiti</strong> (dil, framework, paket yöneticisi, major bağımlılıklar). Manifest dosyalarını okur, framework'ü işaret dosyalarından çıkarır, paket yöneticisini lock file'dan bulur. Belirsizse "Tespit edilemedi" — varsayım yapmaz. Tools: Read/Glob/Grep/Bash. <span class="emeta">obsidian-initializer çağırır.</span></p>
+      </div>
+    </div>
+
+    <!-- arch-mapper -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="map"></i></div><div><div class="etitle">arch-mapper</div></div></div>
+      <div class="ebody">
+        <p><strong>Mimari haritalama</strong> (top-level dizinler, backend/frontend/admin ayrımı, katmanlar). Klasörleri rolüne göre sınıflar, Django app'lerini/monorepo paketlerini listeler, dosya sayılarıyla yapı çıkarır. <code>node_modules</code>/<code>.venv</code>/<code>dist</code> atlanır. Tools: Read/Glob/Grep/Bash. <span class="emeta">obsidian-initializer çağırır.</span></p>
+      </div>
+    </div>
+
+    <!-- readme-extractor -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-text"></i></div><div><div class="etitle">readme-extractor</div></div></div>
+      <div class="ebody">
+        <p><strong>README özeti</strong> — proje amacı, setup adımları, ana özellikler ve komutlar. README yoksa boş rapor. README'de olmayan bilgi eklenmez (varsayım yok). Tools: Read/Glob. <span class="emeta">obsidian-initializer çağırır.</span></p>
+      </div>
+    </div>
+
+    <!-- recent-activity -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="activity"></i></div><div><div class="etitle">recent-activity</div></div></div>
+      <div class="ebody">
+        <p><strong>Son 30 commit analizi</strong> — hot area'lar, en çok değişen dosyalar, aktif contributor'lar. <code>git log -30</code> ile dosya/klasör/contributor frekansı sayılır. Git repo değilse veya az commit varsa uyarlanır. Tools: Bash/Read. <span class="emeta">obsidian-initializer çağırır.</span></p>
+      </div>
+    </div>
+
+    <!-- web-scrape-cleaner -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="eraser"></i></div><div><div class="etitle">web-scrape-cleaner</div><div class="emeta">model: haiku</div></div></div>
+      <div class="ebody">
+        <p><strong>Ham scrape markdown'ındaki gürültüyü temizler</strong> (nav/footer/cookie banner/reklam, boş başlık, link gürültüsü). Maliyet-optimize <code>haiku</code> modelinde çalışır. Tools: Read/Edit/Write/Glob/Grep/Bash.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Keşif (örnek dosyada gürültü tespit) → tüm dosyaları concat + <code>uniq -c</code> ile 5+ dosyada tekrar eden satırları sil → aggressive/conservative temizleme → fark &gt;%5 ise üstüne yaz (orijinal silinmez) → başlık hiyerarşisi + link sadeleştirme.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Asla scrape etmez (sadece mevcut .md düzenler), asla git commit yapmaz, KEEP listesine dokunmaz. İstenirse <code>.original/</code> yedeği bırakır.</p></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- BAĞIMLILIKLAR -->
+<section id="deps">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><i data-lucide="blocks"></i> Bağımlılıklar · dış araçlar</div>
+      <h2>Plugin neye dayanıyor?</h2>
+      <p>Plugin kendi başına çalışır, ama tam gücü dış araçlarla entegrasyonundan gelir. <code>setup.sh</code> hepsini tek komutla kurar; her araç opsiyoneldir — yoksa ilgili özellik sessizce devre dışı kalır.</p>
+    </div>
+
+    <!-- setup -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="terminal"></i></div><div><div class="etitle">setup.sh <span class="ev">+ setup.py</span></div><div class="emeta">Tek komutla kurulum</div></div></div>
+      <div class="ebody">
+        <p><strong>Tüm stack'i tek komutla kuran idempotent installer.</strong> <code>setup.sh</code> önce <code>uv</code> yoksa kurar, sonra <code>setup.py</code>'yi <code>rich</code>/<code>questionary</code> bağımlılıklarıyla ephemeral venv'de çalıştırır (global kirletmeden).</p>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Ne kurar</div><p>settings.json + statusline, Homebrew prerequisites, Python CLI araçları (uv tool), Obsidian vault + CLI, local MCP repo'ları, <code>vikunja-cli</code>, <code>zammad-cli</code>, <code>po-cli</code>, Playwright CLI, Context7 CLI, Claude Code MCP server'ları ve interaktif credential prompt'ları.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="play"></i> Çalıştırma</div><pre><code>./setup.sh              # uv kurup başlatır
+# idempotent — tekrar çalıştırılabilir, mevcut olanı atlar</code></pre></div>
+      </div>
+    </div>
+
+    <!-- obsidian -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="network"></i></div><div><div class="etitle">Obsidian</div><div class="emeta">vault + CLI · proje belleği</div></div></div>
+      <div class="ebody">
+        <p><strong>Nedir:</strong> Markdown tabanlı, yerel bir bilgi tabanı uygulaması; notları <code>[[wikilink]]</code> ile birbirine bağlayıp graf oluşturur. Resmi CLI (<code>obsidian</code> komutu) ile programatik okuma/yazma/arama sağlar.</p>
+        <p><strong>Ne işe yarar:</strong> Proje-spesifik kalıcı bilgiyi (mimari karar, bilinen bug, credential, çalışan komut) kaybetmeden saklar ve BM25 ile aranabilir kılar.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><strong>Plugin'in kalbi.</strong> 5 skill (init/note/search/recall/audit) ve 3 agent (writer/initializer/searcher) doğrudan Obsidian üzerine kurulu; 4 hook (context/daily/userprompt-hint/stop-daily) vault ile konuşur. Vault <code>~/Documents/ObsidianVault/&lt;proje&gt;/</code> altında MOC + wikilink yapısındadır. CLI kapalıyken filesystem fallback'e (Read/Grep) düşer.</p></div>
+      </div>
+    </div>
+
+    <!-- vikunja -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="list-checks"></i></div><div><div class="etitle">Vikunja</div><div class="emeta">vikunja-cli · görev yönetimi</div></div></div>
+      <div class="ebody">
+        <p><strong>Nedir:</strong> Açık kaynak, self-hosted bir görev/proje yönetim aracı (Todoist/Asana alternatifi). Plugin <code>vikunja-cli</code> binary'si üzerinden REST API'sine bağlanır.</p>
+        <p><strong>Ne işe yarar:</strong> Görev listeleme, oluşturma, durum güncelleme, atama ve yorum — terminalden çıkmadan iş takibi.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>init.md</code> kuralı: kullanıcı bir sorun bildirince ilgili Vikunja görevi aranır, yoksa oluşturma teklif edilir. <code>commit</code> skill'i: değişiklikle uyuşan görev tespit edilip kapatılabilir. <code>vikunja-cli</code> skill'i doğrudan task yönetimi sağlar.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yapılandırma</div><pre><code>~/.zshrc → VIKUNJA_API_URL + VIKUNJA_API_TOKEN
+CLAUDE.local.md → Vikunja proje ID</code></pre></div>
+      </div>
+    </div>
+
+    <!-- solo -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="square-terminal"></i></div><div><div class="etitle">Solo</div><div class="emeta">MCP · process yönetimi</div></div></div>
+      <div class="ebody">
+        <p><strong>Nedir:</strong> Geliştirme process'lerini (backend, frontend, worker vb.) yöneten bir araç; <code>solo.yml</code> ile tanımlanan komutları başlatır, durdurur, yeniden başlatır ve çıktılarını takip eder. Plugin'e HTTP MCP server olarak (<code>localhost:45678</code>) bağlanır.</p>
+        <p><strong>Ne işe yarar:</strong> Tekrar eden shell komutlarını (build + run) tek yerde toplayıp Claude'un bunları başlatıp loglarını okumasını sağlar.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>soloterm.md</code> kuralı: tekrar eden komutlar için mutlaka <code>solo.yml</code> oluşturulur ve komutlar Solo üzerinden çalıştırılır. Process başlatma/durdurma/restart ve canlı log takibi <code>mcp__solo__*</code> araçlarıyla yapılır. (Bu plugin repo'sunun kendisi için aktif değil — çalışan process yok.)</p></div>
+      </div>
+    </div>
+
+    <!-- whatsapp -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-circle"></i></div><div><div class="etitle">WhatsApp</div><div class="emeta">whatsapp-mcp · mesaj kanalı</div></div></div>
+      <div class="ebody">
+        <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır.</p>
+        <p><strong>Ne işe yarar:</strong> Sohbetleri listeleme, mesaj arama, kişi bulma ve mesaj/dosya/ses gönderme — Claude'dan doğrudan WhatsApp iletişimi.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin çıktı kanallarından biri. Skill müşteri/acenta mesajını kanal-agnostik üretir; WhatsApp seçilirse <code>mcp__whatsapp__*</code> araçlarıyla gönderilir (skill mesajı üretir, gönderimi entegrasyon yapar).</p></div>
+      </div>
+    </div>
+
+    <!-- google -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="mail"></i></div><div><div class="etitle">Google Workspace</div><div class="emeta">Gmail · Calendar · Drive (claude.ai MCP)</div></div></div>
+      <div class="ebody">
+        <p><strong>Nedir:</strong> claude.ai üzerinden sağlanan resmi Google MCP server'ları — <strong>Gmail</strong> (e-posta), <strong>Google Calendar</strong> (takvim) ve <strong>Google Drive</strong> (dosya). HTTP MCP olarak bağlanır, OAuth ile yetkilendirilir.</p>
+        <p><strong>Ne işe yarar:</strong> E-postaları okuma/arama/gönderme, takvim etkinliklerini görüntüleme/oluşturma ve Drive dosyalarına erişim — Claude'dan doğrudan Google hesabıyla çalışma.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin e-posta kanalı Gmail ile gönderilebilir; takvim/dosya entegrasyonu genel asistan akışlarını besler. Üç servis de claude.ai üzerinden gelir — ayrı binary kurulumu gerekmez.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yetkilendirme</div><pre><code>Claude Code → /mcp → claude.ai servisi seç → Authenticate
+# Gmail / Google Calendar / Google Drive ayrı ayrı OAuth</code></pre></div>
+      </div>
+    </div>
+
+    <!-- diğer -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="ellipsis"></i></div><div><div class="etitle">Diğer Araçlar</div><div class="emeta">opsiyonel destekleyiciler</div></div></div>
+      <div class="ebody">
+        <p>Plugin ayrıca şu araçlarla entegre olur (hepsi opsiyonel, <code>setup.sh</code> kurar):</p>
+        <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Destekleyici stack</div><ul>
+          <li><strong>uv</strong> — Python paket/script yöneticisi; <code>setup.py</code>, <code>crawl2md</code> ve tüm Python akışlarının temeli (pip yasak, kural gereği).</li>
+          <li><strong>Playwright CLI</strong> — tarayıcı otomasyonu ve frontend testi (<code>browser-testing</code> kuralı; MCP yerine CLI).</li>
+          <li><strong>Context7 (ctx7)</strong> — kütüphane/framework dökümanını canlı çeker; <code>obsidian-doc-source</code> library modunda zorunlu.</li>
+          <li><strong>Zammad (zammad-cli)</strong> — helpdesk ticket yönetimi; <code>user-message</code> ile ticket yanıtı üretimi.</li>
+          <li><strong>markitdown</strong> — PDF/Office/ses/görsel → markdown; <code>crawl2md</code> ve <code>obsidian-doc-source</code> dosya kaynaklarında.</li>
+        </ul></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- KURULUM -->
+<section id="kurulum">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><i data-lucide="package"></i> Kurulum</div>
+      <h2>Üç adımda kur</h2>
+      <p>Marketplace üzerinden ekle, kur, yeniden yükle.</p>
+    </div>
+    <div class="install">
+      <ol>
+        <li>Marketplace ekle:<pre><code>/plugin marketplace add omert11/personal-assistant</code></pre></li>
+        <li>Plugin'i kur:<pre><code>/plugin install personal-assistant</code></pre></li>
+        <li>Yeniden yükle ve yeni oturum aç:<pre><code>/reload-plugins</code></pre></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub'da Görüntüle</a>
+    <p class="made">personal-assistant · v1.37.0 · MIT · Ömer Faruk Yığın</p>
+    <p class="made"><i data-lucide="bot"></i> Claude Code ile geliştirildi</p>
+  </div>
+</footer>
+
+<script>
+  // Reveal + progress + lucide
+  document.body.classList.add('reveal');
+  if (window.lucide) lucide.createIcons();
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.card, .entry').forEach(el => io.observe(el));
+
+  // Scroll progress bar
+  const bar = document.getElementById('progress');
+  addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const p = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    bar.style.width = p + '%';
+  }, { passive: true });
+</script>
+</body>
+</html>
