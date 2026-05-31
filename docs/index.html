@@ -275,7 +275,7 @@ python manage.py runserver</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="server-cog"></i></div><div><div class="etitle">django</div><div class="emeta">Diji Django Standartları</div></div></div>
       <div class="ebody">
         <p><strong>Diji'nin Django projelerine özgü çeviri domain'i (<code>djangof7</code>), proje yapısı, Elasticsearch reindex komutları ve admin konvansiyonlarını standartlaştırır.</strong></p>
-        <p>Standart <code>django</code>/<code>djangojs</code>'e ek olarak <code>djangof7</code> domain'i F7 framework çevirilerini yönetir. Mobil repo <code>./mobile/&lt;repo&gt;/</code>, loglar <code>server/logs/</code>, logolar <code>assets/app/</code> altında. Admin: <code><admin-user></code> kullanıcısı, SmartAdmin template; B2C'de Django Admin <code>superadmin/</code>, panel <code>admin/</code>.</p>
+        <p>Standart <code>django</code>/<code>djangojs</code>'e ek olarak <code>djangof7</code> domain'i F7 framework çevirilerini yönetir. Mobil repo <code>./mobile/&lt;repo&gt;/</code>, loglar <code>server/logs/</code>, logolar <code>assets/app/</code> altında. Admin: ortak kullanıcı (credential local-rules), SmartAdmin template; B2C'de Django Admin <code>superadmin/</code>, panel <code>admin/</code>.</p>
         <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Elasticsearch Reindex</div><pre><code>python manage.py elastic_reindex_hotel
 # _flight _car _transfer _bus _tour _ferry varyantları</code></pre></div>
       </div>

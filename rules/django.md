@@ -33,7 +33,7 @@ uv python pin 3.13 && uv venv && uv pip install -r requirements.txt && uv pip in
 - `python manage.py elastic_reindex_ferry`
 
 ## Django Admin
-- Ortak kullanıcı: `<admin-user>` / `<admin-pass>`
+- Ortak kullanıcı: `<admin-user>` / `<admin-pass>` (gerçek değerler `local-rules/django.md`'de, repo'ya commit edilmez)
 - NOT: Bu user genel olarak tüm projelerde ortak, ekli olabilir
 - Panel (admin) template: **SmartAdmin** (Bootstrap 5, jQuery-free)
 - B2C projelerde URL yapısı: Django Admin → `superadmin/`, Panel sayfaları → `admin/`
