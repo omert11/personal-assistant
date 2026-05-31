@@ -7,6 +7,20 @@
 #   - obsidian-context.sh: PROJE klasörünün index.md MOC'u (frontmatter + başlıklar)
 #   - session-obsidian-daily.sh: GLOBAL daily note'lar (bugün + dün), ilk 100 satır
 
+INPUT=$(cat 2>/dev/null)
+
+# session_start damgasi: oturumun GERCEK baslangic zamanini state tablosuna yaz.
+# Stop hook'lardaki 5dk-yas kontrolu bu zamana bakar; ilk Stop'ta degil burada
+# damgalanmali ki tek-turlu/kisa oturumlar da dogru degerlendirilsin. Obsidian
+# kapali olsa bile damga atilir (asagidaki CLI kontrolunden once).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/hook-state.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$SCRIPT_DIR/hook-state.sh"
+  SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+  [ -n "$SESSION_ID" ] && hook_state_touch_session "$SESSION_ID"
+fi
+
 # Obsidian CLI aktif mi? Tüm IPC çağrıları 2s timeout ile sarılır —
 # Obsidian app hung/loading ise SessionStart bloke olmasın.
 if ! command -v obsidian >/dev/null 2>&1; then
@@ -25,30 +39,32 @@ if ! obs vault info=name >/dev/null; then
   exit 0
 fi
 
-DAILY_TODAY=$(obs daily:read)
-[ -z "$DAILY_TODAY" ] || {
-  echo "=== Obsidian Daily — Bugün ($(date +%Y-%m-%d)) ==="
-  echo "$DAILY_TODAY" | head -100
-  echo ""
-}
-
+# NOT: `obsidian daily:read` çağrılmaz — Daily Notes core plugin'i o günün
+# notu yoksa otomatik boş dosya oluşturuyor (auto-create yan etkisi). Bunun
+# yerine dosyayı doğrudan filesystem'den okuyoruz; yoksa sessizce atlıyoruz.
 VAULT_PATH=$(obs vault info=path)
-if [ -n "$VAULT_PATH" ]; then
-  YESTERDAY=$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d "yesterday" +%Y-%m-%d 2>/dev/null)
-  YDAILY=""
-  for candidate in "Daily/${YESTERDAY}.md" "Daily Notes/${YESTERDAY}.md" "${YESTERDAY}.md"; do
-    if [ -f "$VAULT_PATH/$candidate" ]; then
-      YDAILY="$VAULT_PATH/$candidate"
+[ -n "$VAULT_PATH" ] || exit 0
+
+# Tek tarih için daily note dosyasını yaygın konumlarda arar, varsa head'ler.
+print_daily() {
+  local label="$1" d="$2" found=""
+  for candidate in "Daily/${d}.md" "Daily Notes/${d}.md" "${d}.md"; do
+    if [ -s "$VAULT_PATH/$candidate" ]; then
+      found="$VAULT_PATH/$candidate"
       break
     fi
   done
-
-  if [ -n "$YDAILY" ]; then
-    echo "=== Obsidian Daily — Dün ($YESTERDAY) ==="
-    head -100 "$YDAILY"
+  if [ -n "$found" ]; then
+    echo "=== Obsidian Daily — ${label} (${d}) ==="
+    head -100 "$found"
     echo ""
   fi
-fi
+}
+
+TODAY=$(date +%Y-%m-%d)
+YESTERDAY=$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d "yesterday" +%Y-%m-%d 2>/dev/null)
+print_daily "Bugün" "$TODAY"
+[ -n "$YESTERDAY" ] && print_daily "Dün" "$YESTERDAY"
 
 echo "=== Detay: obsidian daily:read veya Read <vault>/Daily/<date>.md ==="
 exit 0

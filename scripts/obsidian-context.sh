@@ -5,7 +5,14 @@
 CWD="$PWD"
 [ -f "$CWD/CLAUDE.local.md" ] || exit 0
 
-OBSIDIAN_FOLDER=$(grep -oE "Obsidian Folder:\s*\K.+" "$CWD/CLAUDE.local.md" 2>/dev/null | head -1)
+# OBSIDIAN_FOLDER cikarimi ortak helper'da (hook-state.sh) — 3 hook'ta tek kaynak.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/hook-state.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$SCRIPT_DIR/hook-state.sh"
+fi
+command -v hook_obsidian_folder >/dev/null 2>&1 || exit 0
+OBSIDIAN_FOLDER=$(hook_obsidian_folder "$CWD/CLAUDE.local.md")
 [ -n "$OBSIDIAN_FOLDER" ] || exit 0
 
 VAULT="${OBSIDIAN_VAULT:-$HOME/Documents/ObsidianVault}"

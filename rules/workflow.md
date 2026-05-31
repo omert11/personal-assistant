@@ -17,3 +17,14 @@ Aşağıdaki durumlarda agent **doğrudan çağrılır, soru sorulmaz, ertelenme
 - **Bir agent'ın kendi tanımında belirtilen alt agent çağrıları** (örn. orchestrator agent'ın koordine ettiği alt agent'lar).
 - **Hook veya otomasyon akışı tarafından tetiklenen agent'lar** (örn. Stop hook → writer).
 - Kısaca: agent çağrısı önceden tanımlanmış bir akışın (skill, agent definition, hook) parçasıysa **direkt yürüt**, kullanıcıya sorma.
+
+## Sub-Agent Çalıştırma Modu — Her Zaman Background (İstisnasız)
+
+Bir subagent (writer, analiz, code reviewer, explorer, doc-source vb.) **belirli bir görev için çağrıldığında, HER ZAMAN `run_in_background: true` ile arka planda başlatılır.** İstisna yoktur — sonucu beklemen gereken durumlarda bile subagent arka planda çalıştırılır ve tamamlanma bildirimi beklenir. Foreground (bloklayan) çağrı **hiçbir koşulda kullanılmaz**.
+
+- **Neden:** Subagent arka planda çalışırken ana akış bloklanmaz. Sonucu beklemen gerekse bile, foreground yerine background + bildirim beklemek daha sağlıklıdır; harness tamamlanmayı yönetir, akış donmaz, kullanıcı istediği an araya girebilir.
+- **Nasıl:** `Agent` çağrısında **daima** `run_in_background: true` ver. Başlattıktan sonra kullanıcıya tek cümleyle ne başlattığını söyle. Bir sonraki adım subagent'ın çıktısına bağlıysa, paralel yapacak başka iş yoksa bile, foreground'a düşme — `task-notification` gelene kadar bekle.
+- **Bildirim geldiğinde:** Subagent'ın döndürdüğü sonucu özetle, gerekiyorsa bir sonraki adımı uygula.
+- **Çakışma:** Subagent ile aynı dosya/konu üzerinde, o çalışırken çakışacak iş yapma.
+
+"Kısa sürer", "tek seferlik", "sonucu hemen lazım" gibi gerekçeler foreground'u haklı çıkarmaz — **her durumda background.**
