@@ -55,6 +55,16 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/userprompt-obsidian-hint.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

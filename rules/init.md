@@ -22,12 +22,9 @@ Eğer kullanıcı bir sorun/hata/görev bildiriyorsa ve `CLAUDE.local.md`'de Vik
 
 ## Obsidian Learnings Ön Arama
 
-Kullanıcı oturumda **ilk somut görevi** verdiğinde (sorun bildir, değişiklik iste, bug çöz, feature ekle, refactor vb.) ve `CLAUDE.local.md`'de `Obsidian Folder: <isim>` tanımlıysa, göreve başlamadan önce ilgili Learnings notlarını ara:
+Kullanıcı oturumda **ilk somut görevi** verdiğinde (sorun bildir, değişiklik iste, bug çöz, feature ekle, refactor vb.) ve `CLAUDE.local.md`'de `Obsidian Folder: <isim>` tanımlıysa, göreve başlamadan önce geçmiş Learnings notlarını ara.
 
-1. **MOC'tan başla**: `obsidian read path=<folder>/index.md` oku. Learnings başlığı altında göreve ilişkili [[wikilink]] varsa → `obsidian read path=<folder>/Learnings/<link>.md` ile **tamamını detaylıca** oku.
-2. **Match yoksa search**: `obsidian search query="<terim>" path=<folder> format=json` çağır. Query için görevden çıkarılmış 2-3 anahtar terim kullan (örn. "SMS provider", "payment 3D Secure", "elastic reindex"). İlk 3-5 match'i oku.
-3. **Sinonim dene**: İlk search boş dönerse yeniden ifade et (örn. "ödeme" → "payment" → "3ds").
-4. **Bulduğun bilgiyi bağlam olarak kullan**: Kullanıcıya "şu Learnings notu ilgili görünüyor" diye kısaca belirt, sonra göreve başla.
+**Nasıl**: Arama mantığını elle yürütme — `obsidian-searcher` agent'ını `run_in_background: true` ile çağır (QUERY: görevin özeti, FOLDER: obsidian folder). Agent "önce MOC → BM25 search → context → not oku" akışıyla ilgili notları bulup sentezler. Bulgu varsa bağlam olarak kullan; kullanıcıya "şu Learnings notu ilgili görünüyor" diye kısaca belirt, sonra göreve başla. (Bu hatırlatma ayrıca UserPromptSubmit hook'u ile her somut prompt'ta otomatik enjekte edilir.)
 
 **Tetiklenmediği durumlar**: Selamlaşma, kavramsal soru ("X nedir?"), dosya listeleme gibi trivial istekler — arama yapılmaz.
 

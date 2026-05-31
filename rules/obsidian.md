@@ -22,22 +22,16 @@ Proje `CLAUDE.local.md`'de `Obsidian Folder: <isim>` tanımlıysa, vault `~/Docu
 
 > Vault seçimi: tek vault varsa otomatik. Çoklu vault için `vault="<name>"` flag'i ekle. Komutların tamamı: `obsidian help`.
 
-## Önce MOC, Sonra Search
+## Arama — obsidian-searcher Agent
 
-SessionStart hook'u `index.md`'nin başlıklarını kontext'e yükler. Bir bilgi ararken:
+Vault'ta bilgi ararken arama mantığını elle yürütme: **`obsidian-searcher` agent'ını `run_in_background: true` ile çağır** (veya `/obsidian-search` skill). Agent "önce MOC → `files` → BM25 `search` → `search:context` → ilgili notu oku → sentezle" akışını yürütür, `[[wikilink]]`'li sentezlenmiş cevap döner. CLI kapalıysa otomatik filesystem fallback'e geçer.
 
-1. **MOC'ta [[wikilink]] varsa**: Direkt `obsidian read path=<folder>/<link>.md` çağır. Search yapma.
-2. **MOC'ta yoksa**: `obsidian files folder=<folder>` ile listele (alt klasörler `Learnings/`, `Journal/`). Dosya adı bulursan oku.
-3. **Hala bulamazsan**: `obsidian search query="<query>" format=json`. Match listesinden ilgiliyi oku.
+Arama davranışı hakkında bilinmesi gerekenler (agent bunları zaten uygular):
 
-## Search Kuralları
-
-- **Full-text + BM25**: Obsidian'ın native search index'i. Sorgu kelimesi notta literal geçiyor olmalı.
-- **Sinonim dene**: İlk query boş dönerse 2-3 alternatif terimle tekrar (örn: "Hetzner" → "ssh key" → "credential").
-- **Path filter**: `path=<folder>` parametresiyle alt klasöre kısıtla (örn. `path=Learnings`).
-- **Vector search yok**. Kavramsal sorular için önce MOC'a bak, sonra search'i keyword varyantlarıyla yinele.
-- **Limit**: `limit=<n>` ile match sayısını sınırla. İlk 3-5 match'e bak.
-- **JSON format**: `format=json` ile parse edilebilir çıktı al, default text okunur ama parse zor.
+- **Full-text + BM25** — sorgu kelimesi notta literal geçmeli; **vector/kavramsal arama yok**.
+- **Tek/az terim önce** — çok kelimeli sorgu AND'lenir ve sık sık boş döner. Tek anahtar terimle başla, boş dönerse sinonim dene (TR↔EN: "Hetzner" → "ssh" → "credential", "ödeme" → "payment").
+- **Path filter** — proje belliyse `path=<folder>` gürültüyü ciddi azaltır.
+- **`search:context`** — eşleşen satırı çevresiyle gösterir, çoğu zaman cevabın özünü tek seferde verir.
 
 ## Yazma Kuralları
 
