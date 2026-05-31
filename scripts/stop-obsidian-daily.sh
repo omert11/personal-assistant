@@ -3,9 +3,9 @@
 # tek satır özet append'ler. Sessiz çalışır (Claude'a soru sormaz),
 # obsidian CLI aktif değilse veya değer bulunmazsa skip eder.
 #
-# stop-obsidian-remind.sh ile birlikte çalışır:
-#   - remind.sh: kayda değer bilgi varsa Claude'a obsidian-writer çağır dedirtir (block decision)
-#   - daily.sh : oturumun bir-cümle özetini daily note'a append eder (sessiz)
+# NOT: Öğrenilen bilgiyi kaydetme hatırlatması artık Stop'ta değil,
+# UserPromptSubmit hook'unda (userprompt-obsidian-hint.sh) yapılıyor — block
+# decision'ın yarattığı ek tur + "error" görünümünü önlemek için.
 
 INPUT=$(cat)
 STOP_HOOK_ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false' 2>/dev/null)
@@ -79,16 +79,23 @@ MSG_LEN=${#LAST_MSG}
 # Transcript'in fiziksel yolu — hem ozet kaynagi (aiTitle) hem daily satirina link.
 TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
 
-# Ozet metni: oncelik AI-generated baslik (transcript'teki son aiTitle satiri).
-# Claude oturumun konusunu zaten bir cumlede ozetler (örn "Hook akislarini kontrol").
-# aiTitle yoksa son asistan mesajinin ilk 280 karakterine dus (eski davranis).
-# Not: jq'ya tum transcript'i deserialize ettirmemek icin once grep ile aiTitle
-# geçen satirlari suzeriz (transcript MB'larca olabilir, bu hot path'te).
+# Ozet metni oncelik sirasi:
+#   1. customTitle — kullanicinin /rename ile bilincli koydugu baslik (en spesifik)
+#   2. aiTitle     — Claude'un urettigi otomatik baslik
+#   3. son asistan mesajinin ilk 280 karakteri (eski davranis, fallback)
+# Ikisi de transcript'te {"customTitle":"..."} / {"aiTitle":"..."} satirlarinda;
+# son (en guncel) deger alinir. jq'ya tum transcript'i deserialize ettirmemek icin
+# once grep ile ilgili satirlari suzeriz (transcript MB'larca olabilir, hot path).
 SUMMARY=""
 if [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ]; then
-  SUMMARY=$(grep '"aiTitle"' "$TRANSCRIPT" 2>/dev/null \
-    | jq -r 'select(.aiTitle? != null and .aiTitle != "") | .aiTitle' 2>/dev/null \
+  SUMMARY=$(grep '"customTitle"' "$TRANSCRIPT" 2>/dev/null \
+    | jq -r 'select(.customTitle? != null and .customTitle != "") | .customTitle' 2>/dev/null \
     | tail -1)
+  if [ -z "$SUMMARY" ]; then
+    SUMMARY=$(grep '"aiTitle"' "$TRANSCRIPT" 2>/dev/null \
+      | jq -r 'select(.aiTitle? != null and .aiTitle != "") | .aiTitle' 2>/dev/null \
+      | tail -1)
+  fi
 fi
 if [ -z "$SUMMARY" ]; then
   SUMMARY="$LAST_MSG"

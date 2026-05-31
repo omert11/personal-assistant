@@ -143,19 +143,33 @@ hook_state_touch_session() {
 }
 
 # hook_obsidian_folder <claude_local_md_path>
-# CLAUDE.local.md'den "Obsidian Folder" degerini cikarir. Hem markdown
-# ("- **Obsidian Folder**: x") hem duz ("Obsidian Folder: x") formatini destekler.
-# Sadece deger TASIYAN satiri secer: dokumantasyon/aciklama satirlarini (">", "NOT:",
-# "init-check" iceren) eler. \K / \s GNU/Perl regex'i macOS BSD grep'te calismaz —
-# tasinabilir grep+sed kullanilir. Bu mantik 3 hook'ta ortak; tek yerde tutulur.
+# CLAUDE.local.md'den Obsidian klasor adini cikarir. Desteklenen formatlar:
+#   - "- **Obsidian Folder**: x"           (bitisik, personal-assistant)
+#   - "Obsidian Folder: x"                  (duz)
+#   - "| **Obsidian** | Folder: `x` |"      (markdown tablo, b2b-dmc)
+# "Obsidian" ve "Folder" ayni satirda (aralarinda ** | gibi seyler olabilir).
+# Dokumantasyon/aciklama satirlarini (">", "init-check" iceren) eler. Deger
+# etrafindaki backtick/**/pipe/bosluk temizlenir. \K / \s GNU/Perl regex'i macOS
+# BSD grep'te calismaz — tasinabilir grep+sed. Bu mantik 4 hook'ta ortak.
 hook_obsidian_folder() {
-  local file="$1"
+  local file="$1" line val
   [ -f "$file" ] || return 0
-  # ">" ile baslayan markdown alinti satirlarini (NOT: aciklamasi gibi) ele;
-  # kalan "Obsidian Folder" satirindan degeri sed ile cikar.
-  grep "Obsidian Folder" "$file" 2>/dev/null \
-    | grep -v "^>" \
+  # Sadece "Obsidian ... Folder ... :" iceren (KOLON zorunlu) satirlari al — kolonsuz
+  # prose/baslik satirlari ("## Obsidian Folder", "The Obsidian Folder is used")
+  # deger TASIMAZ, eslenmez. Girintili blockquote dahil ">" ile baslayan aciklama
+  # satirlarini ele (basta opsiyonel bosluk). init-check aciklamasini da ele.
+  line=$(grep -E "Obsidian.*Folder[^:]*:" "$file" 2>/dev/null \
+    | grep -vE "^[[:space:]]*>" \
     | grep -v "init-check" \
-    | head -1 \
-    | sed -E 's/.*Obsidian Folder[*]*:[[:space:]]*//;s/[*]*[[:space:]]*$//'
+    | head -1)
+  [ -n "$line" ] || return 0
+  # Kolon SONRASI degeri al; backtick/**/pipe/bosluk temizle. Deger bos kalirsa
+  # (kolon var ama sagi bos: "Obsidian Folder:") bos doner — MALFORMED tetikler.
+  val=$(printf '%s' "$line" \
+    | sed -E 's/.*Folder[^:]*:[[:space:]]*//; s/^[`*[:space:]]*//; s/[`*|[:space:]]*$//')
+  # Placeholder degerleri (<isim>, <name> gibi) gercek deger sayma.
+  case "$val" in
+    "<"*">"|"") return 0 ;;
+  esac
+  printf '%s\n' "$val"
 }

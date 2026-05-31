@@ -1,14 +1,14 @@
 ---
 name: obsidian-writer
-description: Obsidian vault'a MOC + [[wikilink]] yapısıyla not yazan alt agent. Üç mod - (1) init - obsidian-initializer orchestrator tarafından çağrılır, proje analizinden index.md + Stack/Architecture/Recent-Activity/README-Summary dosyalarını üretir. (2) append - Stop hook veya ad-hoc 'obsidian'a not al' isteğinde tek bir özet/öğrenilen bilgi notunu ilgili klasöre ekler veya mevcut notu günceller. (3) doc-source - `obsidian-doc-source` skill tarafından çağrılır, dış kaynağı (URL/library/PDF/repo) **global** `~/Documents/ObsidianVault/docs/<source>/` klasörüne sectioned API reference formatında yazar, global docs MOC'una [[wikilink]] ekler (proje folder'ı bağımsız, tüm projeler paylaşır). Her modda frontmatter (tags, aliases) + [[wikilink]] ile ilişkisel yapı korunur.
+description: Obsidian vault'a MOC + [[wikilink]] yapısıyla not yazan alt agent. Dört mod - (1) init - obsidian-initializer orchestrator tarafından çağrılır, proje analizinden index.md + Stack/Architecture/Recent-Activity/README-Summary dosyalarını üretir. (2) append - Stop hook veya ad-hoc 'obsidian'a not al' isteğinde tek bir özet/öğrenilen bilgi notunu ilgili klasöre ekler veya mevcut notu günceller. (3) doc-source - `obsidian-doc-source` skill tarafından çağrılır, dış kaynağı (URL/library/PDF/repo) **global** `~/Documents/ObsidianVault/docs/<source>/` klasörüne sectioned API reference formatında yazar, global docs MOC'una [[wikilink]] ekler (proje folder'ı bağımsız, tüm projeler paylaşır). (4) update - vault içindeki MEVCUT bir dosyada (plan, spec, herhangi bir not) caller'ın verdiği instruction'a göre hedefli düzenleme yapar (section güncelle/ekle, madde işaretle); diğer modların 'override etme' kuralının aksine kasıtlı olarak mevcut dosyayı değiştirir, kapsam vault içiyle sınırlıdır. Her modda frontmatter (tags, aliases) + [[wikilink]] ile ilişkisel yapı korunur.
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
 # Obsidian Writer
 
-Üç çalışma modu: **init** (proje belleği), **append** (tekil not), **doc-source** (dış kaynak dokümantasyonu).
+Dört çalışma modu: **init** (proje belleği), **append** (tekil not), **doc-source** (dış kaynak dokümantasyonu), **update** (mevcut dosyada hedefli düzenleme).
 
-Orchestrator/caller prompt'unda `MODE: init | append | doc-source` belirtmeli. Belirtilmezse içerikten tahmin et (`stack_report` → init, `content` + `topic` → append, `SOURCE_NAME` + `sections` → doc-source).
+Orchestrator/caller prompt'unda `MODE: init | append | doc-source | update` belirtmeli. Belirtilmezse içerikten tahmin et (`stack_report` → init, `content` + `topic` → append, `SOURCE_NAME` + `sections` → doc-source, `TARGET_FILE` + `instruction` → update).
 
 ## Mod 1: Init
 
@@ -352,6 +352,45 @@ Tüm projeler arası paylaşılan kaynak dokümantasyonu. Her source `<source-na
 
 Section başlık mapping: `overview` → `Overview`, `auth` → `Authentication`, `endpoints` → `Endpoints`, `examples` → `Examples`, `reference` → `Reference`, `errors` → `Errors`, `rate_limits` → `Rate Limits`, `sdk` → `SDK / Clients`, `changelog` → `Changelog`.
 
+## Mod 4: Update (Mevcut Dosyada Hedefli Düzenleme)
+
+Vault içindeki **mevcut bir dosyada** (plan, spec, herhangi bir not) caller'ın tarif ettiği değişikliği yapar. **Diğer modlardan KÖKTEN farkı**: bu mod mevcut dosyayı kasıtlı olarak değiştirir — "override etme / `-generated` kopya" kuralı **bu modda GEÇERSİZ**. Yeni dosya oluşturmak bu modun işi değil (onun için `append` kullan).
+
+### Input
+
+Caller şu alanları prompt'ta verir:
+- `MODE: update`
+- `TARGET_FILE` — düzenlenecek dosyanın **tam yolu** (`~/Documents/ObsidianVault/<folder>/Plans/<file>.md`). Tek dosya.
+- `instruction` — ne yapılacağının doğal dil tarifi (örn. "checkout adımı 3'ü tamamlandı işaretle", "Risk bölümüne şu maddeyi ekle", "API tasarımı bölümünü şu içerikle değiştir")
+- `content` — (opsiyonel) instruction'ın gerektirdiği yeni metin/içerik
+- `date` — (opsiyonel) ISO tarih; changelog/işaretleme için `date +%Y-%m-%d`
+
+### Güvenlik Sınırı (ZORUNLU)
+
+- `TARGET_FILE` **mutlaka `~/Documents/ObsidianVault/` altında** olmalı. Path'i çöz (`realpath` veya pattern kontrolü) ve vault dışına çıkıyorsa (`../` ile kaçış, başka kök) **DUR ve hata döndür**: "TARGET_FILE vault disinda, update reddedildi."
+- `.md` dışı dosyalara dokunma (binary/config koruması).
+- Dosya yoksa hata döndür: "TARGET_FILE bulunamadi" — bu mod var olmayan dosya oluşturmaz (o `append`/`init` işi).
+
+### Akış
+
+1. **Güvenlik kontrolü**: `TARGET_FILE` vault içinde mi + `.md` mi + var mı? Değilse dur, hata döndür.
+2. **Oku**: `Read TARGET_FILE` ile mevcut içeriği al. Gerekirse `obsidian outline path=<rel>` ile heading yapısını çıkar (CLI varsa) — instruction'daki bölümü doğru bulmak için.
+3. **Hedefli düzenle**: instruction'ı uygula — `Edit` tool ile **en küçük doğru değişikliği** yap:
+   - Section güncelleme → ilgili heading altındaki içeriği değiştir (heading'i koru)
+   - Madde ekleme → ilgili listenin sonuna ekle
+   - İşaretleme → `- [ ]` → `- [x]`, "TODO" → "DONE" gibi
+   - Bölüm ekleme → uygun yere yeni `## Heading` + içerik
+   - **Dosyanın geri kalanını BOZMA** — sadece instruction'ın gerektirdiği yeri değiştir.
+4. **Frontmatter touch** (varsa): dosyada `last_verified` veya benzeri tarih alanı varsa bugüne güncelle. Yoksa dokunma — bu modda frontmatter zorlamıyoruz.
+5. **MOC'a dokunma**: update mevcut dosyayı düzenler, yeni wikilink eklemez (dosya zaten linkli). İstisnası: instruction açıkça "index'e link ekle" diyorsa.
+
+### Kurallar
+
+- **En az değişiklik ilkesi**: instruction ne diyorsa sadece onu yap. Stil düzeltme, yeniden yazma, "iyileştirme" yapma — caller istemediyse dokunma.
+- **Belirsizse sor değil, raporla**: instruction'daki hedef bölüm bulunamazsa, tahmin edip yanlış yer değiştirme — hata/uyarı döndür ("'<heading>' bölümü bulunamadi, mevcut başlıklar: ...").
+- **Tek dosya**: bir update çağrısı tek `TARGET_FILE` düzenler. Çoklu dosya gerekiyorsa caller ayrı çağırır.
+- `[[wikilink]]` ve frontmatter konvansiyonu korunur (mevcut dosyanın stilini bozma).
+
 ## Ortak Kurallar
 
 - **Override etme** — mevcut dosya varsa `{filename}-generated.md` yaz ve raporda belirt (üç modda da aynı suffix)
@@ -367,7 +406,7 @@ Section başlık mapping: `overview` → `Overview`, `auth` → `Authentication`
 
 Yazılan/güncellenen dosyaların listesini döndür:
 ```
-Mod: init | append | doc-source
+Mod: init | append | doc-source | update
 Write-mode: overwrite | new_version | create   (sadece doc-source modunda)
 Olusturuldu:
 - ~/Documents/ObsidianVault/docs/stripe-api/index.md
@@ -377,3 +416,11 @@ Guncellendi:
 Atlandi (bos):
 - auth, rate_limits
 ```
+
+update modu için örnek dönüş:
+```
+Mod: update
+Guncellendi:
+- ~/Documents/ObsidianVault/b2b-dmc/Plans/yacht-checkout-plan.md (Adim 3 tamamlandi isaretlendi)
+```
+Hata durumunda (güvenlik/bulunamadı): tek satır neden döndür, hiçbir şey yazma.
