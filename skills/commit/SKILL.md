@@ -82,13 +82,15 @@ git diff
 
 #### 3d. Rules Uyum Kontrolü
 
-`~/.claude/rules/` altındaki **tüm** dosyaları dinamik tara:
+`~/.claude/rules/` altındaki **tüm** dosyaları + **proje `CLAUDE.md` ve `CLAUDE.local.md`'sini** dinamik tara:
 
 ```bash
 ls ~/.claude/rules/*.md
+[ -f CLAUDE.md ] && echo CLAUDE.md              # projeye özgü kamuya açık kurallar
+[ -f CLAUDE.local.md ] && echo CLAUDE.local.md  # projeye özgü private kurallar
 ```
 
-Her dosyayı oku, değişen kodla alakalı kuralları bul. Sabit liste tutma — yeni rule eklendiğinde otomatik kapsansın. Örnek alaka eşlemeleri:
+Her dosyayı oku, değişen kodla alakalı kuralları bul. Sabit liste tutma — yeni rule eklendiğinde otomatik kapsansın. **Proje `CLAUDE.md` ve `CLAUDE.local.md`'sindeki kurallar da bağlayıcıdır** (örn. versiyon bump, projeye özgü senkron kuralları, frontmatter konvansiyonları) — bu yüzden global rules'a gömülemeyecek proje-spesifik commit kuralları burada yakalanır. Örnek alaka eşlemeleri:
 
 - Kod dosyası değişti → `coding.md`, `ask-first.md`, dil-spesifik (`python.md`, `django.md`)
 - `.po` dosyası → `django.md` (F7 çeviri)

@@ -68,3 +68,11 @@ Plugin manuel test edilir — yeni oturum açıp hook çıktısını gözle.
 - `rules/` değişirse plugin versiyonu bump edilir
 - `skills/` klasöründe her skill'in kendi `SKILL.md` dosyası olur
 - Yeni kural eklerken `hooks/hooks.json` içindeki `load-rules.sh` otomatik kopyalar
+
+## Tanıtım Sitesi Senkronu (docs/index.html)
+
+`docs/index.html` GitHub Pages tanıtım sitesidir (https://omert11.github.io/personal-assistant/) ve plugin'in **rules / hooks / skills / agents / bağımlılıkları** tek tek anlatır.
+
+**Kural**: `rules/`, `hooks/`, `skills/`, `agents/` veya bağımlılık yapısı (setup.py'deki MCP'ler) **değiştiğinde**, `docs/index.html` içindeki ilgili bölüm de aynı commit'te güncellenmelidir — site bayatlamasın. Yeni bir skill/agent/hook/rule eklenince siteye kartı eklenir, biri kaldırılınca silinir, davranışı değişince açıklaması güncellenir.
+
+`commit` skill'i bu uyumu rules-uyum kontrolünde gözetir: bu dosyalar değiştiyse "docs/index.html güncellendi mi?" diye değerlendirir, gerekiyorsa bulgu olarak sunar.
