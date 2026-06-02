@@ -567,10 +567,10 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- user-message -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-square"></i></div><div><div class="etitle">user-message</div></div></div>
       <div class="ebody">
-        <p><strong>Müşteri/acenta tarafına kanal-agnostik mesaj üretir</strong> (ticket/email/panel/WhatsApp/SMS/push). Stil rehberini her çalıştırmada okur, <code>zed --wait</code> ile onaya sunar, revize gelirse hem düzeltir hem stil dosyasına öğrenim işler.</p>
+        <p><strong>Müşteri/acenta tarafına kanal-agnostik mesaj üretir</strong> (ticket/email/panel/WhatsApp/SMS/push). Stil rehberini her çalıştırmada okur, onaya sunar, revize gelirse hem düzeltir hem stil dosyasına öğrenim işler.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"müşteri mesajı yaz", "acentaya mesaj", "zammad cevap", "duyuru yaz", "whatsapp mesajı", "sms yaz".</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Stil rehberini <b>oku</b> (yoksa dur) → kanal belirle → bağlam topla → mesaj üret (self-check: teknik terim/iç link sızdı mı, kanal uzunluğu) → <code>zed --wait</code> onay → revize ise yeniden üret + stil dosyasına ders ekle.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Stil dosyası <strong>tek doğruluk kaynağı</strong> (bellekten yazmaz). <strong>Revize = öğrenim</strong>: her düzeltme kalıcı ders olur, aynı hata tekrarlanmaz. Türkçe karakter ASCII karşılığı (s/sh) yasak.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Stil rehberini <b>oku</b> (yoksa dur) → kanal belirle → bağlam topla → mesaj üret (self-check: teknik terim/iç link sızdı mı, kanal uzunluğu) → onay → revize ise yeniden üret + stil dosyasına ders ekle.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>E-posta kanalı zengin HTML</strong> üretir (vurgulu tablo, kalın, liste) ve sistem varsayılan programıyla (<code>open</code>) açıp <code>AskUserQuestion</code> ile onay alır; diğer kanallar düz metin + <code>zed --wait</code>. Stil dosyası <strong>tek doğruluk kaynağı</strong> (bellekten yazmaz). <strong>Revize = öğrenim</strong>: her düzeltme kalıcı ders olur. Türkçe karakter ASCII karşılığı (s/sh) yasak.</p></div>
       </div>
     </div>
 
