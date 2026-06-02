@@ -119,8 +119,8 @@ Cevaplara göre sessizce:
 ## Dil
 Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 
-## Kullanılabilir MCP Araçları
-{PROJEYE UYGUN MCP'LER — örneğin Django projesiyse vikunja, solo, context7, github}
+## Entegrasyonlar (CLI / MCP)
+{PROJEYE UYGUN ARAÇLAR — örneğin Django projesiyse vikunja-cli, solo (CLI), ctx7 (CLI), gh}
 
 ## Kod Konvansiyonları
 {STACK'E ÖZEL — örn Django: pre-commit + black + isort + dijilint; Go: golangci-lint; Rust: clippy}
@@ -198,7 +198,7 @@ Seçileni CLAUDE.local.md'ye yaz
 
 #### Solo (seçildiyse)
 
-Solo MCP ile proje oluşturma tool'u var mı test et. Yoksa kullanıcıya Solo UI'dan manuel eklemesini söyle ve ID'yi bekle (soru sor).
+`solo` CLI var mı test et (`solo --version`). Varsa `solo projects create <name> <path> --json` ile proje oluştur, dönen ID'yi al. CLI yoksa kullanıcıya Solo UI'dan manuel eklemesini söyle ve ID'yi bekle (soru sor).
 
 #### Obsidian (seçildiyse)
 

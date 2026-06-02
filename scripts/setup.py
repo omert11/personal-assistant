@@ -376,14 +376,6 @@ def mcp_add_stdio(name: str, command: str):
         run(f'claude mcp add --scope user {name} -- {command}')
     ok(f"mcp {name} eklendi")
 
-def mcp_add_http(name: str, url: str):
-    if mcp_has(name):
-        skip(f"mcp {name}")
-        return
-    with console.status(f"[yellow]mcp add {name} (http)[/yellow]"):
-        run(f'claude mcp add --scope user --transport http {name} {url}')
-    ok(f"mcp {name} eklendi (http)")
-
 
 # ── plugin register ───────────────────────────────────────
 
@@ -479,7 +471,42 @@ def section_apps():
     if not have("docker") and Confirm.ask("Docker Desktop kurulsun mu?", default=True):
         ensure_brew_cask("docker", "/Applications/Docker.app")
 
+    section_solo_cli()
     section_obsidian_vault()
+
+
+SOLO_CLI_BINARY = "/Applications/Solo.app/Contents/MacOS/solo-cli"
+
+
+def section_solo_cli():
+    """Install + verify Solo's CLI.
+
+    The CLI ships inside the Solo app bundle; we symlink it into
+    ~/.local/bin/solo. It talks to the app's HTTP control plane; `solo doctor`
+    confirms discovery + API connectivity. App must be running for
+    project-scoped calls.
+    """
+    section("Solo CLI")
+    if not have("solo"):
+        if not Path(SOLO_CLI_BINARY).exists():
+            warn("solo CLI yok ve Solo.app bulunamadı. İndir: https://soloterm.com/")
+            return
+        bin_dst = HOME / ".local" / "bin" / "solo"
+        bin_dst.parent.mkdir(parents=True, exist_ok=True)
+        with console.status("[yellow]solo CLI symlink (Solo.app bundle)[/yellow]"):
+            run(f"ln -sf '{SOLO_CLI_BINARY}' '{bin_dst}'")
+        if bin_dst.exists():
+            ok(f"solo CLI kuruldu: {bin_dst}")
+        else:
+            err("solo CLI symlink başarısız")
+            return
+
+    r = run("solo doctor 2>&1")
+    out = r.stdout or ""
+    if "Ready: yes" in out or "HTTP API: ok" in out:
+        ok("solo CLI hazır (HTTP API bağlı)")
+    else:
+        warn("solo CLI var ama HTTP API'ye bağlanamadı — Solo app'i aç ve tekrar dene")
 
 
 def section_obsidian_vault():
@@ -685,7 +712,6 @@ def section_register_mcps():
 
     tasks = [
         ("whatsapp",   lambda: mcp_add_stdio("whatsapp",   f"{uv} --directory {LOCAL_DIR}/whatsapp-mcp/whatsapp-mcp-server run main.py")),
-        ("solo",       lambda: mcp_add_http("solo",        "http://localhost:45678/")),
     ]
     with_progress("MCP register", tasks)
 

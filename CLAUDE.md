@@ -23,12 +23,13 @@ Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 - `scripts/` — `load-rules.sh`, `init-check.sh`, `init-check.ps1`, `setup.py`
 - `commands/`, `bin/` — ek genişletme noktaları
 
-## Kullanılabilir MCP Araçları
+## Entegrasyonlar (CLI / MCP)
 
 - `vikunja-cli` — görev/proje yönetimi (CLI binary; CLAUDE.local.md'de proje ID, env'de `VIKUNJA_API_URL`/`VIKUNJA_API_TOKEN`)
-- `solo` — process yönetimi (bu plugin için aktif değil)
-- `obsidian` — vault okuma/yazma (proje belleği)
-- `context7` — kütüphane dokümantasyonu
+- `solo` — process yönetimi (CLI binary, HTTP control plane; bu plugin repo'su için çalışan process yok)
+- `obsidian` — vault okuma/yazma CLI (proje belleği)
+- `ctx7` — kütüphane dokümantasyonu CLI
+- `whatsapp` — MCP server (mesajlaşma; `user-message` skill'inin gönderim entegrasyonu)
 
 ## Kod Konvansiyonları
 
