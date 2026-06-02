@@ -159,7 +159,7 @@ Caller şu alanları prompt'ta verir:
 - `MODE: append`
 - `TARGET` — hedef klasör path'i (`~/Documents/ObsidianVault/<folder>`)
 - `PROJECT_NAME` — proje adı
-- `content` — kaydedilecek bilgi/özet (ham metin)
+- `content` — kaydedilecek bilgi/özet (ham metin). Birden fazla konu içerebilir; agent bağımsız konuları ayrı notlara böler, ilişkili konuları tek notta tutup etiketler (bkz. Akış adım 3).
 - `topic` — kısa başlık (opsiyonel, verilmezse içerikten üret)
 - `date` — ISO tarih (verilmezse `date +%Y-%m-%d` kullan)
 - `category` — kategori etiketi (opsiyonel; one of: `api-key`, `server`, `decision`, `bug`, `command`, `pattern`, `deprecated`). Verilmezse içerikten tahmin et
@@ -170,11 +170,17 @@ Caller şu alanları prompt'ta verir:
 
 1. **Vault aktif mi**: `obsidian vault info=name 2>&1` çalıştır. Hata `Command line interface is not enabled` veya `No active vault` dönerse Bash filesystem (`Read/Write/Edit/Glob/Grep`) ile fallback yap.
 2. **Index check**: `TARGET/index.md` var mı kontrol et (Read veya `obsidian read path=<folder>/index.md`). Yoksa uyarı ver: "index.md yok, once /obsidian-init çalıştır" ve çık.
-3. **Bilginin tipini tespit et** (`category` verilmemişse):
+3. **İçeriği konulara ayrıştır** (split & link — ZORUNLU ön adım): `content` tek bir bilgi olmak zorunda değil. Önce içeriği analiz et ve **kaç ayrı konu/öğrenim** taşıdığını belirle:
+   - **Tek konu** → tek not olarak işle (aşağıdaki adımlar).
+   - **Birden fazla, BİRBİRİNDEN BAĞIMSIZ konu** (örn. bir credential + ilgisiz bir bug + ayrı bir komut): **her konuyu ayrı bir nota böl**. Her parça için adım 4-7'i ayrı ayrı uygula (kendi `topic`, `category`, dosya). Tek dump nota tıkmak ileride aramayı/güncellemeyi zorlaştırır.
+   - **Birden fazla ama BENZER/İLİŞKİLİ konu** (aynı sistemin parçaları, aynı bug'ın varyasyonları, ardışık adımlar): **tek notta tut**, ama ilişkiyi etiketle — ortak `category` + ek konu tag'leri (`tags:` listesine) ekle, ve gerçekten ayrı ama akraba notlar oluştuysa aralarına `[[other-note]]` çapraz-link koy. Amaç: ilişkili bilgi birbirine bağlı, bağımsız bilgi ayrı dosyada.
+   - Karar ölçütü: "Bu iki bilgi gelecekte ayrı ayrı mı aranır/güncellenir?" → Evet ise böl, Hayır ise birleştir + etiketle.
+   - Bölme yaptıysan dönüş raporunda hangi konunun hangi dosyaya gittiğini belirt.
+4. **Bilginin tipini tespit et** (`category` verilmemişse) — her ayrılmış konu için ayrı ayrı:
    - **Kalıcı kural/bilgi** (API key, sunucu, teknik karar, kalıcı komut): yeni not oluştur → `Learnings/{topic-kebab}.md`
    - **Zamanlı log** (bugün yapılan özet): `Journal/{date}.md` varsa append, yoksa oluştur
    - **Mevcut notu güncelleme**: önce `obsidian search query="<topic>" path=Learnings format=json` (CLI varsa) veya `Glob {TARGET}/**/*.md` + Grep ile tara. Başlık/topic match varsa o dosyaya `## {date}` başlığıyla section ekle.
-4. **Yeni dosya oluşturulurken frontmatter** (Learnings için):
+5. **Yeni dosya oluşturulurken frontmatter** (Learnings için; `{content}` yerine o nota ait konu parçası yazılır, birleştirilmiş ilişkili konularda ortak + ek tag'ler):
 
 ```markdown
 ---
@@ -201,9 +207,9 @@ source: {source}
 
    Journal için tags: `[{PROJECT_NAME}, journal]`, frontmatter daha kısa (date + last_verified yeter).
 
-5. **MOC güncelle**: `index.md`'nin "Learnings" veya "Journal" bölümü altına yeni `[[note-name]]` linki ekle (duplicate değilse). Bölüm yoksa oluştur.
+6. **MOC güncelle**: `index.md`'nin "Learnings" veya "Journal" bölümü altına yeni `[[note-name]]` linki ekle (duplicate değilse). Bölüm yoksa oluştur. Bölme yapıldıysa **her yeni notu** ayrı ayrı linkle.
 
-6. **Frontmatter property auto-touch** (mevcut not güncellemesi durumunda):
+7. **Frontmatter property auto-touch** (mevcut not güncellemesi durumunda):
    - `obsidian property:set name=last_verified value={date} type=date path=<folder>/Learnings/{file}.md`
    - CLI yoksa `Edit` ile frontmatter `last_verified:` satırını güncelle
    - Bu, append yapılan notun "hala doğrulanmış" işaretini taze tutar
@@ -223,7 +229,7 @@ Topic'e karşılık gelen not zaten varsa:
 
    - CLI yolu: `obsidian append path=<folder>/Learnings/{file}.md content="\n## {date}\n\n{content}"`
    - Fallback: `Edit` ile EOF append
-3. **last_verified güncelle** (yukarıdaki adım 6)
+3. **last_verified güncelle** (yukarıdaki adım 7)
 4. **Frontmatter'a yeni tag varsa ekle**: `obsidian property:read name=tags ...` ile mevcut tags'i al, `category` listede yoksa `obsidian property:set name=tags value="[...,{category}]" type=list ...`
 
 ### Tag Convention

@@ -412,7 +412,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- userprompt-obsidian-hint -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-square-text"></i></div><div><div class="etitle">userprompt-obsidian-hint.sh</div><div class="emeta">UserPromptSubmit</div></div></div>
       <div class="ebody">
-        <p><strong>Her non-trivial prompt'a iki davranış enjekte eder: (1) ARAMA — araştırma gerekiyorsa önce <code>obsidian-searcher</code> ile vault'a bak; (2) KAYIT — cevap sonrası öğrenilen bilgiyi background kaydet.</strong></p>
+        <p><strong>Her non-trivial prompt'a iki davranış enjekte eder: (1) ARAMA — KESIN KURAL: iş akışının herhangi bir anında ek efor gerektiren bir iş doğduğunda (sorun çözme, araştırma, doğrulama, log analizi, karar/komut/credential arama) önce <code>obsidian-searcher</code> ile vault'a bak; sonuç boşsa kendin yap ve bulguyu sonradan kaydet; (2) KAYIT — cevap sonrası öğrenilen bilgiyi background kaydet.</strong></p>
         <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Klasör çıkarılır, prompt &lt;15 char ise skip. ARAMA her prompt'ta. KAYIT geciktirmeli: <code>last_learning_hook</code>'tan 5 dk geçmişse eklenir. HINT tek satır (jq <code>--arg</code> çok satırı escape etmez), <code>hookSpecificOutput.additionalContext</code> ile basılır. Eski <code>stop-obsidian-remind.sh</code>'in (block + "error" görünümü) yerini alır.</p></div>
         <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Sıfırdan uğraşmadan önce geçmiş bilgi hatırlanır; kayda değer yeni bilgi rahatsız etmeden çıktıyla beraber kalıcılaşır — hem hatırlama hem öğrenme prompt akışına gömülür.</p></div>
       </div>
@@ -592,7 +592,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
         <p><strong>Vault'a MOC + wikilink yapısıyla not yazan merkezi agent.</strong> Tüm Obsidian yazma işlemlerinin tek noktasıdır; frontmatter, ilişkisel wikilink ve dedup kurallarını her modda korur. Tools: Read/Write/Edit/Bash/Glob/Grep.</p>
         <div class="block howto"><div class="bt"><i data-lucide="layers-3"></i> 4 Mod</div><ul>
           <li><strong>init</strong> — orchestrator'dan; 4 alt agent çıktısından <code>index.md</code> MOC + Stack/Architecture/Recent-Activity/README-Summary üretir.</li>
-          <li><strong>append</strong> — Stop hook/ad-hoc; kalıcı bilgi → <code>Learnings/{topic}.md</code>, zamanlı → <code>Journal/{date}.md</code>; MOC'a wikilink + last_verified.</li>
+          <li><strong>append</strong> — Stop hook/ad-hoc; içeriği önce konulara ayrıştırır (bağımsız konular → ayrı notlar, ilişkili konular → tek notta tutup etiketle/cross-link), kalıcı bilgi → <code>Learnings/{topic}.md</code>, zamanlı → <code>Journal/{date}.md</code>; MOC'a wikilink + last_verified.</li>
           <li><strong>doc-source</strong> — dış kaynağı global <code>docs/&lt;source&gt;/</code> altına multi-file API reference; global docs MOC'unun tek sahibi.</li>
           <li><strong>update</strong> — mevcut dosyada hedefli düzenleme (madde işaretle, section güncelle); "override etme"nin kasıtlı istisnası, vault-içi + .md güvenlik sınırı, en-az-değişiklik ilkesi.</li>
         </ul></div>
