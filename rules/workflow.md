@@ -18,13 +18,26 @@ Aşağıdaki durumlarda agent **doğrudan çağrılır, soru sorulmaz, ertelenme
 - **Hook veya otomasyon akışı tarafından tetiklenen agent'lar** (örn. Stop hook → writer).
 - Kısaca: agent çağrısı önceden tanımlanmış bir akışın (skill, agent definition, hook) parçasıysa **direkt yürüt**, kullanıcıya sorma.
 
-## Sub-Agent Çalıştırma Modu — Her Zaman Background (İstisnasız)
+## Bloklayan İş Çalıştırma Modu — Her Zaman Background (İstisnasız)
 
-Bir subagent (writer, analiz, code reviewer, explorer, doc-source vb.) **belirli bir görev için çağrıldığında, HER ZAMAN `run_in_background: true` ile arka planda başlatılır.** İstisna yoktur — sonucu beklemen gereken durumlarda bile subagent arka planda çalıştırılır ve tamamlanma bildirimi beklenir. Foreground (bloklayan) çağrı **hiçbir koşulda kullanılmaz**.
+**Bloklayan veya süreli olabilecek HER iş arka planda çalıştırılır** — subagent, uzun süren Bash komutu, workflow ve benzeri asenkron işler dahil. Bloklayan iş ana akışı dondurur; bunun yerine işi background'a al, kullanıcıya tek cümleyle ne başlattığını söyle ve tamamlanma bildirimini (`task-notification`) bekle.
 
-- **Neden:** Subagent arka planda çalışırken ana akış bloklanmaz. Sonucu beklemen gerekse bile, foreground yerine background + bildirim beklemek daha sağlıklıdır; harness tamamlanmayı yönetir, akış donmaz, kullanıcı istediği an araya girebilir.
-- **Nasıl:** `Agent` çağrısında **daima** `run_in_background: true` ver. Başlattıktan sonra kullanıcıya tek cümleyle ne başlattığını söyle. Bir sonraki adım subagent'ın çıktısına bağlıysa, paralel yapacak başka iş yoksa bile, foreground'a düşme — `task-notification` gelene kadar bekle.
-- **Bildirim geldiğinde:** Subagent'ın döndürdüğü sonucu özetle, gerekiyorsa bir sonraki adımı uygula.
-- **Çakışma:** Subagent ile aynı dosya/konu üzerinde, o çalışırken çakışacak iş yapma.
+- **Neden:** İş arka planda çalışırken ana akış bloklanmaz. Sonucu beklemen gerekse bile, foreground yerine background + bildirim beklemek daha sağlıklıdır; harness tamamlanmayı yönetir, akış donmaz, kullanıcı istediği an araya girebilir.
+- **Bildirim geldiğinde:** İşin döndürdüğü sonucu/çıktıyı özetle, gerekiyorsa bir sonraki adımı uygula.
+- **Çakışma:** Arka planda çalışan işle aynı dosya/konu üzerinde, o çalışırken çakışacak iş yapma.
 
-"Kısa sürer", "tek seferlik", "sonucu hemen lazım" gibi gerekçeler foreground'u haklı çıkarmaz — **her durumda background.**
+"Kısa sürer", "tek seferlik", "sonucu hemen lazım" gibi gerekçeler foreground'u haklı çıkarmaz — **bloklayan her iş background.**
+
+### İş Tiplerine Göre Uygulama
+
+- **Subagent (`Agent` tool):** Bir subagent (writer, analiz, code reviewer, explorer, doc-source vb.) **belirli bir görev için çağrıldığında, HER ZAMAN `run_in_background: true` ile** başlatılır. İstisna yoktur — sonucunu beklemen gereken durumda bile foreground (bloklayan) çağrı **hiçbir koşulda kullanılmaz**. Bir sonraki adım subagent çıktısına bağlıysa, paralel yapacak başka iş olmasa bile foreground'a düşme — bildirimi bekle.
+- **Bash (`Bash` tool):** Saniyelerce veya daha uzun sürebilen / süreli olan komutlar **`run_in_background: true` ile** çalıştırılır. Örnekler: build (`go build`, `npm run build`, `cargo build`), test suite (`pytest`, `npm test`), bağımlılık kurulumu (`uv pip install`, `npm install`, `brew install`), dev server / watch (`npm run dev`, `manage.py runserver`), deploy / migration (`manage.py migrate`, `fastlane`), log tail (`tail -f`, uzun `grep`/`find`), uzun veri işleme (büyük dosya dönüştürme, reindex). Çıktıyı bekleyeceksen bile background başlat, `task-notification` ile sonucu al. Süresi belirsiz/uzun olabilecek bir komutta tereddüt edersen → background.
+- **Workflow (`Workflow` tool):** Zaten background çalışır (tool çağrısı anında döner, tamamlanınca `task-notification` gelir). Foreground'a zorlamaya çalışma; sonucu bildirimle topla.
+
+### İstisna — Kısa/Anlık Komutlar Foreground Kalır
+
+Aşağıdaki Bash komutları foreground çalıştırılır (background gereksiz gecikme yaratır):
+
+- **Sub-saniye, yan etkisiz, çıktısı anında lazım olan okuma komutları:** `ls`, `pwd`, `git status`, `git log`, `git diff`, `cat` (dedicated tool yoksa), kısa `grep`/`rg`, `which`, version check (`--version`), `echo`, tek kayıt DB/CLI sorgusu.
+- **Genel ölçü:** Komutun normalde ~birkaç saniyenin altında bitmesi **kesinse** ve çıktısı bir sonraki adımın ön koşuluysa → foreground. Aksi her durumda → background.
+- Bu istisna **yalnızca Bash içindir** — subagent ve workflow her zaman background, istisnasız.

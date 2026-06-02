@@ -282,10 +282,11 @@ python manage.py runserver</code></pre></div>
     </div>
 
     <!-- workflow -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="users"></i></div><div><div class="etitle">workflow</div><div class="emeta">Subagent Kuralları</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="users"></i></div><div><div class="etitle">workflow</div><div class="emeta">Subagent + Background Çalıştırma</div></div></div>
       <div class="ebody">
-        <p><strong>Sub-agent çağrısı kullanıcı onayı olmadan yasak; izin verilen agent çağrıları ise her zaman background modunda çalıştırılır.</strong></p>
-        <p>Kullanıcı "takım kur" derse <code>TeamCreate</code>. Subagent için açık izin yoksa önce <code>AskUserQuestion</code> sorulur ("hızlı olur/paralel" gerekçeleri geçersiz). İstisna: skill/agent-tanımı/hook akışının parçası olan çağrılar direkt yürür. Çalıştırma: bir subagent her zaman <code>run_in_background: true</code> ile başlatılır — foreground hiçbir koşulda kullanılmaz, sonucu beklemen gerekse bile <code>task-notification</code> beklenir.</p>
+        <p><strong>Sub-agent çağrısı kullanıcı onayı olmadan yasak; bloklayan veya süreli olabilecek HER iş (subagent, uzun Bash, workflow) ise her zaman background modunda çalıştırılır.</strong></p>
+        <p>Kullanıcı "takım kur" derse <code>TeamCreate</code>. Subagent için açık izin yoksa önce <code>AskUserQuestion</code> sorulur ("hızlı olur/paralel" gerekçeleri geçersiz). İstisna: skill/agent-tanımı/hook akışının parçası olan çağrılar direkt yürür.</p>
+        <p>Çalıştırma kuralı bloklayan tüm işleri kapsar: subagent <strong>her zaman</strong> <code>run_in_background: true</code> (istisnasız); uzun/süreli Bash komutları (build, test, install, dev server, deploy/migration, log tail) background; workflow zaten background döner. Foreground'a düşmek yerine <code>task-notification</code> beklenir. <strong>Tek istisna:</strong> sub-saniye, yan etkisiz, çıktısı anında lazım olan kısa okuma komutları (<code>ls</code>, <code>git status</code>, version check) Bash'te foreground kalabilir.</p>
       </div>
     </div>
 
