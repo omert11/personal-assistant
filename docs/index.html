@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 13 kural, 8 hook, 12 skill, 8 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 13 kural, 8 hook, 14 skill, 8 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -196,7 +196,7 @@
     <div class="hero-stats">
       <div class="stat"><div class="num">13</div><div class="lbl">Kural</div></div>
       <div class="stat"><div class="num">8</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">12</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">14</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">8</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -444,7 +444,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 13 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 14 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
       <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır — ağır iş agent'lara delege edilir.</p>
     </div>
@@ -545,6 +545,16 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"siteyi crawl et", "URL'i markdown yap", <code>/crawl2md &lt;url&gt; &lt;dir&gt; [--depth N] [--delay S]</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>uv</code> kontrol → parametre parse → crawl onayı → <code>uv run --script</code> (PEP 723 inline deps, ephemeral venv) → rapor → temizleme onayı → cleaner agent.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Same-host kilidi</strong> — sadece aynı hosttaki linkleri izler. Delay zorunlu (rate-limit). Cleaner aggressive modda yedek önerir.</p></div>
+      </div>
+    </div>
+
+    <!-- diji-log-search -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="search-code"></i></div><div><div class="etitle">diji-log-search</div></div></div>
+      <div class="ebody">
+        <p><strong>Diji tabanlı b2c Django projelerde bir basket'in (UserBookingBasket) tüm yaşam döngüsünü prod <code>AppLog</code> tablosundan çıkarır, özetler, sorunu teşhis eder.</strong> Ref verilmezse hata mesajından/ekran görüntüsünden ilgili basket'i kendisi bulur.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu hata alındı son loglara bak", "bu hata mesajını araştır", "&lt;ref&gt; sepetini incele", "ödeme neden başarısız", "provider logları", <code>/diji-log-search</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Ortamı <code>CLAUDE.local.md</code>'den oku → mod belirle (<code>lifecycle</code>/<code>provider</code>/<code>payment</code>/<code>raw</code>/<code>find</code>/<code>diagnose</code>) → <code>scripts/diji_log_search.py</code>'yi prod'a scp → <code>manage.py shell &lt;</code> ile çalıştır (param env var ile) → LogReader sağlık kontrolü → kronolojik rapor.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>find modu</strong> "mesaj → kod → basket → trace" zincirini tek komuta indirir. Marka/proje adı hardcode edilmez (domain her zaman <code>CLAUDE.local.md</code>'den). Çıktı <code>/tmp</code>'e yazılır (canlı credential içerebilir, Zed ile açılmaz).</p></div>
       </div>
     </div>
 
