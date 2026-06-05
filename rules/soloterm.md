@@ -4,11 +4,27 @@
 - Process yönetimi `solo` **CLI** ile yapılır (`~/.local/bin/solo`, `solo --version` ile doğrula)
 - Tekrar eden shell komutları için mutlaka `solo.yml` oluşturulmalı ve komutlar buraya eklenmeli
 - Bir komut çalıştırılacaksa ve ileride tekrar kullanılabilecekse: önce `solo.yml`'yi kontrol et, komut varsa Solo üzerinden çalıştır, yoksa önce `solo.yml`'ye ekle sonra Solo üzerinden çalıştır
-- `solo.yml` ile tanımlanan komutlar CLI üzerinden başlatılabilir, durdurulabilir, yeniden başlatılabilir ve çıktıları takip edilebilir
+- `solo.yml` ile tanımlanan komutlar CLI üzerinden başlatılabilir, durdurulabilir ve yeniden başlatılabilir (process **çıktısı/logu CLI'de YOK** — aşağıdaki uyarıya bak)
 
 ## CLI Kullanımı
 
 CLI HTTP control plane'e (Solo app) bağlanır — app açık olmalı. Her komutta `--json` ile makine-okunur çıktı al, parse et. `solo doctor` ile bağlantıyı doğrula.
+
+### ⚠️ Process Çıktısı/Log — CLI'de YOK
+
+Solo CLI ve HTTP API process **loglarını/çıktısını göstermez**. Mevcut alanlar sadece: `command, id, name, pid, projectId, status, uptimeSeconds`.
+
+- `solo processes output/logs/tail` → **yok** (unknown command)
+- HTTP API `GET /api/processes/{id}` → output/log alanı **yok**, `/output` `/logs` `/tail` → **404**
+
+**Sonuç:** Bir Solo process crash/hata verdiğinde sebebini CLI'den göremezsin. Hata teşhisi için:
+
+1. **Solo app GUI** terminal paneli (görsel), veya
+2. Komutu logla: `solo.yml`'de `command: ... 2>&1 | tee /tmp/<proc>.log` → sonra `Read`/`grep`
+3. HTTP servis ise `curl` ile traceback oku (Django `DEBUG=1` ise traceback döner)
+4. Tek seferlik teşhiste foreground `Bash` ile çalıştır (Solo dışı)
+
+> NOT: Bu kısıt ileride Solo CLI'da düzeltilecek. CLI'da process output/log komutu (`solo processes output/logs/tail` veya HTTP `/output` alanı) çalışır hale geldiğinde, bu uyarının **geçersizleştiğini** kullanıcıya bildir — artık GUI/workaround gerekmiyor.
 
 ```bash
 solo --version                          # kurulu mu (0.7.x)

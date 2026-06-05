@@ -358,7 +358,8 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="square-terminal"></i></div><div><div class="etitle">soloterm</div><div class="emeta">Process Yönetimi</div></div></div>
       <div class="ebody">
         <p><strong>Tekrar eden shell komutları için mutlaka <code>solo.yml</code> oluşturulur ve komutlar <code>solo</code> CLI üzerinden process olarak yönetilir.</strong></p>
-        <p>Bir komut ileride tekrar kullanılabilecekse önce <code>solo.yml</code> kontrol edilir; varsa Solo üzerinden çalıştırılır, yoksa önce eklenir. Process'ler <code>solo processes</code> / <code>solo commands</code> komutlarıyla başlatılabilir, durdurulabilir, yeniden başlatılabilir, çıktıları takip edilebilir.</p>
+        <p>Bir komut ileride tekrar kullanılabilecekse önce <code>solo.yml</code> kontrol edilir; varsa Solo üzerinden çalıştırılır, yoksa önce eklenir. Process'ler <code>solo processes</code> / <code>solo commands</code> komutlarıyla başlatılabilir, durdurulabilir ve yeniden başlatılabilir.</p>
+        <p><strong>⚠️ Process çıktısı/logu CLI'de YOK:</strong> Solo CLI ve HTTP API process loglarını göstermez (sadece <code>status</code>, <code>pid</code>, <code>uptime</code>). Crash sebebini görmek için Solo app GUI terminal paneli, <code>2>&1 | tee /tmp/&lt;proc&gt;.log</code> ile loglama, <code>curl</code> ile traceback veya foreground <code>Bash</code> gerekir. (Bu kısıt CLI'da düzeltildiğinde uyarı geçersizleşir.)</p>
       </div>
     </div>
 
@@ -727,7 +728,7 @@ CLAUDE.local.md → Vikunja proje ID</code></pre></div>
       <div class="ebody">
         <p><strong>Nedir:</strong> Geliştirme process'lerini (backend, frontend, worker vb.) yöneten bir araç; <code>solo.yml</code> ile tanımlanan komutları başlatır, durdurur, yeniden başlatır ve çıktılarını takip eder. <code>solo</code> CLI binary'si Solo app'in HTTP control plane'ine bağlanır (<code>solo doctor</code> ile doğrulanır).</p>
         <p><strong>Ne işe yarar:</strong> Tekrar eden shell komutlarını (build + run) tek yerde toplayıp Claude'un bunları başlatıp loglarını okumasını sağlar.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>soloterm.md</code> kuralı: tekrar eden komutlar için mutlaka <code>solo.yml</code> oluşturulur ve komutlar Solo üzerinden çalıştırılır. Process başlatma/durdurma/restart ve canlı log takibi <code>solo processes</code> / <code>solo commands</code> CLI komutlarıyla yapılır. (Bu plugin repo'sunun kendisi için aktif değil — çalışan process yok.)</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>soloterm.md</code> kuralı: tekrar eden komutlar için mutlaka <code>solo.yml</code> oluşturulur ve komutlar Solo üzerinden çalıştırılır. Process başlatma/durdurma/restart <code>solo processes</code> / <code>solo commands</code> CLI komutlarıyla yapılır — <strong>ancak process logu/çıktısı CLI'de görünmez</strong> (hata teşhisi için GUI veya log dosyası workaround'ı gerekir). (Bu plugin repo'sunun kendisi için aktif değil — çalışan process yok.)</p></div>
       </div>
     </div>
 
