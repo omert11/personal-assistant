@@ -1,5 +1,11 @@
 # SoloTerm
 
+> ⚠️ **GEÇİCİ — Solo MCP aktif (yarabandı).** CLI'da process çıktısı/logu olmadığı için (aşağıdaki bug) geçici olarak Solo MCP kuruldu:
+> ```bash
+> claude mcp add --scope user --transport stdio solo -- '/Applications/Solo.app/Contents/MacOS/mcp'
+> ```
+> Process logu/çıktısı gerektiğinde MCP araçlarını kullan. **Bug düzeldiğinde** (CLI `solo processes output/logs/tail` veya HTTP `/output` çalışır hale geldiğinde) bu MCP `claude mcp remove --scope user solo` ile **kaldırılacak** ve bu not silinecek.
+
 - Proje ID `CLAUDE.local.md` içinden alınır
 - Process yönetimi `solo` **CLI** ile yapılır (`~/.local/bin/solo`, `solo --version` ile doğrula)
 - Tekrar eden shell komutları için mutlaka `solo.yml` oluşturulmalı ve komutlar buraya eklenmeli

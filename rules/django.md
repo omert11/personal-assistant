@@ -24,13 +24,16 @@ uv python pin 3.13 && uv venv && uv pip install -r requirements.txt && uv pip in
 ```
 
 ## Elasticsearch Reindex Komutları
-- `python manage.py elastic_reindex_hotel`
+> UYARI: Komut isimleri projeden projeye DEĞİŞEBİLİR (özellikle hotel). Çalıştırmadan önce
+> mutlaka `find . -path "*/management/commands/*.py" | grep -i reindex` ile gerçek isimleri doğrula.
 - `python manage.py elastic_reindex_flight`
 - `python manage.py elastic_reindex_car`
-- `python manage.py elastic_reindex_transfer`
 - `python manage.py elastic_reindex_bus`
 - `python manage.py elastic_reindex_tour`
 - `python manage.py elastic_reindex_ferry`
+- Hotel: `elastic_reindex_hotel` VEYA `elasticsearch_reindex_hotel` (prefix projeye göre değişir — voyante-web'de `elasticsearch_` prefix'li)
+- Transfer: `elastic_reindex_transfer` (her projede yok — voyante-web'de mevcut DEĞİL)
+- Lokasyon arama indeksi (varsa): `python manage.py update_location_search`
 
 ## Django Admin
 - Ortak kullanıcı: `<admin-user>` / `<admin-pass>` (gerçek değerler `local-rules/django.md`'de, repo'ya commit edilmez)
