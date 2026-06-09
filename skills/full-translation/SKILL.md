@@ -20,16 +20,35 @@ Django gettext projesinde **tüm dillerin** eksik (untranslated) ve fuzzy çevir
 
 ## Akış (7 adım)
 
-### Adım 0 — Repoları güncelle
+### Adım 0 — Repoları güncelle  ⛔ ATLANAMAZ, AKIŞIN İLK İŞİ
 
-Base branch (genelde `stage`) + **mobil repo** (varsa) pull edilir. **Mobil pull ŞARTTIR**: `makemessagesf7` `F7_ROOT` (varsayılan `"mobile"`) dizinini tarar — mobil repo güncel değilse yeni F7 metinleri `djangof7.pot`'a girmez.
+> **MOBİL PULL = ÇEVİRİNİN BİR NUMARALI ÖN KOŞULU. Atlanırsa çeviri SESSİZCE EKSİK kalır ve bunu fark etmezsin.**
+>
+> `makemessagesf7` mobil dizinini (`F7_ROOT`, varsayılan `"mobile"`) **çalıştığı anki haliyle** tarar. Mobil repo geride ise yeni F7 metinleri `djangof7.pot`'a **hiç girmez** → o dilde "0 untranslated/0 fuzzy" çıkar → bunu yanlışlıkla **"F7 temiz"** sanırsın. **0, "çevrildi" değil "metin hiç çıkarılmadı" demek olabilir.** Bu sahte-temiz, eksik bir release'e (yanlış tag'e) yol açar.
+>
+> **Somut kanıt (2026-06-09, v5.6.12):** mobil pull atlandı → `djangof7` her dilde `0u/0f` göründü, "temiz" sanıldı, v5.6.12 tag'i atıldı. Tag SONRASI mobil pull edilince makemessagesf7 **208 yeni msgid + her dilde 1 fuzzy** çıkardı — yani release eksik çıkmıştı, tag re-point gerekti. (Detay: [[full-translation-workflow]])
+
+**KESİN SIRA — başka hiçbir şeyden ÖNCE:**
 
 ```bash
+# 1) Base branch
 git checkout <base> && git pull --ff-only origin <base>     # çakışma → DUR, kullanıcıya bildir
+# 2) MOBİL — ZORUNLU, koşulsuz. Proje mobil repo içeriyorsa (mobile/<app>/.git varsa) ASLA atlama.
 git -C mobile/<app> checkout main && git -C mobile/<app> pull --ff-only origin main
 ```
 
-Uncommitted `.po` değişikliği varsa pull engellenir → önce `commit` skill ile commit'le, gerekirse `git rebase origin/<base>` (çakışma çıkarsa kullanıcıya sor).
+**Doğrulama (pull'un gerçekten yeni commit getirip getirmediğini GÖR, körlemesine geçme):**
+
+```bash
+git -C mobile/<app> log --oneline -1            # HEAD ilerledi mi
+git -C mobile/<app> status -sb                  # "behind" KALMAMALI
+```
+
+`makemessagesf7`'yi çalıştırmadan önce mobil HEAD'in `origin/main` ile **eşit** olduğunu teyit et. Eşit değilse **DUR** — Adım 1'e geçme.
+
+- Mobil repo **yoksa** (`mobile/<app>` dizini hiç yoksa) bu adımı atla; ama dizin **varsa** pull **koşulsuz zorunludur** ("zaten günceldir", "az önce baktım", "küçük değişiklik" gerekçeleri geçersiz).
+- Uncommitted `.po` değişikliği varsa pull engellenir → önce `commit` skill ile commit'le, gerekirse `git rebase origin/<base>` (çakışma çıkarsa kullanıcıya sor).
+- **Self-check (Adım 1'e geçmeden):** "Mobil repo var mı? Varsa pull ettim ve HEAD=origin/main mı?" İkisi de evet değilse Adım 0 bitmemiştir.
 
 ### Adım 1 — makemessages (tüm diller, 3 domain)
 
