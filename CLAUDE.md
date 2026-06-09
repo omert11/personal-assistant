@@ -41,7 +41,6 @@ Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 ## Versiyon Akışı
 
 - `plugin.json` ve `marketplace.json` içindeki version aynı tutulur
-- Release öncesi `CHANGELOG.md` güncellenir
 - Commit mesajında `(vX.Y.Z)` soneki kullanılır
 
 ## Komutlar
