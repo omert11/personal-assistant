@@ -114,9 +114,12 @@ Yapılan değişikliklerle uyuşan bir görev var mı tespit et:
 - **Yok**: bulgu olarak işaretle (yeni görev önerisi için)
 
 #### 3f. Obsidian Kayıt İhtiyacı
-`CLAUDE.local.md`'de `Obsidian Folder` varsa bu commit'te kaydedilmesi kayda değer bir şey var mı tespit et:
-- Yeni API key, sunucu bilgisi, teknik karar, kalıcı komut, tekrar eden pattern
-- Büyük mimari değişiklik (commit mesajı `feat:` veya `refactor:` başlıklı + >100 satır diff)
+`CLAUDE.local.md`'de `Obsidian Folder` varsa bu commit'te kaydedilmesi kayda değer bir şey var mı tespit et (dar kriter — kanonik tanım: `agents/obsidian-writer.md` append guard):
+- Yeni credential/sunucu/endpoint bilgisi
+- Çözülen non-trivial bug + çözümü
+- Kalıcı mimari/teknik karar
+
+Repo/CLAUDE.md/vault'ta zaten yazılı bilgi veya genel oturum özeti kayda değer sayılmaz; şüphedeysen önerme.
 
 Varsa bulgu olarak işaretle. Yoksa sessiz geç.
 

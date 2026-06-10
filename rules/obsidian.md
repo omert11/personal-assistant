@@ -37,7 +37,7 @@ Arama davranışı hakkında bilinmesi gerekenler (agent bunları zaten uygular)
 
 - **Direkt CLI write yapma** (ad-hoc append hariç). Yapısal yazımlar için `obsidian-writer` agent'ını `MODE: append` ile çağır (`Task` tool). Agent MOC index.md'yi günceller, dedup eder, frontmatter doğru yazar.
 - **Ad-hoc "not al" isteklerinde**: `/obsidian-note` skill tetikle veya `obsidian-writer` agent'ı çağır.
-- **Stop hook otomatik tetiklenir**: Kullanıcı paylaştığı kayda değer bilgi (API key, sunucu, karar) varsa oturum sonunda main agent'tan writer'ı çağırması istenir.
+- **UserPromptSubmit hook hatırlatır**: Dar kritere uyan (credential/sunucu/endpoint, çözülen non-trivial bug, kalıcı mimari/teknik karar) YENİ öğrenilen bilgi varsa cevap sonrası writer background çağrılır; devam eden iş varsa kayıt işler bitene kadar bekletilir. Stop hook ise yalnızca daily note'a tek satır oturum özeti yazar, writer çağırmaz.
 
 ## Mevcut Notu Güncelleme
 

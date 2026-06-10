@@ -2,10 +2,13 @@
 # UserPromptSubmit hook — Obsidian Folder tanimli projede, kullanici prompt'una
 # iki davranisi additionalContext olarak enjekte eder:
 #   1. ARAMA: arastirma/inceleme gerekiyorsa once obsidian-searcher ile vault'a bak.
-#   2. KAYIT: cevabi urettikten sonra, ogrenilen/kaydedilmesi gereken bilgi varsa
-#      obsidian-writer'i background calistirip kaydet (Stop-block yerine — block
-#      ek tur + "error" gorunumu yaratiyordu; bu yontem ciktiyla beraber sessizce
-#      arka planda baslatir).
+#   2. KAYIT: cevabi urettikten sonra, DAR KRITERE uyan ogrenilen bilgi varsa
+#      (credential/sunucu, cozulen non-trivial bug, kalici karar) obsidian-writer'i
+#      background calistirip kaydet (Stop-block yerine — block ek tur + "error"
+#      gorunumu yaratiyordu; bu yontem ciktiyla beraber sessizce arka planda baslatir).
+#      NOT: kriter listesinin kanonik tanimi agents/obsidian-writer.md append
+#      guard'indadir — kriter degisirse HINT, guard ve docs/index.html birlikte
+#      guncellenir.
 #
 # Sessiz calisir: Obsidian Folder yoksa veya CLAUDE.local.md yoksa hicbir sey
 # enjekte etmez. Trivial prompt'lari (cok kisa / selamlasma) atlar. KAYIT
@@ -66,7 +69,7 @@ fi
 # NOT: HINT tek satir tutulur — jq --arg ham newline'i JSON string icinde escape
 # ETMEZ, cok satirli deger gecersiz JSON uretir. Bolumler bosluk/ayraçla birlesir.
 if [ "$ADD_SAVE" -eq 1 ]; then
-  HINT="${HINT}  ||  Ayrica son cevabini urettikten sonra sunu dusun: su an kaydetmem gereken, bu oturumda ogrendigim kayda deger bir bilgi var mi (yeni bir karar, calisan komut, credential/sunucu, tekrar eden pattern, cozulen bug)? Varsa cevabinla beraber, ek bir calistirma beklemeden, \`obsidian-writer\` agent'ini (run_in_background: true, MODE: append, TARGET: ~/Documents/ObsidianVault/${OBSIDIAN_FOLDER}) gizlice arka planda baslatip kaydet ve kullaniciya tek cumleyle ne kaydettigini bildir. Kayda deger bir sey yoksa hicbir sey yapma, normal akisa devam et."
+  HINT="${HINT}  ||  KAYIT (dar kriter): SADECE bu oturumda YENI ogrenilen su uc tipten biri varsa kaydet — (1) credential/sunucu/endpoint, (2) cozulen non-trivial bug + cozumu, (3) kalici mimari/teknik karar. Repo/CLAUDE.md/vault'ta zaten yazili bilgi, oturum ozeti, genel bilgi veya gecici durum KAYDEDILMEZ; supheliysen KAYDETME. Uygunsa \`obsidian-writer\` agent'ini (run_in_background: true, MODE: append, TARGET: ~/Documents/ObsidianVault/${OBSIDIAN_FOLDER}) arka planda baslat ve tek cumleyle bildir; yoksa hicbir sey yapma. BEKLETME: elinde devam eden is varsa kaydi hemen baslatma — tum isler bittiginde kaydet; isler bitmediyse kalan isleri raporlarken bekleyen kayit islemini de listele ki kullanici karar verebilsin."
 fi
 
 jq -n --arg ctx "$HINT" '{
