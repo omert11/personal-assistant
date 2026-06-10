@@ -2,6 +2,7 @@
 name: readme-extractor
 description: README.md dosyasından proje amacı, setup adımları, ana özellikler ve komutları özetleyen alt agent. obsidian-initializer orchestrator tarafından çağrılır. README yoksa boş rapor döner.
 tools: Read, Glob
+model: haiku
 ---
 
 # README Extractor

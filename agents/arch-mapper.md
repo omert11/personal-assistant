@@ -2,6 +2,7 @@
 name: arch-mapper
 description: Projenin mimari yapısını (top-level dizinler, backend/frontend/admin ayrımı, katmanlar) haritalayan alt agent. obsidian-initializer orchestrator tarafından çağrılır. Directory tree + ana modülleri rapor eder.
 tools: Read, Glob, Grep, Bash
+model: haiku
 ---
 
 # Arch Mapper

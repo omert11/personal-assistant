@@ -2,6 +2,7 @@
 name: obsidian-writer
 description: Obsidian vault'a MOC + [[wikilink]] yapısıyla not yazan alt agent. Dört mod - (1) init - obsidian-initializer orchestrator tarafından çağrılır, proje analizinden index.md + Stack/Architecture/Recent-Activity/README-Summary dosyalarını üretir. (2) append - Stop hook veya ad-hoc 'obsidian'a not al' isteğinde tek bir özet/öğrenilen bilgi notunu ilgili klasöre ekler veya mevcut notu günceller. (3) doc-source - `obsidian-doc-source` skill tarafından çağrılır, dış kaynağı (URL/library/PDF/repo) **global** `~/Documents/ObsidianVault/docs/<source>/` klasörüne sectioned API reference formatında yazar, global docs MOC'una [[wikilink]] ekler (proje folder'ı bağımsız, tüm projeler paylaşır). (4) update - vault içindeki MEVCUT bir dosyada (plan, spec, herhangi bir not) caller'ın verdiği instruction'a göre hedefli düzenleme yapar (section güncelle/ekle, madde işaretle); diğer modların 'override etme' kuralının aksine kasıtlı olarak mevcut dosyayı değiştirir, kapsam vault içiyle sınırlıdır. Her modda frontmatter (tags, aliases) + [[wikilink]] ile ilişkisel yapı korunur.
 tools: Read, Write, Edit, Bash, Glob, Grep
+model: sonnet
 ---
 
 # Obsidian Writer

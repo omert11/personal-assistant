@@ -2,6 +2,7 @@
 name: stack-detector
 description: Projenin tech stack'ini (dil, framework, paket yöneticisi, major bağımlılıklar) tespit eden alt agent. obsidian-initializer orchestrator tarafından çağrılır. Manifest dosyalarını (package.json, pyproject.toml, go.mod, Cargo.toml, pubspec.yaml, Gemfile) okur ve yapılandırılmış rapor döner.
 tools: Read, Glob, Grep, Bash
+model: haiku
 ---
 
 # Stack Detector
