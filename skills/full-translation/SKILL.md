@@ -76,6 +76,8 @@ po-cli --json analyze <po> > /tmp/<proj>-i18n/<lang>.<domain>.analysis.json
 
 ### Adım 4 — Workflow: dil başına 1 ajan paralel çeviri
 
+> **Model**: Çeviri ajanları `model: 'sonnet'` ile çalışır (opts'ta sabit). Belirtilmezse Workflow ajanı ana oturum modelini devralır — pahalı session modelinde N dil × paralel çeviri gereksiz maliyet. Sonnet çok dilli lokalizasyon için yeterli kalitede.
+
 `Workflow` tool ile **dil başına 1 ajan** (`parallel`, cap ~10 eşzamanlı). Her ajan kendi dilinin analysis json'larını **Read** eder, entry'leri çevirir, `<lang>.<domain>.translations.json` yazar (po-cli `update` formatı: `[{msgid, msgstr, context}]`).
 
 **Ajan prompt'una MUTLAKA gömülecek kurallar:**
@@ -119,7 +121,7 @@ KURALLAR: (1) her entry TEK TEK, toplu replace YASAK. (2) fuzzy msgstr'ye GÜVEN
 (3) placeholder/%%/HTML/URL/JS birebir koru. (4) URL slug'ı mevcut konvansiyona uydur.
 (5) marka adları İngilizce. (6) ${L.pluralNote} (7) msgstr boş bırakma.
 Her domain için ${OUT}/${L.code}.<domain>.translations.json YAZ (dizi: {msgid,msgstr,context}).`,
-    { label: `translate:${L.code}`, phase: 'Translate',
+    { label: `translate:${L.code}`, phase: 'Translate', model: 'sonnet',
       schema: { type:'object', required:['lang'], properties:{ lang:{type:'string'}, notes:{type:'string'} } } }
   ).then((r) => ({ ...r, code: L.code }))
 ))
