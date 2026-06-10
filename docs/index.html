@@ -609,7 +609,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     </div>
 
     <!-- obsidian-writer -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-edit"></i></div><div><div class="etitle">obsidian-writer</div><div class="emeta">4 mod · merkezi yazma noktası</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-edit"></i></div><div><div class="etitle">obsidian-writer</div><div class="emeta">4 mod · merkezi yazma noktası · model: sonnet</div></div></div>
       <div class="ebody">
         <p><strong>Vault'a MOC + wikilink yapısıyla not yazan merkezi agent.</strong> Tüm Obsidian yazma işlemlerinin tek noktasıdır; frontmatter, ilişkisel wikilink ve dedup kurallarını her modda korur. Tools: Read/Write/Edit/Bash/Glob/Grep.</p>
         <div class="block howto"><div class="bt"><i data-lucide="layers-3"></i> 4 Mod</div><ul>
@@ -622,7 +622,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     </div>
 
     <!-- obsidian-initializer -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="workflow"></i></div><div><div class="etitle">obsidian-initializer</div><div class="emeta">orchestrator</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="workflow"></i></div><div><div class="etitle">obsidian-initializer</div><div class="emeta">orchestrator · model: sonnet</div></div></div>
       <div class="ebody">
         <p><strong>Projeyi tarayıp vault'ta MOC + wikilink proje belleği oluşturan orchestrator.</strong> Kendisi içerik üretmez — 5 alt agent'ı koordine eder. Tools: Task/Read/Glob/Grep/Bash.</p>
         <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Hedef klasör hazırla → 4 alt agent'ı (<code>stack-detector</code>, <code>arch-mapper</code>, <code>readme-extractor</code>, <code>recent-activity</code>) <b>tek mesajda paralel</b> <code>Task</code> ile çağır → raporları <code>writer MODE: init</code>'e ver → sonuç raporu.</p></div>
@@ -630,7 +630,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     </div>
 
     <!-- obsidian-searcher -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="scan-search"></i></div><div><div class="etitle">obsidian-searcher</div><div class="emeta">salt-okur arama</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="scan-search"></i></div><div><div class="etitle">obsidian-searcher</div><div class="emeta">salt-okur arama · model: haiku</div></div></div>
       <div class="ebody">
         <p><strong>Vault'ta sorgu bazlı arama yapan salt-okur agent.</strong> Aranan konuyu bulur, notları okur, sentezler, wikilink kaynaklarıyla bağlar. Hiçbir şey yazmaz. Tools: Bash/Read/Grep/Glob.</p>
         <div class="block howto"><div class="bt"><i data-lucide="route"></i> MOC → search → context → sentez</div><ul>
@@ -645,28 +645,28 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     </div>
 
     <!-- stack-detector -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="layers"></i></div><div><div class="etitle">stack-detector</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="layers"></i></div><div><div class="etitle">stack-detector</div><div class="emeta">model: haiku</div></div></div>
       <div class="ebody">
         <p><strong>Tech stack tespiti</strong> (dil, framework, paket yöneticisi, major bağımlılıklar). Manifest dosyalarını okur, framework'ü işaret dosyalarından çıkarır, paket yöneticisini lock file'dan bulur. Belirsizse "Tespit edilemedi" — varsayım yapmaz. Tools: Read/Glob/Grep/Bash. <span class="emeta">obsidian-initializer çağırır.</span></p>
       </div>
     </div>
 
     <!-- arch-mapper -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="map"></i></div><div><div class="etitle">arch-mapper</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="map"></i></div><div><div class="etitle">arch-mapper</div><div class="emeta">model: haiku</div></div></div>
       <div class="ebody">
         <p><strong>Mimari haritalama</strong> (top-level dizinler, backend/frontend/admin ayrımı, katmanlar). Klasörleri rolüne göre sınıflar, Django app'lerini/monorepo paketlerini listeler, dosya sayılarıyla yapı çıkarır. <code>node_modules</code>/<code>.venv</code>/<code>dist</code> atlanır. Tools: Read/Glob/Grep/Bash. <span class="emeta">obsidian-initializer çağırır.</span></p>
       </div>
     </div>
 
     <!-- readme-extractor -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-text"></i></div><div><div class="etitle">readme-extractor</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-text"></i></div><div><div class="etitle">readme-extractor</div><div class="emeta">model: haiku</div></div></div>
       <div class="ebody">
         <p><strong>README özeti</strong> — proje amacı, setup adımları, ana özellikler ve komutlar. README yoksa boş rapor. README'de olmayan bilgi eklenmez (varsayım yok). Tools: Read/Glob. <span class="emeta">obsidian-initializer çağırır.</span></p>
       </div>
     </div>
 
     <!-- recent-activity -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="activity"></i></div><div><div class="etitle">recent-activity</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="activity"></i></div><div><div class="etitle">recent-activity</div><div class="emeta">model: haiku</div></div></div>
       <div class="ebody">
         <p><strong>Son 30 commit analizi</strong> — hot area'lar, en çok değişen dosyalar, aktif contributor'lar. <code>git log -30</code> ile dosya/klasör/contributor frekansı sayılır. Git repo değilse veya az commit varsa uyarlanır. Tools: Bash/Read. <span class="emeta">obsidian-initializer çağırır.</span></p>
       </div>

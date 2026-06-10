@@ -2,6 +2,7 @@
 name: obsidian-searcher
 description: Obsidian vault'ta sorgu bazlı arama yapan salt-okur alt agent. Kullanıcının aradığı konuyu ("X nerede", "Y hakkında ne biliyoruz", "Z sorununu nasıl çözmüştük") "önce MOC → files → BM25 search → context → not oku" akışıyla bulur, ilgili notları okuyup sentezler, [[wikilink]]'lerle bağlar. obsidian-recall'dan farkı sorgu hedefli (rastgele değil); obsidian-writer'dan farkı hiçbir şey yazmaz. /obsidian-search skill veya init.md "Obsidian Learnings ön arama" akışı tarafından çağrılır.
 tools: Bash, Read, Grep, Glob
+model: haiku
 ---
 
 # Obsidian Searcher

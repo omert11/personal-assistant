@@ -2,6 +2,7 @@
 name: recent-activity
 description: Son 30 commit'i analiz ederek proje içinde popüler/aktif alanları tespit eden alt agent. obsidian-initializer orchestrator tarafından çağrılır. Hot area, popüler dosyalar, contributor listesi döner.
 tools: Bash, Read
+model: haiku
 ---
 
 # Recent Activity
