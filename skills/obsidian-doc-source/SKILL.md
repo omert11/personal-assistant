@@ -138,6 +138,13 @@ SOURCE_TYPE: web|library|github|file
 FETCHED_AT: <YYYY-MM-DD>
 WRITE_MODE: overwrite|new_version   # çakışma kararından (yoksa 'create')
 
+provenance: |
+  ## Kaynak ve Edinim
+  - **Birincil kaynak**: <kaynak + edinim yöntemi: Context7 library ID + sorgu sayısı / Stoplight-OpenAPI export / mail eki + dönüştürme yöntemi / WebFetch / crawl2md>
+  - **İlgili referans**: <Zammad ticket no / mail konu-ID + varsa orijinal dosya yolu (örn. ~/Downloads/<dosya>.eml)>
+  - **Credential'lar**: [[<credential-learnings-notu>]]   # varsa
+  - **Doğrulama**: <✅/❌ + tarih + kısa sonuç (örn. "CreateTokenV2 ✅ 2026-06-11, token alındı")>
+
 overview: |
   ...
 endpoints: |
@@ -147,6 +154,7 @@ examples: |
 )
 ```
 
+- **provenance (ZORUNLU)**: Writer bu bölümü index.md'ye "## Kaynak ve Edinim" olarak yazar. Frontmatter `source_url`/`fetched_at` tek başına yeterli DEĞİLDİR — görünür provenance bölümü şarttır (bkz. rules/obsidian.md "Doc-Source Provenance").
 - **TARGET**: Global docs, proje folder'ı DEĞİL. Format: `~/Documents/ObsidianVault/docs/<source-name>/` (veya `-v2` vs. new_version seçildiyse)
 - **WRITE_MODE**: `overwrite` → eski dosyalar silinir. `new_version` → ayrı klasör. `create` → hiç yok, yeni kurulum
 - Writer global docs MOC'unu (`~/Documents/ObsidianVault/docs/index.md`) **tek sahip** olarak günceller. Skill dokunmaz.

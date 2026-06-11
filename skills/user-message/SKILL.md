@@ -70,6 +70,24 @@ E-posta seçildiyse mesajın başına `Konu: <kısa öz>` satırı ekle (HTML ç
 
 **Kanal "E-posta" ise → Adım 5-E (zengin HTML + open).** Diğer tüm kanallar → **Adım 5-T (düz metin + zed --wait).**
 
+#### Yabancı Dil Kuralı (ZORUNLU)
+
+Mesaj **Türkçe dışında bir dilde** üretildiyse (İngilizce tedarikçi maili vb.), onay önizlemesi **iki dilli** sunulur:
+
+```
+<orijinal yabancı dilde mesaj>
+
+---
+
+(Türkçe)
+<mesajın Türkçe çevirisi>
+```
+
+- Türkçe bölüm **yalnızca önizleme içindir, gönderilmez** — önizlemede bunu açıkça belirt ("Türkçe çeviri — sadece önizleme, gönderilmeyecek").
+- 5-T (zed) dalında: düz metin dosyasında orijinal + `---` ayraç + `(Türkçe)` başlıklı çeviri.
+- 5-E (HTML) dalında: orijinal HTML gövdesinin altına `<hr>` + gri arka planlı çeviri bölümü (`<div style="background:#f4f4f4; padding:12px; border-radius:6px">` içinde `(Türkçe çeviri — sadece önizleme, gönderilmeyecek)` etiketi + çeviri).
+- Onay sonrası kullanıcıya verilen nihai metin/HTML **sadece orijinal dili** içerir — çeviri bloğu çıkarılır.
+
 #### 5-T. Düz metin onayı (SMS, WhatsApp, Push, Panel, Destek talebi)
 
 Mesajı geçici dosyaya yaz, zed'i bekle-modunda aç, sonucu oku:

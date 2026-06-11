@@ -1,10 +1,31 @@
 {
   "name": "personal-assistant",
-  "version": "1.45.2",
+  "version": "1.45.3",
   "description": "Kisisel asistan plugin'i — init kontrolleri, oturum yonetimi, extension builder, commit, project-init, worktree, obsidian docs, user-message, diji-log-search, global rules",
   "author": {
     "name": "Omer Faruk Yigin"
   },
   "license": "MIT",
-  "keywords": ["personal", "assistant", "init", "hooks", "extension-builder", "commit", "obsidian", "obsidian-init", "obsidian-note", "obsidian-doc-source", "knowledge-base", "worktree", "git-worktree", "user-message", "customer-message", "diji-log-search", "basket-lifecycle", "applog", "zammad", "helpdesk"]
+  "keywords": [
+    "personal",
+    "assistant",
+    "init",
+    "hooks",
+    "extension-builder",
+    "commit",
+    "obsidian",
+    "obsidian-init",
+    "obsidian-note",
+    "obsidian-doc-source",
+    "knowledge-base",
+    "worktree",
+    "git-worktree",
+    "user-message",
+    "customer-message",
+    "diji-log-search",
+    "basket-lifecycle",
+    "applog",
+    "zammad",
+    "helpdesk"
+  ]
 }

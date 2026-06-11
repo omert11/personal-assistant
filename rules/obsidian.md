@@ -54,6 +54,15 @@ Aynı konuda mevcut not varsa `obsidian-writer` onu bulur ve `## {date}` başlı
 - `Learnings/<topic>.md` — Kalıcı bilgiler (API key, sunucu, kural, teknik karar)
 - `Journal/<YYYY-MM-DD>.md` — Zamanlı oturum özetleri
 
+## Doc-Source Provenance (ZORUNLU)
+
+`obsidian-doc-source` skill'i ile üretilen her dokümantasyonun `index.md`'sine **"## Kaynak ve Edinim"** bölümü eklenmeli. Frontmatter'daki `source_url`/`fetched_at` tek başına yeterli DEĞİLDİR — görünür provenance bölümü şarttır. Bölüm içeriği:
+
+1. **Birincil/ikincil kaynak + edinim yöntemi** — Context7 sorgusu (library ID + sorgu sayısı), Stoplight/OpenAPI export, mail eki (+ dönüştürme yöntemi: markitdown, görsel PDF okuma vb.), WebFetch/crawl2md...
+2. **İlgili ticket/mail referansı** — Zammad ticket no, mail konu/ID'si ve varsa orijinal dosya yolu (örn. `~/Downloads/<dosya>.eml`)
+3. **Credential Learnings notuna `[[wikilink]]`** — varsa
+4. **Canlı doğrulama durumu** — ✅/❌ + tarih + kısa sonuç (örn. "CreateTokenV2 ✅ 2026-06-11, token alındı" / "❌ 401 incorrect_credentials")
+
 ## Ne Zaman Obsidian, Ne Zaman Memory
 
 - **Obsidian** → Proje-spesifik kalıcı bilgi (bu projenin DB şifresi, bu projenin mimari kararı)

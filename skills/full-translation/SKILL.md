@@ -63,7 +63,27 @@ python manage.py makemessagesf7 -d djangof7 --all        # F7 projesi ise; mobil
 
 ### Adım 2-3 — po-cli analyze → /tmp json çıktılar
 
-`en` (kaynak dil) **hariç** her `locale/<lang>/LC_MESSAGES/<domain>.po` için:
+> **⛔ Kapalı (hidden) diller ÇEVRİLMEZ.** Proje dil gizleme kullanıyorsa
+> (`djangomain/app_options.py` içinde `HIDDEN_LANGUAGES`, örn. voyante-web'de
+> Ticket#61613 ile es/uz/kk/tk/tg/zh-hans/ja/hi kapatıldı), bu diller analiz ve
+> çeviri matrisinden **tamamen çıkarılır** — kullanıcıya kapalı dile çeviri
+> eforu/token harcanmaz. `.po` dosyaları silinmez, makemessages'ın onlara
+> dokunması sorun değil; sadece analyze + translate + yakınsama dışında tutulur.
+>
+> ```bash
+> # Kapalı dilleri dinamik tespit et (yoksa boş döner):
+> python -c "
+> import importlib
+> try:
+>     opts = importlib.import_module('djangomain.app_options')
+>     print(' '.join(sorted(getattr(opts, 'HIDDEN_LANGUAGES', set()))))
+> except ModuleNotFoundError:
+>     pass"
+> ```
+>
+> Dil array'ini kurarken: `LANGS = tüm locale dilleri − en − HIDDEN_LANGUAGES`.
+
+`en` (kaynak dil) ve **HIDDEN_LANGUAGES** hariç her `locale/<lang>/LC_MESSAGES/<domain>.po` için:
 
 ```bash
 mkdir -p /tmp/<proj>-i18n
@@ -104,6 +124,7 @@ export const meta = {
   phases: [{ title: 'Translate' }],
 }
 const OUT = '/tmp/<proj>-i18n'
+// LANGS'a HIDDEN_LANGUAGES'taki dilleri EKLEME (Adım 2-3'teki tespit komutu)
 const LANGS = [
   { code: 'ar', name: 'Arapça',  pluralNote: 'nplurals=6: zero/one/two/few/many/other.' },
   { code: 'ja', name: 'Japonca', pluralNote: 'nplurals=1: TEK form; plural string varsa msgstr[1] OLMAMALI.' },
@@ -153,6 +174,7 @@ python manage.py compilemessages                               # .po → .mo
 
 - `compilemessages` plural/duplicate FATAL verirse → ilgili dosyayı düzelt (plural tablosu / perl) → tekrar.
 - Re-analyze'da hâlâ untranslated/fuzzy varsa → **Adım 3'e dön** (kalan entry'ler için). Kaynak kod sabitse genelde **tek tur** yakınsar.
+- "Tüm diller temiz" kriteri **HIDDEN_LANGUAGES hariç** değerlendirilir — kapalı dilde untranslated kalması normaldir ve akışı bloklamaz.
 
 > ⚠️ `grep '^msgid ""$'` ile duplicate sayma — **yanıltıcı**: gettext uzun msgid'leri `msgid ""` + alt satırda devam ettirir (string wrapping), bu duplicate header değil. Gerçek test: `msgfmt --check`.
 
