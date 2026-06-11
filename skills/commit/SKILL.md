@@ -3,7 +3,7 @@ name: commit
 description: Commit oncesi kalite kontrol + teslimat secenekleri (commit, push, PR, branch).
 when_to_use: Trigger — "commit", "commit at", "push et", "PR olustur", "branch ac", "degisiklikleri kaydet", "kodu gonder", "/commit". Her kod teslimat/kaydetme isteginde tetiklenir.
 disable-model-invocation: false
-allowed-tools: Bash(git *), Bash(gh *), Read, Grep, Glob, AskUserQuestion, Task
+allowed-tools: Bash(git *), Bash(gh *), Read, Grep, Glob, AskUserQuestion, Task, Workflow
 ---
 
 # Commit Skill
@@ -46,14 +46,19 @@ git diff --cached --stat  # staged varsa
 git diff
 ```
 
-#### 3b. /code-review Çalıştır — ZORUNLU (kod değişikliği varsa)
+#### 3b. Code Review — ZORUNLU (kod değişikliği varsa)
 
-**Kural kesin**: `git diff --stat` çıktısında herhangi bir **kod dosyası** (`.py`, `.js`, `.ts`, `.tsx`, `.jsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.dart`, `.rb`, `.php`, `.c`, `.cpp`, `.cs`, `.sh`, `.vue`, `.svelte`) değişmişse `/code-review` skill'i **mutlaka** çalıştırılır.
+**Kural kesin**: `git diff --stat` çıktısında herhangi bir **kod dosyası** (`.py`, `.js`, `.ts`, `.tsx`, `.jsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.dart`, `.rb`, `.php`, `.c`, `.cpp`, `.cs`, `.sh`, `.vue`, `.svelte`) değişmişse review **mutlaka** çalıştırılır.
 
 - **Atlanamaz**, **ertelenemez**, **koşula bağlanamaz**.
-- Kullanıcı "commit at hadi", "hızlıca commit", "direkt commit" dese bile önce `/code-review` çalışır.
+- Kullanıcı "commit at hadi", "hızlıca commit", "direkt commit" dese bile önce review çalışır.
 - Sadece **non-kod dosyaları** (`.md`, `.json`, `.yml`, `.txt`, asset'ler) değişmişse atlanabilir.
 - Skip sadece kullanıcı **açıkça** "code-review atla" / "skip code-review" / "code-review çalıştırma" derse mümkün — bu durumda bulgu olarak "kullanıcı explicit skip istedi" diye işaretle.
+
+**Mekanizma effort'a göre seçilir** (effort seçimi aşağıda):
+
+- `low` → **Inline review**: tek diff geçişi, subagent yok (aşağıda "Low Effort — Inline Review").
+- `medium` ve üzeri → **Review Workflow**: `Workflow` tool'u ile aşama aşama (Scope → Find → Verify → Sweep → Report) çalışır, her fazın ajanına effort'a göre açık model atanır (aşağıda "Review Workflow"). Built-in `/code-review` skill'i ÇAĞRILMAZ — onun workflow'u model belirtmediği için tüm ajanlar pahalı ana oturum modelini devralıyor; bu script aynı yapıyı kalibre edilmiş modellerle çalıştırır.
 
 ##### Dürüst Review — KESKİN KURAL
 
@@ -61,8 +66,8 @@ git diff
 
 **Yasaklar:**
 - Bulguları "küçük", "önemsiz", "stil meselesi" diye **filtrelemek yasak** — tüm bulgular Soru 1'e ham haliyle dahil edilir.
-- Review effort'unu **düşük tutmak yasak** — `/code-review` çağrısında effort en az `medium`, kod karmaşık/güvenlik-kritik/data-mutating ise `high` kullan.
-- Review'i **hızlandırmak için kısa kesmek yasak** — diff büyükse skill'in tam çalışmasını bekle, "muhtemelen sorun yok" diye atlama.
+- Review effort'unu **işten bağımsız seçmek yasak** — effort değişikliğin karmaşıklığına göre kalibre edilir (aşağıdaki "Effort Seçimi"). Gereksiz yüksek effort de, kolaya kaçan düşük effort de hatadır.
+- Review'i **hızlandırmak için kısa kesmek yasak** — workflow background çalışır, task-notification ile sonucu bekle; "muhtemelen sorun yok" diye atlama. Beklerken working tree'de çakışacak iş yapma.
 - Bulguyu **kullanıcıya sunmadan elemek yasak** — false positive olduğunu düşünsen bile bulguyu listele, kullanıcı karar versin.
 - Bulguları **özetlerken yumuşatmak yasak** — "minor issue" yerine review'in dediği şiddet seviyesini aynen aktar.
 - "Zaten test geçiyor" / "küçük değişiklik" / "trivial" gibi gerekçelerle review **atlanamaz**.
@@ -74,7 +79,188 @@ git diff
 - Review crash / timeout olursa **sessizce geçme** — kullanıcıya raporla, tekrar dene veya açıkça skip onayı al.
 - Review'in `high` effort'la verdiği "uncertain" bulgular bile listelenir — kullanıcı false positive olduğuna karar verebilir, sen değil.
 
-Çıktıyı bulgu olarak topla. Code-review değişiklik önerdiyse Soru 1'e dahil et.
+##### Effort Seçimi — Karmaşıklığa Göre Kalibre Et
+
+Effort, **yapılan işin karmaşıklığına** göre seçilir — gereksiz yüksek effort verme (zaman/token israfı), karmaşık işte düşük effort'a kaçma (kaçan bug). `git diff --stat` + diff içeriğine bakıp karar ver. Effort yükseldikçe faz modelleri de güçlenir:
+
+| Effort | Ne zaman | Mekanizma | Find | Verify | Report |
+|---|---|---|---|---|---|
+| `low` | Tek-birkaç satırlık trivial değişiklik: typo, rename, sabit/string güncelleme, import düzeltme | Inline (workflow yok) | — | — | — |
+| `medium` (varsayılan) | Sıradan feature/fix: birkaç dosya, sınırlı mantık değişikliği | Workflow | opus | sonnet | sonnet |
+| `high` | Karmaşık mantık, çok dosyaya yayılan değişiklik, güvenlik-kritik kod, data-mutating işlem (migration, ödeme, silme), concurrency/race riski | Workflow | opus | opus | sonnet |
+| `xhigh`/`max` | Sadece kullanıcı açıkça isterse — skill kendi inisiyatifiyle seçmez | Workflow + Sweep | inherit (ana model) | opus | opus |
+
+- Scope fazı her seviyede `sonnet` (diff + konvansiyon özeti).
+- Kararsızsan bir üst seviyeyi seç (eksik review > fazla review maliyetinden pahalı).
+- Effort seçimi review'in **dürüstlüğünü** etkilemez: seçilen seviyenin verdiği TÜM bulgular yine ham haliyle sunulur.
+
+##### Low Effort — Inline Review
+
+Workflow açılmaz. Tek tool çağrısıyla diff'i oku (`git diff @{upstream}...HEAD; git diff HEAD`), hunk'tan görünen runtime-correctness buglarını işaretle: ters koşul, off-by-one, null/undefined deref, kaldırılan guard, falsy-zero, eksik `await`, yanlış-değişken copy-paste, yutulan hata. Ayrıca diff bağlamında görünen duplicate helper ve geride kalan dead code. Stil, isimlendirme, perf, eksik test FLAG EDİLMEZ. En fazla 4 bulgu, en kritik önce: `dosya:satır — sorun + somut hata senaryosu`. Hiçbiri yoksa "(none)".
+
+##### Review Workflow (medium ve üzeri)
+
+`Workflow` tool'unu aşağıdaki script ile çağır; `args` olarak `"<effort> <varsa hedef/ek talimat>"` geçir (örn. `"high sadece payment/ dizinine odaklan"`). Workflow background çalışır — tamamlanma bildirimini bekle, dönen `report` + `findings` çıktısını bulgu olarak Soru 1'e ham haliyle taşı.
+
+```js
+export const meta = {
+  name: 'commit-review',
+  description: 'Find/Verify/Sweep/Report code review with per-phase calibrated models',
+  phases: [
+    { title: 'Scope', detail: 'diff + changed files + conventions' },
+    { title: 'Find', detail: 'parallel finder angles' },
+    { title: 'Verify', detail: 'one verdict per candidate' },
+    { title: 'Report', detail: 'ranked findings synthesis' },
+    // Sweep is intentionally absent: it only runs at xhigh/max and gets its own progress group then
+  ],
+}
+
+// Effort ladder — models strengthen as effort rises (null = inherit main-loop model)
+const LEVELS = {
+  medium: { correctness: 3, perAngle: 6, maxFindings: 8,  sweep: false, recall: false, finder: 'opus', verifier: 'sonnet', report: 'sonnet' },
+  high:   { correctness: 3, perAngle: 6, maxFindings: 10, sweep: false, recall: true,  finder: 'opus', verifier: 'opus',   report: 'sonnet' },
+  xhigh:  { correctness: 5, perAngle: 8, maxFindings: 15, sweep: true,  recall: true,  finder: null,   verifier: 'opus',   report: 'opus' },
+  max:    { correctness: 5, perAngle: 8, maxFindings: 15, sweep: true,  recall: true,  finder: null,   verifier: 'opus',   report: 'opus' },
+}
+const MAX_VERIFY = 25
+const RAW = (typeof args === 'string' ? args : '').trim()
+const FIRST = RAW.split(/\s+/)[0] || ''
+const LEVEL = Object.prototype.hasOwnProperty.call(LEVELS, FIRST) ? FIRST : 'medium'
+const TARGET = LEVEL === FIRST ? RAW.slice(FIRST.length).trim() : RAW
+const P = LEVELS[LEVEL]
+const mdl = (m) => (m ? { model: m } : {})
+
+const CORRECTNESS = [
+  { key: 'diff-scan', text: 'Read every hunk line by line, then the enclosing function of each hunk. For every line ask: what input, state, timing, or platform makes it wrong? Inverted conditions, off-by-one, null/undefined deref, missing await, falsy-zero checks, wrong-variable copy-paste, errors swallowed in catch.' },
+  { key: 'removed-behavior', text: 'For every line the diff deletes or replaces, name the invariant it enforced and find where the new code re-establishes it. A removed guard, dropped error path, narrowed validation, or deleted covering test is a candidate.' },
+  { key: 'cross-file', text: 'For each changed function, Grep its callers and callees. Flag call sites broken by a new precondition, changed return shape, new exception, or timing/ordering dependency.' },
+  { key: 'lang-pitfalls', text: "Scan for the diff language's classic pitfalls: JS falsy-zero / == coercion / closure-captured loop var; Python mutable default args / late-binding closures; Go nil-map write / range-var capture; SQL injection; timezone/DST drift; float equality." },
+  { key: 'wrapper-proxy', text: 'If the diff adds or modifies a wrapper type (cache, proxy, decorator, adapter): check every method routes through the wrapped instance (not back through a registry/session/global) and that all caller-used methods are forwarded.' },
+]
+const CLEANUP = [
+  { key: 'reuse', text: 'Flag new code that re-implements something the codebase already has. Grep shared/utility modules and files adjacent to the change; name the existing helper to call instead.' },
+  { key: 'simplify', text: 'Flag unnecessary complexity the diff adds: redundant or derivable state, copy-paste with slight variation, deep nesting, dead code left behind. Name the simpler form.' },
+  { key: 'efficiency', text: 'Flag wasted work the diff introduces: redundant computation or repeated I/O, independent operations run sequentially, blocking work on startup or hot paths. Name the cheaper alternative.' },
+  { key: 'altitude', text: 'Check each change sits at the right depth, not as a fragile bandaid: special cases layered on shared infrastructure signal the fix is not deep enough — prefer generalizing the mechanism.' },
+]
+const ANGLES = CORRECTNESS.slice(0, P.correctness).concat(CLEANUP)
+
+const SCOPE_SCHEMA = {
+  type: 'object', required: ['diffCommand', 'files', 'summary'],
+  properties: {
+    diffCommand: { type: 'string' },
+    files: { type: 'array', items: { type: 'string' } },
+    summary: { type: 'string' },
+    conventions: { type: 'string' },
+  },
+}
+const CANDIDATES_SCHEMA = {
+  type: 'object', required: ['candidates'],
+  properties: { candidates: { type: 'array', items: {
+    type: 'object', required: ['file', 'summary', 'failure_scenario'],
+    properties: {
+      file: { type: 'string' }, line: { type: 'number' },
+      summary: { type: 'string' }, failure_scenario: { type: 'string' },
+    },
+  } } },
+}
+const VERDICT_SCHEMA = {
+  type: 'object', required: ['verdict', 'evidence'],
+  properties: { verdict: { enum: ['CONFIRMED', 'PLAUSIBLE', 'REFUTED'] }, evidence: { type: 'string' } },
+}
+
+phase('Scope')
+const scope = await agent(
+  'Establish the scope of a code review.\n' +
+  (TARGET ? 'Review target / instructions (verbatim): "' + TARGET + '". Honor any scope restriction when building the diff command.\n' : '') +
+  "1. Build and run the diff command: prefer 'git diff @{upstream}...HEAD' (fallback 'git diff main...HEAD' / 'git diff HEAD~1'); also include 'git diff HEAD' if there are uncommitted changes.\n" +
+  '2. List the changed files.\n' +
+  '3. Summarize what changed in one paragraph.\n' +
+  '4. Read CLAUDE.md files relevant to the changed files and note reviewer-relevant conventions.\n' +
+  'Return diffCommand exactly as a reviewer should run it. Structured output only.',
+  { label: 'scope', model: 'sonnet', schema: SCOPE_SCHEMA }
+)
+if (!scope) return { level: LEVEL, findings: [], report: 'Scope agent failed — review could not run.' }
+if (!scope.files || scope.files.length === 0) return { level: LEVEL, findings: [], report: 'No changes found to review.' }
+log(LEVEL + ' review: ' + scope.files.length + ' files, finder=' + (P.finder || 'inherit') + ', verifier=' + P.verifier)
+
+const SCOPE_BLOCK =
+  '## Review scope\nDiff command: ' + scope.diffCommand + '\nChanged files:\n' +
+  scope.files.map(f => '- ' + f).join('\n') +
+  '\n\n## What changed\n' + scope.summary +
+  '\n\n## Conventions\n' + (scope.conventions || '(none)') +
+  (TARGET ? '\n\n## User instructions (verbatim)\n' + TARGET + '\nHonor scope restrictions; do not surface findings the instructions ask to skip.' : '')
+
+phase('Find')
+const found = await parallel(ANGLES.map(a => () =>
+  agent('## Code-review finder — ' + a.key + '\n\n' + SCOPE_BLOCK +
+    '\n\nRun the diff command above and review ONLY through this lens:\n' + a.text +
+    '\n\nSurface up to ' + P.perAngle + ' candidates, each with file, line, a one-line summary, and a concrete failure_scenario (for cleanup angles, state the concrete cost instead of a crash). Pass every candidate with a nameable failure scenario through — do not silently drop half-believed candidates; an independent verifier judges them next. Empty list if nothing qualifies. Structured output only.',
+    { label: 'find:' + a.key, phase: 'Find', schema: CANDIDATES_SCHEMA, ...mdl(P.finder) })
+))
+// barrier justified: dedup across ALL finders before expensive verification
+const dedup = new Set()
+let candidates = found.filter(Boolean).flatMap(r => r.candidates).filter(c => {
+  const k = c.file + ':' + (c.line ?? '?')
+  if (dedup.has(k)) return false
+  dedup.add(k)
+  return true
+})
+if (candidates.length > MAX_VERIFY) {
+  log('capping verify at ' + MAX_VERIFY + ' of ' + candidates.length + ' candidates')
+  candidates = candidates.slice(0, MAX_VERIFY)
+}
+// sweep dedup keys come from VERIFIED candidates only — capped-out ones may resurface in sweep
+const seen = new Set(candidates.map(c => c.file + ':' + (c.line ?? '?')))
+log(candidates.length + ' unique candidates to verify')
+
+const RECALL_NOTE = P.recall
+  ? '\nRecall-biased: do NOT refute for being "speculative" when the trigger state is realistic (races, rare-but-reachable paths, falsy-zero, boundary off-by-one). REFUTED only when constructible from the code: quote the line that proves it, show the type/invariant, or cite the guard in this diff.'
+  : ''
+const verifyOne = (c) =>
+  agent('## Code-review verifier\n\n' + SCOPE_BLOCK +
+    '\n\n## Candidate\nFile: ' + c.file + (c.line != null ? ':' + c.line : '') +
+    '\nSummary: ' + c.summary + '\nFailure scenario: ' + c.failure_scenario +
+    '\n\nRun the diff command, read the relevant file(s), and return exactly one verdict:\n' +
+    '- CONFIRMED — you can name the inputs/state that trigger it and the wrong output/crash. Quote the line.\n' +
+    '- PLAUSIBLE — mechanism is real, trigger uncertain. State what would confirm it.\n' +
+    '- REFUTED — factually wrong or guarded elsewhere. Quote the line that proves it.' +
+    RECALL_NOTE + '\nStructured output only. Evidence must quote or cite the relevant line(s).',
+    { label: 'verify:' + c.file, phase: 'Verify', schema: VERDICT_SCHEMA, ...mdl(P.verifier) })
+    .then(v => v && v.verdict !== 'REFUTED' ? { ...c, verdict: v.verdict, evidence: v.evidence } : null)
+
+phase('Verify')
+let confirmed = (await parallel(candidates.map(c => () => verifyOne(c)))).filter(Boolean)
+
+if (P.sweep) {
+  phase('Sweep')
+  const sweep = await agent('## Code-review sweep\n\n' + SCOPE_BLOCK +
+    '\n\n## Already-verified findings\n' +
+    (confirmed.map(f => '- ' + f.file + (f.line != null ? ':' + f.line : '') + ' — ' + f.summary).join('\n') || '(none)') +
+    '\n\nRe-read the diff and enclosing functions looking ONLY for defects not already listed: moved/extracted code that dropped a guard or anchor, second-tier footguns (default evaluated once, lock-scope shrink, side-effecting predicates), setup/teardown asymmetry in tests, flipped config defaults. Up to 8 new candidates; empty if nothing new — do not pad. Structured output only.',
+    { label: 'sweep', schema: CANDIDATES_SCHEMA, ...mdl(P.finder) })
+  const fresh = (sweep ? sweep.candidates : []).filter(c => !seen.has(c.file + ':' + (c.line ?? '?')))
+  if (fresh.length) {
+    log('sweep found ' + fresh.length + ' new candidates')
+    confirmed = confirmed.concat((await parallel(fresh.map(c => () => verifyOne(c)))).filter(Boolean))
+  }
+}
+
+phase('Report')
+const report = confirmed.length === 0
+  ? 'No findings survived verification.'
+  : await agent('## Code-review report\n\nSynthesize the verified findings below into a review report. Rank most-severe first; correctness bugs always outrank cleanup findings. Keep at most ' + P.maxFindings + ' (cut least-severe cleanup first). For each finding write: `file:line — [verdict] summary`, then the failure scenario on the next line. End with a one-paragraph overall assessment.\n\n' + JSON.stringify(confirmed, null, 2),
+      { label: 'report', model: P.report })
+
+return {
+  level: LEVEL,
+  stats: { angles: ANGLES.length, candidates: candidates.length, verified: confirmed.length },
+  findings: confirmed,
+  report,
+}
+```
+
+Çıktıyı bulgu olarak topla. Review değişiklik önerdiyse Soru 1'e dahil et.
 
 #### 3c. Test Kontrolü
 - Değişen dosyaların test'i var mı? (`*.test.*`, `*_test.*`, `tests/`, `__tests__/`)
@@ -135,7 +321,7 @@ Aktif olanları (koşul sağlanan) sıraya koy, ilk 4'ünü tek blokta sor:
 
 **S1 — Tespit Edilen Sorunlar** (varsa)
 - header: "Sorunlar"
-- question: "Şu bulgular var: [/code-review: X, rules ihlal: Z]. Düzelteyim mi?"
+- question: "Şu bulgular var: [review: X, rules ihlal: Z]. Düzelteyim mi?"
 - options: ["Evet, düzelt" (Recommended), "Sadece kritikleri düzelt", "Geçiştir, commit et"]
 
 **S2 — Test Eksikse** (3c bulgusu varsa)
@@ -196,7 +382,7 @@ git add <ilgili-dosyalar>  # asla `git add -A` veya `git add .` kullanma (sensit
 git commit -m "$(cat <<'EOF'
 <commit mesajı>
 
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 EOF
 )"
 ```
