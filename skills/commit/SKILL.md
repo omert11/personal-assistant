@@ -435,14 +435,15 @@ EOF
 
 ### 10. Vikunja Kapatma
 
-Soru 3'te "Evet kapat" seçildiyse:
+Soru 3'te "Evet kapat" seçildiyse (`--done` değer zorunlu: `true`/`false`):
 ```
-vikunja-cli task update <id> --done ile status: done yap
+vikunja-cli --json task update <id> --done true
 ```
 
-Görev yoksa ve "Evet" seçildiyse:
+Görev yoksa ve "Evet" seçildiyse (create pozisyonel argüman alır, `--done` flag'i YOK — önce create, sonra update):
 ```
-vikunja-cli task create --project-id <pid> --title "<özet>" --done ile yeni görev oluştur
+vikunja-cli --json task create <pid> "<özet>" --description "<detay>"
+vikunja-cli --json task update <yeni-id> --done true
 ```
 
 ## Kritik Kurallar
