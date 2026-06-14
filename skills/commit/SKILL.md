@@ -90,9 +90,21 @@ Effort, **yapılan işin karmaşıklığına** göre seçilir — gereksiz yüks
 | `high` | Karmaşık mantık, çok dosyaya yayılan değişiklik, güvenlik-kritik kod, data-mutating işlem (migration, ödeme, silme), concurrency/race riski | Workflow | opus | opus | sonnet |
 | `xhigh`/`max` | Sadece kullanıcı açıkça isterse — skill kendi inisiyatifiyle seçmez | Workflow + Sweep | inherit (ana model) | opus | opus |
 
-- Scope fazı her seviyede `sonnet` (diff + konvansiyon özeti).
+- Scope fazı her seviyede `sonnet` (diff + konvansiyon özeti) ve aynı zamanda **karmaşıklığı kendisi tespit eder** (`trivial`/`normal`/`complex` + `linesChanged`). Effort'u dışarıdan verdiğin model seviyesi (finder/verifier modelleri) belirlerken, **kaç agent spawn edileceğini** scope'un bu kararı belirler — alttaki "Agent Sayısı" notuna bak.
 - Kararsızsan bir üst seviyeyi seç (eksik review > fazla review maliyetinden pahalı).
 - Effort seçimi review'in **dürüstlüğünü** etkilemez: seçilen seviyenin verdiği TÜM bulgular yine ham haliyle sunulur.
+
+##### Agent Sayısı — Scope Karmaşıklığına Göre Gruplama
+
+Find ve Verify fazları her açıyı/adayı ayrı agent'a vermez; **scope'un `complexity` + `linesChanged` kararına göre işleri gruplar** — küçük/basit diff'te az agent, büyük/riskli diff'te tam izolasyon:
+
+| Scope kararı | Find: açı/agent | Verify: aday/agent | Mantık |
+|---|---|---|---|
+| `complex` **veya** >400 satır | 1 | 1 | Her lens/aday izole — geniş blast radius, riskli kod |
+| `normal` **veya** >80 satır | 2 | 2 | Lens'leri/adayları ikişerle topla |
+| `trivial` / küçük diff | 3 | 3 | Üçerli batch — agent sayısını minimuma indir |
+
+Bir finder agent'ı taşıdığı her lens'i ayrı ayrı tam uygular (biri diğerini boğmaz); aday üst sınırı `perAngle × grup boyutu` olur. Bir verifier agent'ı grubundaki her adayı bağımsız değerlendirip indeksli verdict döndürür. Böylece 9 açılık bir review trivial diff'te 3 finder agent'ıyla, complex diff'te 9 finder agent'ıyla çalışır — kalite aynı, maliyet diff'e göre ölçeklenir.
 
 ##### Low Effort — Inline Review
 
@@ -146,12 +158,15 @@ const CLEANUP = [
 const ANGLES = CORRECTNESS.slice(0, P.correctness).concat(CLEANUP)
 
 const SCOPE_SCHEMA = {
-  type: 'object', required: ['diffCommand', 'files', 'summary'],
+  type: 'object', required: ['diffCommand', 'files', 'summary', 'linesChanged', 'complexity'],
   properties: {
     diffCommand: { type: 'string' },
     files: { type: 'array', items: { type: 'string' } },
     summary: { type: 'string' },
     conventions: { type: 'string' },
+    linesChanged: { type: 'number', description: 'total added+removed lines across the diff' },
+    complexity: { enum: ['trivial', 'normal', 'complex'], description: 'reviewer-facing risk: trivial=mechanical/string/import, normal=ordinary feature/fix, complex=intricate logic, multi-file blast radius, security/data-mutating, concurrency' },
+    complexityReason: { type: 'string', description: 'one line justifying the complexity rating' },
   },
 }
 const CANDIDATES_SCHEMA = {
@@ -165,24 +180,50 @@ const CANDIDATES_SCHEMA = {
   } } },
 }
 const VERDICT_SCHEMA = {
-  type: 'object', required: ['verdict', 'evidence'],
-  properties: { verdict: { enum: ['CONFIRMED', 'PLAUSIBLE', 'REFUTED'] }, evidence: { type: 'string' } },
+  type: 'object', required: ['verdicts'],
+  properties: { verdicts: { type: 'array', items: {
+    type: 'object', required: ['index', 'verdict', 'evidence'],
+    properties: {
+      index: { type: 'number', description: 'the candidate number this verdict is for' },
+      verdict: { enum: ['CONFIRMED', 'PLAUSIBLE', 'REFUTED'] },
+      evidence: { type: 'string' },
+    },
+  } } },
 }
 
 phase('Scope')
 const scope = await agent(
-  'Establish the scope of a code review.\n' +
+  'Establish the scope of a code review AND judge its complexity — your judgement drives how many agents the rest of the review spawns, so weigh it honestly.\n' +
   (TARGET ? 'Review target / instructions (verbatim): "' + TARGET + '". Honor any scope restriction when building the diff command.\n' : '') +
   "1. Build and run the diff command: prefer 'git diff @{upstream}...HEAD' (fallback 'git diff main...HEAD' / 'git diff HEAD~1'); also include 'git diff HEAD' if there are uncommitted changes.\n" +
   '2. List the changed files.\n' +
   '3. Summarize what changed in one paragraph.\n' +
   '4. Read CLAUDE.md files relevant to the changed files and note reviewer-relevant conventions.\n' +
+  '5. Count linesChanged (added+removed across the whole diff).\n' +
+  '6. Rate complexity by what the change actually does, not just its size:\n' +
+  '   - trivial: mechanical edits — typo, rename, string/constant update, import fix, formatting; no logic to reason about.\n' +
+  '   - normal: an ordinary feature or fix — bounded logic across a few files, nothing security- or data-critical.\n' +
+  '   - complex: intricate control flow, change rippling across many files/call sites, security-sensitive, data-mutating (migration, payment, delete), or concurrency/ordering risk. A small diff can still be complex.\n' +
+  '   Give complexityReason in one line.\n' +
   'Return diffCommand exactly as a reviewer should run it. Structured output only.',
   { label: 'scope', model: 'sonnet', schema: SCOPE_SCHEMA }
 )
 if (!scope) return { level: LEVEL, findings: [], report: 'Scope agent failed — review could not run.' }
 if (!scope.files || scope.files.length === 0) return { level: LEVEL, findings: [], report: 'No changes found to review.' }
-log(LEVEL + ' review: ' + scope.files.length + ' files, finder=' + (P.finder || 'inherit') + ', verifier=' + P.verifier)
+
+// Scope's complexity judgement + line count decide how many angles each finder agent carries.
+// Goal: fewer agents on small/simple diffs, one-angle-per-agent only when the change earns it.
+const lines = scope.linesChanged || 0
+const cx = scope.complexity || 'normal'
+let anglesPerAgent
+if (cx === 'complex' || lines > 400) anglesPerAgent = 1          // big blast radius / risky → isolate each lens
+else if (cx === 'normal' || lines > 80) anglesPerAgent = 2       // ordinary change → pair lenses
+else anglesPerAgent = 3                                          // trivial / tiny diff → batch lenses
+const chunk = (arr, n) => arr.reduce((acc, x, i) => { if (i % n === 0) acc.push([]); acc[acc.length - 1].push(x); return acc }, [])
+const angleGroups = chunk(ANGLES, anglesPerAgent)
+log(LEVEL + ' review: ' + scope.files.length + ' files, ~' + lines + ' lines, ' + cx +
+    ' → ' + ANGLES.length + ' angles in ' + angleGroups.length + ' finder agent(s) (' + anglesPerAgent + '/agent)' +
+    ', finder=' + (P.finder || 'inherit') + ', verifier=' + P.verifier)
 
 const SCOPE_BLOCK =
   '## Review scope\nDiff command: ' + scope.diffCommand + '\nChanged files:\n' +
@@ -192,12 +233,17 @@ const SCOPE_BLOCK =
   (TARGET ? '\n\n## User instructions (verbatim)\n' + TARGET + '\nHonor scope restrictions; do not surface findings the instructions ask to skip.' : '')
 
 phase('Find')
-const found = await parallel(ANGLES.map(a => () =>
-  agent('## Code-review finder — ' + a.key + '\n\n' + SCOPE_BLOCK +
-    '\n\nRun the diff command above and review ONLY through this lens:\n' + a.text +
-    '\n\nSurface up to ' + P.perAngle + ' candidates, each with file, line, a one-line summary, and a concrete failure_scenario (for cleanup angles, state the concrete cost instead of a crash). Pass every candidate with a nameable failure scenario through — do not silently drop half-believed candidates; an independent verifier judges them next. Empty list if nothing qualifies. Structured output only.',
-    { label: 'find:' + a.key, phase: 'Find', schema: CANDIDATES_SCHEMA, ...mdl(P.finder) })
-))
+const found = await parallel(angleGroups.map(group => () => {
+  const lensBlock = group.map((a, i) =>
+    'Lens ' + (i + 1) + ' — ' + a.key + ':\n' + a.text).join('\n\n')
+  const label = 'find:' + group.map(a => a.key).join('+')
+  return agent('## Code-review finder\n\n' + SCOPE_BLOCK +
+    '\n\nRun the diff command above and review it through EACH of the following ' + group.length +
+    ' lens(es). Apply every lens fully — do not let one lens crowd out another:\n\n' + lensBlock +
+    '\n\nAcross all lenses combined, surface up to ' + P.perAngle +
+    ' candidates total (a fixed budget regardless of how many lenses this agent carries — report only the strongest), each with file, line, a one-line summary, and a concrete failure_scenario (for cleanup lenses, state the concrete cost instead of a crash). Pass every candidate with a nameable failure scenario through — do not silently drop half-believed candidates; an independent verifier judges them next. Empty list if nothing qualifies. Structured output only.',
+    { label, phase: 'Find', schema: CANDIDATES_SCHEMA, ...mdl(P.finder) })
+}))
 // barrier justified: dedup across ALL finders before expensive verification
 const dedup = new Set()
 let candidates = found.filter(Boolean).flatMap(r => r.candidates).filter(c => {
@@ -217,20 +263,41 @@ log(candidates.length + ' unique candidates to verify')
 const RECALL_NOTE = P.recall
   ? '\nRecall-biased: do NOT refute for being "speculative" when the trigger state is realistic (races, rare-but-reachable paths, falsy-zero, boundary off-by-one). REFUTED only when constructible from the code: quote the line that proves it, show the type/invariant, or cite the guard in this diff.'
   : ''
-const verifyOne = (c) =>
-  agent('## Code-review verifier\n\n' + SCOPE_BLOCK +
-    '\n\n## Candidate\nFile: ' + c.file + (c.line != null ? ':' + c.line : '') +
-    '\nSummary: ' + c.summary + '\nFailure scenario: ' + c.failure_scenario +
-    '\n\nRun the diff command, read the relevant file(s), and return exactly one verdict:\n' +
+// Verify grouping mirrors Find: complex/risky diffs get one candidate per verifier (max scrutiny),
+// simpler diffs batch several candidates into one verifier agent to cut agent count.
+const candsPerVerifier = (cx === 'complex' || lines > 400) ? 1 : (cx === 'normal' || lines > 80) ? 2 : 3
+const verifyGroup = (group) => {
+  const block = group.map((c, i) =>
+    'Candidate ' + (i + 1) + ' — File: ' + c.file + (c.line != null ? ':' + c.line : '') +
+    '\n  Summary: ' + c.summary + '\n  Failure scenario: ' + c.failure_scenario).join('\n\n')
+  return agent('## Code-review verifier\n\n' + SCOPE_BLOCK +
+    '\n\nRun the diff command, read the relevant file(s), and judge EACH candidate below independently. ' +
+    'Return one verdict per candidate, tagged with its candidate number as `index`:\n\n' + block +
+    '\n\nFor each, return exactly one verdict:\n' +
     '- CONFIRMED — you can name the inputs/state that trigger it and the wrong output/crash. Quote the line.\n' +
     '- PLAUSIBLE — mechanism is real, trigger uncertain. State what would confirm it.\n' +
     '- REFUTED — factually wrong or guarded elsewhere. Quote the line that proves it.' +
-    RECALL_NOTE + '\nStructured output only. Evidence must quote or cite the relevant line(s).',
-    { label: 'verify:' + c.file, phase: 'Verify', schema: VERDICT_SCHEMA, ...mdl(P.verifier) })
-    .then(v => v && v.verdict !== 'REFUTED' ? { ...c, verdict: v.verdict, evidence: v.evidence } : null)
+    RECALL_NOTE + '\nStructured output only. Each evidence must quote or cite the relevant line(s).',
+    { label: 'verify:' + group.map(c => c.file).join('+'), phase: 'Verify', schema: VERDICT_SCHEMA, ...mdl(P.verifier) })
+    .then(r => {
+      const verdicts = (r && r.verdicts) || []
+      // Match each candidate ONLY by its 1-based index — never positional fallback:
+      // a misordered/short/duplicate-index response could otherwise stamp candidate B's
+      // verdict + evidence onto candidate A (wrong file/line) or revive a REFUTED one.
+      return group.map((c, i) => {
+        const matches = verdicts.filter(x => x.index === i + 1)
+        const v = matches.length === 1 ? matches[0] : null
+        if (!v) {
+          // Verdict missing or ambiguous — surface as PLAUSIBLE rather than drop or mis-attribute.
+          return { ...c, verdict: 'PLAUSIBLE', evidence: 'Verifier returned no clear verdict for this candidate; review manually.' }
+        }
+        return v.verdict !== 'REFUTED' ? { ...c, verdict: v.verdict, evidence: v.evidence } : null
+      })
+    })
+}
 
 phase('Verify')
-let confirmed = (await parallel(candidates.map(c => () => verifyOne(c)))).filter(Boolean)
+let confirmed = (await parallel(chunk(candidates, candsPerVerifier).map(g => () => verifyGroup(g)))).flat().filter(Boolean)
 
 if (P.sweep) {
   phase('Sweep')
@@ -242,7 +309,7 @@ if (P.sweep) {
   const fresh = (sweep ? sweep.candidates : []).filter(c => !seen.has(c.file + ':' + (c.line ?? '?')))
   if (fresh.length) {
     log('sweep found ' + fresh.length + ' new candidates')
-    confirmed = confirmed.concat((await parallel(fresh.map(c => () => verifyOne(c)))).filter(Boolean))
+    confirmed = confirmed.concat((await parallel(chunk(fresh, candsPerVerifier).map(g => () => verifyGroup(g)))).flat().filter(Boolean))
   }
 }
 
