@@ -585,6 +585,23 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       </div>
     </div>
 
+    <!-- issue-workflow -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="circle-dot"></i></div><div><div class="etitle">issue-workflow</div></div></div>
+      <div class="ebody">
+        <p><strong>Bir kaynağı (Zammad ticket / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → izole worktree açar → <code>effort: max</code> ultrathink ile kök-neden analizi yapar → çözüm <strong>kesinse uygular, belirsizse durup sorar</strong> → kanıt toplar → kanıt klasörünü Zed ile açıp onay bekler.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'i çöz", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/issue-workflow &lt;ref|metin&gt;</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
+          <li><code>0</code> — kaynağı tam analiz et (zammad-cli / Read / markitdown / WebFetch / diji-log-search)</li>
+          <li><code>1</code> — worktree aç + <code>/tmp/&lt;isim&gt;/REPORT.md</code> oluştur, Zed ile aç (canlı takip — onay <em>beklemez</em>)</li>
+          <li><code>2</code> — kök-neden analizi, <strong>ultrathink</strong> (canlı "Anlık Bulgular" → final temiz rapor)</li>
+          <li><code>3</code> — kesin → uygula | belirsiz → AskUserQuestion (muhafazakar)</li>
+          <li><code>4</code> — kanıt topla → <code>/tmp/&lt;isim&gt;/</code> (playwright/api/test/diff)</li>
+          <li><code>5</code> — <code>zed</code> ile aç → onay → <code>commit</code> skill</li>
+        </ul></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Worktree mantığı <code>worktree</code>, teslimat <code>commit</code> skill'e delege (DRY). <strong>Adım 0 (kaynak analizi) ve Adım 2 (kök-neden) asla sub-agent'a verilmez</strong> — bağlamdan kopmamak için ana ajan kendi context'inde yapar. Kök-neden kesin değilse asla otomatik uygulamaz — durup sorar. Kanıt her zaman <code>/tmp</code> altında (repo'ya credential sızmaz).</p></div>
+      </div>
+    </div>
+
     <!-- user-message -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-square"></i></div><div><div class="etitle">user-message</div></div></div>
       <div class="ebody">
