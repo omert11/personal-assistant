@@ -1,6 +1,6 @@
 ---
 name: full-translation
-description: Django projesinde tüm dillerin eksik/fuzzy çevirilerini uçtan uca tamamlar (makemessages → po-cli → paralel ajan çeviri → compile → commit).
+description: Django projesinde tüm dillerin eksik/fuzzy çevirilerini uçtan uca tamamlar (makemessages → po-cli → entry yüküne göre çeviri → compile → commit).
 when_to_use: Trigger — "tam çeviri akışı", "tüm dilleri çevir", "eksik çevirileri tamamla (tüm diller)", "translation workflow", "i18n sync", "/full-translation". Tek .po dosyası için po-cli skill yeterli; bu skill ÇOK DİL + ÇOK DOMAIN uçtan uca akış içindir (makemessages + paralel Workflow ajanları + compilemessages + commit).
 allowed-tools: Bash, Read, Write, Edit, Glob, Task, Workflow, AskUserQuestion
 ---
@@ -9,7 +9,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Task, Workflow, AskUserQuestion
 
 Django gettext projesinde **tüm dillerin** eksik (untranslated) ve fuzzy çevirilerini **tek seferde**, paralel ajanlarla uçtan uca tamamlar. Diji B2C projeleri (voyante-web/Zenrota gibi) için 3 domain (`django`, `djangojs`, `djangof7`) + N dil matrisini kapsar.
 
-> **po-cli skill'inden farkı**: po-cli **tek bir `.po` dosyasını** analiz edip çevirir. Bu skill **tüm dil × domain matrisini** orkestre eder: makemessages ile metin çıkarma, dil başına paralel çeviri ajanı (Workflow tool), compile ve commit dahil. İçeride po-cli'nin `analyze`/`update` komutlarını kullanır — onu tekrar etmez, ona dayanır.
+> **po-cli skill'inden farkı**: po-cli **tek bir `.po` dosyasını** analiz edip çevirir. Bu skill **tüm dil × domain matrisini** orkestre eder: makemessages ile metin çıkarma, **iş yüküne göre** çeviri (≤200 entry inline, fazlası ~200'lük chunk'lara bölünüp paralel Workflow ajanlarıyla), compile ve commit dahil. İçeride po-cli'nin `analyze`/`update` komutlarını kullanır — onu tekrar etmez, ona dayanır.
 
 ## Önkoşullar
 
@@ -94,13 +94,46 @@ po-cli --json analyze <po> > /tmp/<proj>-i18n/<lang>.<domain>.analysis.json
 
 İstatistik özeti çıkar (`statistics.untranslated` + `statistics.fuzzy`). Tümü 0 ise dur ("tüm diller temiz"). zsh'de dil listesini **array** olarak ver (`LANGS=(ar de ...)`), düz string word-splitting'e güvenme.
 
-### Adım 4 — Workflow: dil başına 1 ajan paralel çeviri
+### Adım 4 — Çeviri: iş **entry sayısına** göre paylaştırılır (dil başına DEĞİL)
 
-> **Model**: Çeviri ajanları `model: 'sonnet'` ile çalışır (opts'ta sabit). Belirtilmezse Workflow ajanı ana oturum modelini devralır — pahalı session modelinde N dil × paralel çeviri gereksiz maliyet. Sonnet çok dilli lokalizasyon için yeterli kalitede.
+> **İş birimi = çevrilecek entry sayısı, dil değil.** Bir dilde 2 entry, diğerinde 0 olabilir — "dil başına 1 ajan" hem dengesizdir hem de toplam iş azken Workflow'u boş yere kurar. Önce toplam yükü hesapla, sonra böl.
 
-`Workflow` tool ile **dil başına 1 ajan** (`parallel`, cap ~10 eşzamanlı). Her ajan kendi dilinin analysis json'larını **Read** eder, entry'leri çevirir, `<lang>.<domain>.translations.json` yazar (po-cli `update` formatı: `[{msgid, msgstr, context}]`).
+**4a — Toplam çevrilecek entry'yi hesapla.** Adım 2-3'teki analiz json'larından (HIDDEN_LANGUAGES + `en` hariç) tüm dil × domain için `statistics.untranslated + statistics.fuzzy` topla → `TOTAL`.
 
-**Ajan prompt'una MUTLAKA gömülecek kurallar:**
+**4b — Eşik kararı:**
+
+- **`TOTAL == 0`** → dur ("tüm diller temiz").
+- **`TOTAL ≤ 200`** → **Workflow KURMA.** Tek ajanlık iştir; orchestrator (sen) ilgili analiz json'larını **Read** edip entry'leri aşağıdaki kurallarla **kendin** çevirir ve her `<lang>.<domain>.translations.json` dosyasını **kendin** yazarsın. Paralel ajan/Workflow gereksiz overhead'dir.
+- **`TOTAL > 200`** → `Workflow` tool ile **chunk başına 1 ajan**. Chunk'lama **dil sınırında kesilir** (aşağıdaki 4c).
+
+**4c — Chunk'lama (sadece `TOTAL > 200`): dil sınırında bin-packing.**
+
+Dilleri entry sayısıyla sırala; bir chunk'a dil dil ekle, ~200'ü aşacaksan yeni chunk aç. **Bir dili iki ajana bölme** — böylece o dilin slug konvansiyonu/terim birliği tek ajanda kalır. Tek istisna: **bir dilin kendisi >200 ise** o dil zorunlu olarak entry sırasına göre 200'lük parçalara bölünür (bu durumda prompt'a o dilin mevcut slug örneklerini de göm).
+
+```js
+// her L = { code, name, pluralNote, count }  (count = o dilin tüm domainlerdeki untranslated+fuzzy)
+function packChunks(langs, target = 200) {
+  const chunks = []
+  let cur = [], curSum = 0
+  for (const L of langs.sort((a, b) => b.count - a.count)) {
+    if (L.count > target) {            // tek dil hedefi aşıyor → kendi başına chunk(lar)
+      if (cur.length) { chunks.push(cur); cur = []; curSum = 0 }
+      chunks.push([L])                 // ajan kendi içinde 200'erli işler; prompt'a slug örneği göm
+      continue
+    }
+    if (curSum + L.count > target && cur.length) { chunks.push(cur); cur = []; curSum = 0 }
+    cur.push(L); curSum += L.count
+  }
+  if (cur.length) chunks.push(cur)
+  return chunks                        // her chunk = 1 ajan; chunk içinde 1+ tam dil
+}
+```
+
+> **Model**: Çeviri ajanları `model: 'sonnet'` ile çalışır (opts'ta sabit). Belirtilmezse Workflow ajanı ana oturum modelini devralır — pahalı session modelinde paralel çeviri gereksiz maliyet. Sonnet çok dilli lokalizasyon için yeterli kalitede.
+
+Her ajan **chunk'ındaki dillerin** analiz json'larını **Read** eder, entry'leri çevirir, her dil için `<lang>.<domain>.translations.json` yazar (po-cli `update` formatı: `[{msgid, msgstr, context}]`).
+
+**Çeviri kuralları (hem inline ≤200 hem de ajan prompt'una MUTLAKA gömülür):**
 
 1. **Her entry TEK TEK, bağlamını anlayarak çevrilir.** `sed`/`replace_all`/toplu string-replace **YASAK** — her `msgid` ayrı, anlamına göre.
 2. **FUZZY msgstr'ye GÜVENME** — makemessages'ın yanlış otomatik eşleşmesidir (örn. yeni özellik eklenince "Yacht"→"araç", "Brand Localization"→"Hata Mesajı Yerelleştirme"). msgstr'yi YOK SAY, `msgid`'den sıfırdan çevir.
@@ -113,45 +146,61 @@ po-cli --json analyze <po> > /tmp/<proj>-i18n/<lang>.<domain>.analysis.json
    - `tr, de, es, hi, kk, tk, tg` = **2** (tekil/çoğul)
 7. msgstr asla boş bırakılmaz.
 
-Ajan StructuredOutput ile `{lang, <domain>_count, notes}` döndürür.
+Ajan StructuredOutput ile `{langs:[...], notes}` döndürür (chunk birden çok dil içerebilir).
 
-Workflow script iskeleti (inline):
+Workflow script iskeleti (sadece `TOTAL > 200` ise — `≤200` inline çevrilir, Workflow kurulmaz):
 
 ```js
 export const meta = {
   name: '<proj>-i18n-translate',
-  description: 'Dil başına 1 ajan: eksik/fuzzy entryleri tek tek çevirip translations.json yazar',
+  description: 'Chunk başına 1 ajan (dil sınırında bin-packed): eksik/fuzzy entryleri tek tek çevirip translations.json yazar',
   phases: [{ title: 'Translate' }],
 }
 const OUT = '/tmp/<proj>-i18n'
-// LANGS'a HIDDEN_LANGUAGES'taki dilleri EKLEME (Adım 2-3'teki tespit komutu)
-const LANGS = [
-  { code: 'ar', name: 'Arapça',  pluralNote: 'nplurals=6: zero/one/two/few/many/other.' },
-  { code: 'ja', name: 'Japonca', pluralNote: 'nplurals=1: TEK form; plural string varsa msgstr[1] OLMAMALI.' },
-  { code: 'ru', name: 'Rusça',   pluralNote: 'nplurals=4: one/few/many/other.' },
-  // ... diğer diller (tr/de/es/hi/kk/tk/tg=2, uz/zh_Hans=1)
-]
 const DOMAINS = ['django', 'djangof7']   // iş olan domainler (djangojs genelde 0)
+// LANGS'a HIDDEN_LANGUAGES'taki dilleri EKLEME (Adım 2-3'teki tespit komutu).
+// count = o dilin tüm domainlerdeki untranslated+fuzzy toplamı (Adım 2-3 analizinden).
+const LANGS = [
+  { code: 'ar', name: 'Arapça',  pluralNote: 'nplurals=6: zero/one/two/few/many/other.', count: 0 },
+  { code: 'ja', name: 'Japonca', pluralNote: 'nplurals=1: TEK form; plural string varsa msgstr[1] OLMAMALI.', count: 0 },
+  { code: 'ru', name: 'Rusça',   pluralNote: 'nplurals=4: one/few/many/other.', count: 0 },
+  // ... diğer diller (tr/de/es/hi/kk/tk/tg=2, uz/zh_Hans=1) — her birine count ekle
+]
+// 4c: dil sınırında ~200'lük chunk'lar (bir dili bölme; tek dil >200 ise zorunlu böl)
+function packChunks(langs, target = 200) {
+  const chunks = []; let cur = [], curSum = 0
+  for (const L of [...langs].sort((a, b) => b.count - a.count)) {
+    if (L.count > target) { if (cur.length) { chunks.push(cur); cur = []; curSum = 0 } chunks.push([L]); continue }
+    if (curSum + L.count > target && cur.length) { chunks.push(cur); cur = []; curSum = 0 }
+    cur.push(L); curSum += L.count
+  }
+  if (cur.length) chunks.push(cur)
+  return chunks
+}
+const CHUNKS = packChunks(LANGS.filter(L => L.count > 0))
 phase('Translate')
-const results = await parallel(LANGS.map((L) => () =>
-  agent(
-`Profesyonel lokalizasyon uzmanısın. Hedef dil: ${L.name} (${L.code}).
-Şu json'ları OKU: ${DOMAINS.map(d => `${OUT}/${L.code}.${d}.analysis.json`).join(', ')}
-untranslated_entries + fuzzy_entries'i ÇEVİR.
+const results = await parallel(CHUNKS.map((chunk, i) => () => {
+  const langBlock = chunk.map(L =>
+    `- ${L.name} (${L.code}) — OKU: ${DOMAINS.map(d => `${OUT}/${L.code}.${d}.analysis.json`).join(', ')} | plural: ${L.pluralNote}`
+  ).join('\n')
+  return agent(
+`Profesyonel lokalizasyon uzmanısın. Bu chunk'taki HER dil için çeviri yap:
+${langBlock}
+Her dilin untranslated_entries + fuzzy_entries'ini ÇEVİR.
 KURALLAR: (1) her entry TEK TEK, toplu replace YASAK. (2) fuzzy msgstr'ye GÜVENME, msgid'den sıfırdan.
-(3) placeholder/%%/HTML/URL/JS birebir koru. (4) URL slug'ı mevcut konvansiyona uydur.
-(5) marka adları İngilizce. (6) ${L.pluralNote} (7) msgstr boş bırakma.
-Her domain için ${OUT}/${L.code}.<domain>.translations.json YAZ (dizi: {msgid,msgstr,context}).`,
-    { label: `translate:${L.code}`, phase: 'Translate', model: 'sonnet',
-      schema: { type:'object', required:['lang'], properties:{ lang:{type:'string'}, notes:{type:'string'} } } }
-  ).then((r) => ({ ...r, code: L.code }))
-))
+(3) placeholder/%%/HTML/URL/JS birebir koru. (4) URL slug'ı o dilin mevcut konvansiyonuna uydur.
+(5) marka adları İngilizce. (6) plural'da yukarıdaki dil-bazlı nplurals notunu uygula. (7) msgstr boş bırakma.
+Her dil×domain için ${OUT}/<lang>.<domain>.translations.json YAZ (dizi: {msgid,msgstr,context}).`,
+    { label: `translate:chunk${i}(${chunk.map(c => c.code).join(',')})`, phase: 'Translate', model: 'sonnet',
+      schema: { type:'object', required:['langs'], properties:{ langs:{type:'array',items:{type:'string'}}, notes:{type:'string'} } } }
+  ).then((r) => ({ ...r, codes: chunk.map(c => c.code) }))
+}))
 return results
 ```
 
 ### Adım 5 — Apply (TEK toplu onay) + perl temizlik
 
-Tüm ajanlar bitince **önce dry-run validate**, sonra **TEK `AskUserQuestion` onayı**, sonra apply. Her dosya için:
+Tüm `translations.json`'lar hazır olunca (inline çeviri bittiyse veya tüm ajanlar döndüyse) **önce dry-run validate**, sonra **TEK `AskUserQuestion` onayı**, sonra apply. Her dosya için:
 
 ```bash
 po-cli --json update <po> -t <translations.json> --dry-run    # validation.valid kontrol
