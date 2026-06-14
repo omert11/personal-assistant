@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Kisisel asistan plugin'i — init kontrolleri, oturum yonetimi",
-    "version": "1.46.0"
+    "version": "1.47.0"
   },
   "plugins": [
     {

@@ -5,7 +5,7 @@ when_to_use: Trigger — "su ticket'i coz", "issue-workflow ile bak", "bu hatayi
 argument-hint: <ticket-ref | serbest-metin | dosya-yolu>
 disable-model-invocation: false
 effort: max
-allowed-tools: Bash, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, WebFetch, EnterWorktree, ExitWorktree, Skill
+allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, WebFetch, EnterWorktree, ExitWorktree, Skill
 ---
 
 # Issue Workflow — Analiz → Izole Worktree → Coz → Kanit → Onay
@@ -29,7 +29,28 @@ kanit klasorunu acip onay bekler.
 
 ---
 
-## Adim 0 — Kaynagi tam analiz et ve contexte al (ATLANAMAZ, ANA AJAN)
+## Adim 0a — Skille ozel local alani oku (ILK IS)
+
+Ise baslamadan once `CLAUDE.local.md`'de **"## Issue Workflow"** bolumu var mi bak:
+
+```bash
+grep -n "## Issue Workflow" CLAUDE.local.md 2>/dev/null
+```
+
+Varsa **tamamini oku ve uygula** — bu projedeki akisa ozel talimatlar burada tanimlidir:
+- **Uygulama baslatma komutu** (orn `uv run manage.py runserver`, `npm run dev`, `go run .`)
+- **Test komutlari** (orn `pytest`, `npm test`, ozel e2e komutu)
+- **Port stratejisi** / ortam degiskenleri (varsayilan port, baska gerekli servisler)
+- **Bagimlilik kurulum** adimlari (worktree'de calistirilacak)
+- **Kullanici-ozel akis notlari** (bu projede dikkat edilecekler)
+
+> Bu bolum **yoksa** zorlama — genel akisla devam et. Kullanici akisa ozel bir sey eklemek isterse
+> (veya is sirasinda boyle bir ihtiyac dogarsa), `CLAUDE.local.md`'ye **"## Issue Workflow"** bolumu
+> ekle/guncelle ki sonraki calismalar bunu otomatik okusun. Sablon Ek bolumde.
+
+---
+
+## Adim 0b — Kaynagi tam analiz et ve contexte al (ATLANAMAZ, ANA AJAN)
 
 Kullanicinin verdigi her kaynagi **tek tek, tam** incele. Hicbirini atlama, ozetle gecme.
 **Bu adim sub-agent'a verilmez** — kaynagi ana ajan kendi context'inde okur (yukaridaki sub-agent yasagi).
@@ -145,29 +166,68 @@ Uygularken `coding` kurallarina uy: hata wrap, TODO yorumlari, gereksiz workarou
 
 ---
 
-## Adim 4 — Kanit topla (`/tmp/<isim>/` altina)
+## Adim 4 — Test ortamini hazirla, calistir, kanit topla, kapat
 
-Calisma tamamlaninca, **sorunun cozuldugune dair kanitlari** topla. Klasor:
+Calisma tamamlaninca cozumu **calisan uygulamada** test et ve kanitla. Klasor:
 
 ```bash
 EVID=/tmp/<isim>
 mkdir -p "$EVID"
 ```
 
+### 4a. Test ortamini worktree'de hazirla
+
+Worktree izole bir kopyadir — uygulamayi **burada** kur ve calistir (ana checkout'a dokunma).
+Komutlar `CLAUDE.local.md` **"## Issue Workflow"** alanindan gelir (Adim 0a); yoksa proje tipinden cikar.
+
+```bash
+# Bagimlilik kurulum (worktree icinde, gerekiyorsa) — orn:
+#   Python:  uv venv && source .venv/bin/activate && uv pip install -r requirements.txt
+#   Node:    npm install
+#   Go:      go build ./...
+```
+
+### 4b. Unique port ile ARKA PLANDA calistir
+
+Ana checkout'taki dev server ile cakismamak icin **unique port** sec ve uygulamayi
+**`run_in_background: true`** ile baslat. PID/port'u `$EVID/`'ye not al.
+
+```bash
+PORT=$(python3 -c "import socket;s=socket.socket();s.bind(('',0));print(s.getsockname()[1]);s.close()")
+echo "$PORT" > "$EVID/.port"
+# Arka planda baslat (run_in_background: true) — orn:
+#   Django: .venv/bin/python manage.py runserver 127.0.0.1:$PORT 2>&1 | tee $EVID/server.log
+#   Node:   PORT=$PORT npm run dev 2>&1 | tee $EVID/server.log
+```
+
+Bound port'u bekle (`curl --retry` veya port-check), hazir olunca testlere gec.
+
+### 4c. Testleri yap + kanit topla
+
 Soruna uygun araclarla kanit uret (her birini `$EVID/` altina dosya olarak yaz):
 
 | Sorun tipi | Kanit araci | Cikti |
 |---|---|---|
-| Frontend / UI / akis | `playwright-cli` skill | `$EVID/screenshot-*.png`, adim adim snapshot |
-| API / backend endpoint | `curl`/`Bash` | `$EVID/api-before.json`, `$EVID/api-after.json` |
+| **Gorsel / UI / akis** | `playwright-cli` skill (`PORT`'a baglan) | `$EVID/screenshot-*.png`, adim adim snapshot |
+| API / backend endpoint | `curl`/`Bash` (`localhost:$PORT`) | `$EVID/api-before.json`, `$EVID/api-after.json` |
 | Mantik / fonksiyon | test (`pytest`/`npm test`) | `$EVID/test-output.txt` (PASS) |
 | Veri / DB / log | shell sorgu | `$EVID/query-result.txt` |
 | Her durum | before/after diff | `$EVID/diff.txt` (`git diff > ...`) |
+
+> **Gorsel degisiklik varsa GORSEL KANIT ZORUNLU.** Degisiklik UI/render/stil/akisi etkiliyorsa
+> `playwright-cli` ile **mutlaka** ekran goruntusu al — mumkunse before/after (`screenshot-before.png`
+> / `screenshot-after.png`). Gorsel kanit olmadan gorsel bir cozum "kanitlanmis" sayilmaz.
 
 Ayrica `$EVID/SUMMARY.md` yaz:
 - Kok neden (1-2 cumle)
 - Yapilan degisiklik (dosya + ozet)
 - Her kanit dosyasinin neyi ispatladigi (orn "api-after.json — artik 200 donuyor, onceden 500")
+
+### 4d. Arka plandaki uygulamayi DURDUR (ZORUNLU)
+
+Testler bitince **arka planda calisan uygulamayi mutlaka durdur** — orphan process/port birakma.
+`KillShell`/ilgili background task'i sonlandir; gerekirse `kill $(lsof -ti tcp:$PORT)` ile port'u bosalt.
+Playwright session aciksa `playwright-cli close` ile kapat. Bu adim hata/iptal durumunda da yapilir.
 
 > Kanit dosyalari canli credential/JWT icerebilir → her zaman `/tmp` altinda, **repo disi**.
 
@@ -194,12 +254,13 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 ## Akis Ozeti
 
 ```
-0. Kaynagi tam analiz et + contexte al        (zammad-cli / Read / markitdown / WebFetch / diji-log-search)
-1. Worktree ac + /tmp/<isim>/REPORT.md ac      (worktree skill; REPORT zed ile acilir — takip icin, onay DEGIL)
-2. Kok-neden analizi — ULTRATHINK              (effort: max; canli "Anlik Bulgular" → sonda "Final Rapor")
-3. KESIN → uygula (sorma) | BELIRSIZ → AskUserQuestion (muhafazakar)
-4. Kanit topla → /tmp/<isim>/                  (playwright-cli / curl / pytest / git diff)
-5. zed ile ac → AskUserQuestion onay → commit skill
+0a. CLAUDE.local.md "## Issue Workflow" alanini oku  (varsa proje-ozel komut/port/test/akis notu)
+0b. Kaynagi tam analiz et + contexte al              (zammad-cli / Read / markitdown / WebFetch / diji-log-search)
+1.  Worktree ac + /tmp/<isim>/REPORT.md ac           (worktree skill; REPORT zed — takip icin, onay DEGIL)
+2.  Kok-neden analizi — ULTRATHINK                   (effort: max; canli "Anlik Bulgular" → "Final Rapor")
+3.  KESIN → uygula (sorma) | BELIRSIZ → AskUserQuestion (muhafazakar)
+4.  Test ortami hazirla → unique port + arka plan → test → kanit (gorsel degisiklikte SCREENSHOT zorunlu) → uygulamayi DURDUR
+5.  zed ile ac → AskUserQuestion onay → commit skill
 ```
 
 > REPORT.md (takip, onay beklemez) ile Adim 5 kanit-onayi farkli seylerdir: rapor analizi izlemek
@@ -211,7 +272,25 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 - **Teslimat**: commit/push/PR mantigi `commit` skill'de — `before-commit` kurali geregi manuel git yok
 - **Log analizi**: diji b2c projede `diji-log-search` skill'e delege (basket lifecycle)
 - **Kaynak donusum**: PDF/Office → `markitdown`, URL → `WebFetch`, gorsel → `Read`
+- **Local alan**: `CLAUDE.local.md` **"## Issue Workflow"** bolumu ise baslarken (Adim 0a) okunur — proje-ozel baslatma/test/port komutlari ve kullanici-ozel akis notlari oraya yazilir
+- **Test ortami**: worktree'de izole hazirlanir, **unique port** ile arka planda (`run_in_background`) calisir, testler bitince **mutlaka durdurulur** (orphan process yok)
+- **Gorsel kanit**: gorsel/UI degisikliginde `playwright-cli` ekran goruntusu **zorunlu** (mumkunse before/after)
 - **Takip raporu**: `/tmp/<isim>/REPORT.md` calisma basinda olusur, zed ile acilir, analiz akarken guncellenir — yalniz **izleme** icindir, hicbir adimda onay/etkilesim beklemez
 - **Kanit izolasyonu**: her zaman `/tmp/<isim>/` — repo'ya kanit/credential sizmaz
 - **Karar felsefesi**: muhafazakar — supheliysen uygulama, sor (`ask-first` kurali)
-- **Sub-agent siniri**: Adim 0 (kaynak analizi) ve Adim 2 (kok-neden) **asla** `Task`/sub-agent'a verilmez — baglamdan kopar, kritik analiz bozulur. `Task` yalniz `obsidian-searcher` on aramasi ve Adim 4 kanit-uretiminde (playwright vb.) kullanilabilir
+- **Sub-agent siniri**: Adim 0b (kaynak analizi) ve Adim 2 (kok-neden) **asla** `Task`/sub-agent'a verilmez — baglamdan kopar, kritik analiz bozulur. `Task` yalniz `obsidian-searcher` on aramasi ve Adim 4 kanit-uretiminde (playwright vb.) kullanilabilir
+
+## Ek — `CLAUDE.local.md` "## Issue Workflow" Sablonu
+
+Bu bolumu calisilan projenin `CLAUDE.local.md`'sine ekle (proje-ozel; commit edilmez). Skill Adim 0a'da okur.
+
+```markdown
+## Issue Workflow
+
+- **Bagimlilik kurulum**: <orn `uv venv && source .venv/bin/activate && uv pip install -r requirements.txt`>
+- **Baslatma komutu**: <orn `.venv/bin/python manage.py runserver 127.0.0.1:$PORT`>
+- **Test komutu**: <orn `pytest`, `npm test`, `playwright test`>
+- **Port**: unique (otomatik) | sabit gerekiyorsa: <port>
+- **Ek servisler**: <orn redis/postgres gerekli mi, nasil ayaga kalkar>
+- **Akis notlari**: <bu projede dikkat edilecekler, kullanici-ozel kurallar>
+```
