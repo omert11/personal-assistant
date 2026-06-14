@@ -40,3 +40,32 @@ uv python pin 3.13 && uv venv && uv pip install -r requirements.txt && uv pip in
 - NOT: Bu user genel olarak tüm projelerde ortak, ekli olabilir
 - Panel (admin) template: **SmartAdmin** (Bootstrap 5, jQuery-free)
 - B2C projelerde URL yapısı: Django Admin → `superadmin/`, Panel sayfaları → `admin/`
+
+## Mobil Publish — Domain Pre-Flight (ZORUNLU, TÜM PROJELER)
+
+Her Django projesinin mobil app'i (Framework7 / Capacitor) bir **backend domain'ine** bağlanır.
+Bu domain genelde tek bir JS dosyasında hardcoded tutulur ve geliştirme sırasında dev/stage/localhost'a
+çevrilir. **Geliştirici prod'a geri çevirmeyi unutursa, dev backend'ine bağlı bir release store'a sızar**
+(canlı vaka: Zenrota `app.js` 9 Haziran'da dev'e çevrilmiş, prod'a alınmamış → müşteri dev DB içeriği görmüş).
+
+### Kural — Publish/Release Öncesi Bloklayıcı Kontrol
+
+Bir mobil app publish/release/build işlemine başlamadan **ÖNCE** (App Store, Google Play, Huawei,
+TestFlight, AAB/IPA/APK build, `fastlane`, `bundleRelease`, `npm run build-and-copy-*` vb.):
+
+1. **Domain tanımını bul** — yaygın konum `mobile/<app>/src/js/core/app.js` içindeki `window.domain_name`,
+   ama projeye göre değişir. Bulmak için:
+   ```bash
+   grep -rn "domain_name\|API_URL\|baseURL\|base_url" mobile/*/src/js 2>/dev/null | grep -v node_modules
+   ```
+2. **Aktif (yorum olmayan) değeri kontrol et** — prod domain mi?
+   - Prod işareti: `https://www.<marka>.com` / `https://<marka>.com` (localhost/`192.168`/`*dev*`/`*stage*`/`*.diji.app` DEĞİL)
+3. **Prod DEĞİLSE → DUR.** `AskUserQuestion` ile uyar (header: "Domain", question: "Mobil app domain'i
+   prod değil (`<aktif değer>`). Release prod domain'ine çevrilmeli. Ne yapayım?",
+   options: ["Prod'a çevir ve devam", "Bilerek dev/stage — devam et", "İptal"]).
+   **Kullanıcı onaylamadan publish'e devam etme.**
+4. **Kullanıcı "aksini söylemediği sürece domain MUTLAKA prod olmalı"** — varsayılan davranış prod'a çevirmek;
+   dev/stage ile yayın ancak kullanıcı açıkça isterse.
+
+> Bu kural **app-publisher / app-store-mcp** akışları ve manuel `fastlane`/`gradlew` publish'lerinin
+> hepsinde geçerlidir. Domain dosyasının yolu/değişken adı projeden projeye değişir — önce grep ile doğrula.
