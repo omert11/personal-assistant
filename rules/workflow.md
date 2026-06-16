@@ -1,5 +1,29 @@
 # Workflow
 
+## Görev Takibi (TaskCreate / TaskUpdate) — Çok Adımlı İşlerde Zorunlu
+
+Çok adımlı bir iş (3+ adım, birden fazla dosya, veya önceden planlanan bir akış) başladığında **TaskCreate ile görev listesi oluştur** ve süreç boyunca canlı tut. Amaç: kullanıcı akışın nerede olduğunu görsün, hiçbir adım unutulmasın.
+
+- **Başlarken**: İşi adımlara böl, her adım için `TaskCreate` ile görev aç. Akış net değilse önce planla, sonra görevleri oluştur.
+- **İlerlerken**: Bir adıma başlarken o görevi `TaskUpdate` ile `in_progress`, bitirince `completed` işaretle. Aynı anda yalnızca bir görev `in_progress` olsun.
+- **Yeni iş çıkarsa**: Akış sırasında ortaya çıkan ek iş/alt görev için anında yeni `TaskCreate` aç — listeyi gerçeği yansıtacak şekilde güncelle.
+- **Bitince**: Tüm görevler `completed` olmalı; yarım kalan/iptal olan varsa durumunu net bırak (görmezden gelme).
+
+### Ne Zaman Gerekmez
+- Tek-shot küçük işler (tek dosya düzenleme, tek komut, tek soru yanıtı, trivial istek) — görev listesi gereksiz yük, açma.
+- Genel ölçü: İş zihinde tek adımda tamamlanıyorsa görev açma; izlenmesi gereken birden çok bağımsız adım varsa **mutlaka aç**.
+
+## Hedef Belirleme (`/goal`) — Net + Uzun Hedefte Öner
+
+Kullanıcı agente **doğrulanabilir bir bitiş durumu olan, çok turlu / uzun soluklu bir hedef** verdiğinde (ör. "tüm testler geçene kadar migrate et", "bütün eksik çeviriler bitene kadar çevir", "issue backlog'u boşalana kadar kapat"), bu hedefi `/goal` ile tanımlamayı **kullanıcıya öner** — kendiliğinden set etme.
+
+`/goal <koşul>` Claude'u koşul sağlanana kadar **turlar arası kendiliğinden** çalıştırır (her tur sonunda küçük model koşulu denetler, token harcar, oturumu açık tutar). Bu yüzden kararı kullanıcı verir:
+
+- **Öner**: Hedef tek ölçülebilir bir bitiş durumuna sahipse ve birden çok tur sürecekse, `AskUserQuestion` ile sor (header: "Goal", question: "Bu hedefi `/goal` ile koşula bağlayıp otonom ilerleteyim mi?", options: ["Evet, /goal ile bağla", "Hayır, normal ilerle"]). Onay gelirse koşulu `/goal <koşul>` olarak öner/kur.
+- **Koşulu iyi yaz**: Tek ölçülebilir end-state + nasıl kanıtlanacağı (ör. "`pytest` exit 0", "`git status` temiz") + değişmemesi gerekenler. Sınır için "or stop after N turns" ekle. Maks 4000 karakter. Evaluator komut çalıştırmaz — koşul yalnızca Claude'un transcript'e yansıttığıyla doğrulanabilir olmalı.
+- **Öner­me**: Tek-shot/kısa işler, bitiş durumu belirsiz/öznel hedefler (ör. "kodu güzelleştir"), veya kullanıcının her adımı görmek istediği işler. Bunlarda görev takibi (yukarıdaki TaskCreate akışı) yeterli.
+- **`/goal` vs Görev Takibi**: İkisi dik. `/goal` = otonom turlar arası ilerleme (kullanıcı onaylı); TaskCreate = adımların görünür takibi. Uzun hedefte ikisi birlikte kullanılabilir.
+
 ## Teammate Kullanımı
 - Kullanıcı "teammate", "takım kur", "team kur", "ekip kur" dediğinde **mutlaka TeamCreate** kullan, sub-agent değil
 - Teammate'ler birbirleriyle mesajlaşabilir, görev listesi paylaşır ve koordineli çalışır

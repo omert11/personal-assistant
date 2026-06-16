@@ -117,6 +117,26 @@ Iki bolum:
 - **1. Anlik Bulgular** — Adim 2 boyunca her yeni gozlem/hipotez/dogrulama `Edit` ile eklenir (akan kayit, dagillik normal)
 - **2. Final Rapor** — Adim 2 sonunda temiz, ozet final yazilir (kok neden + cozum + yan etki + kesinlik)
 
+### Hedefi `/goal`'a baglamayi oner (opsiyonel — `workflow` kurali)
+
+Kullanicinin verdigi hedef **dogrulanabilir tek bir bitis durumuna** sahipse (orn "ticket'taki tum
+adimlar gecene kadar duzelt", "test suite yesil olana kadar migrate et", "verilen 3 hatanin hepsi
+giderilene kadar"), bu hedefi `/goal` ile koşula baglamayi **kullaniciya oner** — kendin set etme.
+`/goal` Claude'u koşul saglanana kadar turlar arasi otonom calistirir (her tur kucuk model denetler).
+
+`AskUserQuestion` ile sor:
+- header: "Goal"
+- question: "Bu issue'yu `/goal` ile koşula baglayip kanit/onay asamasina kadar otonom ilerleteyim mi?"
+- options: ["Evet, /goal ile bagla", "Hayir, normal akis"]
+
+Onay gelirse koşulu somut yaz — orn `/goal fix-<ref> worktree'sinde kok neden duzeltildi, ilgili test
+PASS ($EVID/test-output.txt), gorsel degisiklikte before/after screenshot uretildi; veya 20 turdan
+sonra dur`. Evaluator komut calistirmaz; koşulu Adim 4 kanit dosyalarinin transcript'e yansiyan
+ciktilariyla **kanitlanabilir** yaz. **Onay/iptal sorulari (Adim 3 belirsizlik, Adim 5 onay) hedefi
+bozmaz** — `/goal` o turlarda da kullaniciya doner; otonomi yalnizca KESIN-uygula adimlarini hizlandirir.
+
+> Hedef tek-shot/kucukse veya bitis durumu oznelse `/goal` ONERME — Adim 1'deki REPORT takibi yeterli.
+
 ---
 
 ## Adim 2 — Kok-neden analizi (ultrathink — `effort: max`, ANA AJAN)
@@ -257,6 +277,7 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 0a. CLAUDE.local.md "## Issue Workflow" alanini oku  (varsa proje-ozel komut/port/test/akis notu)
 0b. Kaynagi tam analiz et + contexte al              (zammad-cli / Read / markitdown / WebFetch / diji-log-search)
 1.  Worktree ac + /tmp/<isim>/REPORT.md ac           (worktree skill; REPORT zed — takip icin, onay DEGIL)
+    └─ Hedef dogrulanabilir+coktur ise `/goal`'a baglamayi ONER (opsiyonel; workflow kurali)
 2.  Kok-neden analizi — ULTRATHINK                   (effort: max; canli "Anlik Bulgular" → "Final Rapor")
 3.  KESIN → uygula (sorma) | BELIRSIZ → AskUserQuestion (muhafazakar)
 4.  Test ortami hazirla → unique port + arka plan → test → kanit (gorsel degisiklikte SCREENSHOT zorunlu) → uygulamayi DURDUR
@@ -278,6 +299,7 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 - **Takip raporu**: `/tmp/<isim>/REPORT.md` calisma basinda olusur, zed ile acilir, analiz akarken guncellenir — yalniz **izleme** icindir, hicbir adimda onay/etkilesim beklemez
 - **Kanit izolasyonu**: her zaman `/tmp/<isim>/` — repo'ya kanit/credential sizmaz
 - **Karar felsefesi**: muhafazakar — supheliysen uygulama, sor (`ask-first` kurali)
+- **Hedef baglama (`/goal`)**: hedef dogrulanabilir tek bitis durumuna sahip + cok turlu ise Adim 1'de `/goal`'a baglamayi ONER (set etme, kullanici onayiyla); koşulu Adim 4 kanit ciktilariyla kanitlanabilir yaz (`workflow` kurali)
 - **Sub-agent siniri**: Adim 0b (kaynak analizi) ve Adim 2 (kok-neden) **asla** `Task`/sub-agent'a verilmez — baglamdan kopar, kritik analiz bozulur. `Task` yalniz `obsidian-searcher` on aramasi ve Adim 4 kanit-uretiminde (playwright vb.) kullanilabilir
 
 ## Ek — `CLAUDE.local.md` "## Issue Workflow" Sablonu

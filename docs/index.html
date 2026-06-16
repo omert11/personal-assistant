@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 13 kural, 8 hook, 14 skill, 8 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 13 kural, 8 hook, 16 skill, 8 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -196,7 +196,7 @@
     <div class="hero-stats">
       <div class="stat"><div class="num">13</div><div class="lbl">Kural</div></div>
       <div class="stat"><div class="num">8</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">14</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">16</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">8</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -282,9 +282,11 @@ python manage.py runserver</code></pre></div>
     </div>
 
     <!-- workflow -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="users"></i></div><div><div class="etitle">workflow</div><div class="emeta">Subagent + Background Çalıştırma</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="users"></i></div><div><div class="etitle">workflow</div><div class="emeta">Görev Takibi + Goal + Subagent + Background</div></div></div>
       <div class="ebody">
-        <p><strong>Sub-agent çağrısı kullanıcı onayı olmadan yasak; bloklayan veya süreli olabilecek HER iş (subagent, uzun Bash, workflow) ise her zaman background modunda çalıştırılır.</strong></p>
+        <p><strong>Çok adımlı işte görevler <code>TaskCreate</code>/<code>TaskUpdate</code> ile canlı takip edilir; doğrulanabilir uzun hedeflerde <code>/goal</code> önerilir; sub-agent çağrısı kullanıcı onayı olmadan yasak; bloklayan HER iş background çalıştırılır.</strong></p>
+        <p><strong>Görev takibi:</strong> 3+ adım / çok dosya / planlı akış başlayınca <code>TaskCreate</code> ile görev listesi açılır, adım başında <code>in_progress</code> bitince <code>completed</code> işaretlenir, yeni iş çıkınca anında görev eklenir. Tek-shot/trivial işte açılmaz.</p>
+        <p><strong>Hedef (<code>/goal</code>):</strong> tek ölçülebilir bitiş durumuna sahip, çok turlu bir hedef verilince Claude bunu <code>/goal</code> ile koşula bağlamayı <em>önerir</em> (kendiliğinden set etmez — koşul sağlanana kadar turlar arası otonom çalıştırır, token harcar). Tek-shot/öznel hedeflerde önerilmez; görev takibi yeterlidir.</p>
         <p>Kullanıcı "takım kur" derse <code>TeamCreate</code>. Subagent için açık izin yoksa önce <code>AskUserQuestion</code> sorulur ("hızlı olur/paralel" gerekçeleri geçersiz). İstisna: skill/agent-tanımı/hook akışının parçası olan çağrılar direkt yürür.</p>
         <p>Çalıştırma kuralı bloklayan tüm işleri kapsar: subagent <strong>her zaman</strong> <code>run_in_background: true</code> (istisnasız); uzun/süreli Bash komutları (build, test, install, dev server, deploy/migration, log tail) background; workflow zaten background döner. Foreground'a düşmek yerine <code>task-notification</code> beklenir. <strong>Tek istisna:</strong> sub-saniye, yan etkisiz, çıktısı anında lazım olan kısa okuma komutları (<code>ls</code>, <code>git status</code>, version check) Bash'te foreground kalabilir.</p>
       </div>
@@ -454,7 +456,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 14 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 16 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
       <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır — ağır iş agent'lara delege edilir.</p>
     </div>
@@ -593,13 +595,22 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
           <li><code>0a</code> — <code>CLAUDE.local.md</code> "## Issue Workflow" alanını oku (proje-özel komut/port/test/akış notu)</li>
           <li><code>0b</code> — kaynağı tam analiz et (zammad-cli / Read / markitdown / WebFetch / diji-log-search)</li>
-          <li><code>1</code> — worktree aç + <code>/tmp/&lt;isim&gt;/REPORT.md</code> oluştur, Zed ile aç (canlı takip — onay <em>beklemez</em>)</li>
+          <li><code>1</code> — worktree aç + <code>/tmp/&lt;isim&gt;/REPORT.md</code> oluştur, Zed ile aç (canlı takip — onay <em>beklemez</em>); hedef doğrulanabilir + çok turlu ise <code>/goal</code>'a bağlamayı <em>öner</em></li>
           <li><code>2</code> — kök-neden analizi, <strong>ultrathink</strong> (canlı "Anlık Bulgular" → final temiz rapor)</li>
           <li><code>3</code> — kesin → uygula | belirsiz → AskUserQuestion (muhafazakar)</li>
           <li><code>4</code> — test ortamı hazırla → <strong>unique port + arka plan</strong> → test → kanıt (görselde <strong>screenshot zorunlu</strong>) → uygulamayı <strong>durdur</strong></li>
           <li><code>5</code> — <code>zed</code> ile aç → onay → <code>commit</code> skill</li>
         </ul></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Worktree mantığı <code>worktree</code>, teslimat <code>commit</code> skill'e delege (DRY). <strong>Adım 0b (kaynak analizi) ve Adım 2 (kök-neden) asla sub-agent'a verilmez</strong> — bağlamdan kopmamak için ana ajan kendi context'inde yapar. Test ortamı worktree'de izole, unique port ile arka planda çalışır ve bitince durdurulur. Proje-özel başlatma/test komutları <code>CLAUDE.local.md</code> "## Issue Workflow" alanından okunur. Kök-neden kesin değilse durup sorar; kanıt her zaman <code>/tmp</code> altında.</p></div>
+      </div>
+    </div>
+
+    <!-- design-brief -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="layout-template"></i></div><div><div class="etitle">design-brief</div></div></div>
+      <div class="ebody">
+        <p><strong>Bir uygulamanın bir veya birkaç ekranını/akışını görsel olarak yakalar ve her ekranın hangi bileşen/veri/etkileşime sahip olduğunu tarafsız belgeler.</strong> Çıktı: ekran görüntüleri + <code>BRIEF.md</code> — bir tasarım aracına (Claude Design vb.) girdi olarak verilir. Dil/framework/ortam bağımsızdır.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"design brief oluştur", "ekranların brief'ini çıkar", "Claude Design için hazırla", "UI dökümü çıkar", "şu akışı belgele", <code>/design-brief</code>.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Tasarım ÖNERMEZ — mevcut durumu belgeler.</strong> Kapsam (hedef/erişim, ekranlar, viewport, ton) <code>AskUserQuestion</code> ile netleştirilir; "şu kötü/şöyle olmalı" yorumu yalnızca kullanıcı açıkça isterse girer (varsayılan tarafsız).</p></div>
       </div>
     </div>
 
