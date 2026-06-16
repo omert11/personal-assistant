@@ -5,7 +5,7 @@ when_to_use: Trigger — "su ticket'i coz", "issue-workflow ile bak", "bu hatayi
 argument-hint: <ticket-ref | serbest-metin | dosya-yolu>
 disable-model-invocation: false
 effort: max
-allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, WebFetch, EnterWorktree, ExitWorktree, Skill
+allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, WebFetch, EnterWorktree, ExitWorktree, EnterPlanMode, ExitPlanMode, Skill
 ---
 
 # Issue Workflow — Analiz → Izole Worktree → Coz → Kanit → Onay
@@ -132,8 +132,8 @@ giderilene kadar"), bu hedefi `/goal` ile koşula baglamayi **kullaniciya oner**
 Onay gelirse koşulu somut yaz — orn `/goal fix-<ref> worktree'sinde kok neden duzeltildi, ilgili test
 PASS ($EVID/test-output.txt), gorsel degisiklikte before/after screenshot uretildi; veya 20 turdan
 sonra dur`. Evaluator komut calistirmaz; koşulu Adim 4 kanit dosyalarinin transcript'e yansiyan
-ciktilariyla **kanitlanabilir** yaz. **Onay/iptal sorulari (Adim 3 belirsizlik, Adim 5 onay) hedefi
-bozmaz** — `/goal` o turlarda da kullaniciya doner; otonomi yalnizca KESIN-uygula adimlarini hizlandirir.
+ciktilariyla **kanitlanabilir** yaz. **Onay sorulari (Adim 3 plan onayi, Adim 5 kanit onayi) hedefi
+bozmaz** — `/goal` o turlarda da kullaniciya doner; otonomi yalnizca onay arasi adimlari hizlandirir.
 
 > Hedef tek-shot/kucukse veya bitis durumu oznelse `/goal` ONERME — Adim 1'deki REPORT takibi yeterli.
 
@@ -160,26 +160,39 @@ bozmaz** — `/goal` o turlarda da kullaniciya doner; otonomi yalnizca KESIN-uyg
 - Yan etki / risk degerlendirmesi
 - **Kesinlik**: KESIN | BELIRSIZ
 
-> Rapor **onay mekanizmasi DEGIL** — final yazildi diye durma. Kesinlik KESIN ise dogrudan Adim 3'te
-> uygulamaya gec; raporu kullaniciya gostermek yeterli, "onayliyor musun?" diye SORMA.
+> Rapor **onay mekanizmasi DEGIL** — final yazildi diye durma, dogrudan Adim 3'e (plan modu) gec.
+> Kesinlik KESIN olsa da BELIRSIZ olsa da fark etmez; bir sonraki adimda plan moduna girilip cozum
+> plani kullaniciya sunulur. Raporu ayrica burada kullaniciya gostermen yeterli — "onayliyor musun?"
+> diye burada SORMA, onay plan modunda (Adim 3) alinir.
 
 ---
 
-## Adim 3 — Karar: uygula veya sor (MUHAFAZAKAR)
+## Adim 3 — Plan moduna gec ve plan onayi al (HER DURUMDA)
 
-**Cozum KESIN ise** (hepsi saglanmali) → dogrudan uygulamaya basla:
-- Tek olasi kok neden var, kanitla dogrulandi
-- Net, tek bir dogru duzeltme var
-- Yan etki riski dusuk / izole
+Final rapor yazilinca **kesinlik fark etmeksizin** (KESIN de BELIRSIZ de) plan moduna gir ve cozum
+planini kullaniciya onaya sun. Eski "KESIN ise sormadan uygula / BELIRSIZ ise AskUserQuestion ile sor"
+karar mekanizmasi **kaldirilmistir** — tek onay noktasi plan modudur.
 
-**Cozum BELIRSIZ ise** (herhangi biri) → **DUR**, `AskUserQuestion` ile sor:
-- Birden cok olasi kok neden / duzeltme yolu var
-- Degisiklik genis yuzeyi etkiliyor, breaking olabilir
-- Urun/UX karari iceriyor (kullanici tercihine bagli)
-- Eksik bilgi var (hangi ortam, hangi davranis bekleniyor)
+```
+EnterPlanMode()
+```
 
-> En ufak belirsizlikte SORMAK varsayilandir. Yanlis varsayimla ilerlemek pahalidir.
-> `ask-first` kurali: her soru `AskUserQuestion` tool ile — duz metin soru yasak.
+Plan modu sistem mesajinda belirtilen **plan dosyasina** cozum planini yaz; Adim 2'nin kok-neden
+analizinden ureyen somut adimlari icersin:
+- **Kok neden** (1-2 cumle, kanitiyla)
+- **Yapilacak degisiklikler** (hangi dosyada ne degisecek — madde madde)
+- **Yan etki / risk** ve nasil dogrulanacagi
+- **Kesinlik** ve varsa **belirsizlik/alternatif yollar** (kullanicinin karar vermesi gereken noktalar)
+
+Belirsizlik varsa once `AskUserQuestion` ile alternatifleri netlestir (plan modu icinde), sonra
+plani kesinlestir. Plan hazir olunca onay iste:
+
+```
+ExitPlanMode()
+```
+
+> `ExitPlanMode` plani dosyadan okur ve kullanicidan onay ister — ayrica `AskUserQuestion` ile
+> "onayliyor musun?" diye **SORMA**, onay bu adimda alinir. Plan onaylaninca uygulamaya gecilir.
 
 Uygularken `coding` kurallarina uy: hata wrap, TODO yorumlari, gereksiz workaround yok,
 "daha zarif yol var mi?" self-check.
@@ -279,7 +292,7 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 1.  Worktree ac + /tmp/<isim>/REPORT.md ac           (worktree skill; REPORT zed — takip icin, onay DEGIL)
     └─ Hedef dogrulanabilir+coktur ise `/goal`'a baglamayi ONER (opsiyonel; workflow kurali)
 2.  Kok-neden analizi — ULTRATHINK                   (effort: max; canli "Anlik Bulgular" → "Final Rapor")
-3.  KESIN → uygula (sorma) | BELIRSIZ → AskUserQuestion (muhafazakar)
+3.  Plan moduna gec — EnterPlanMode → plan yaz → ExitPlanMode onayi  (her durumda; eski KESIN/BELIRSIZ karari kalkti)
 4.  Test ortami hazirla → unique port + arka plan → test → kanit (gorsel degisiklikte SCREENSHOT zorunlu) → uygulamayi DURDUR
 5.  zed ile ac → AskUserQuestion onay → commit skill
 ```
@@ -298,7 +311,8 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 - **Gorsel kanit**: gorsel/UI degisikliginde `playwright-cli` ekran goruntusu **zorunlu** (mumkunse before/after)
 - **Takip raporu**: `/tmp/<isim>/REPORT.md` calisma basinda olusur, zed ile acilir, analiz akarken guncellenir — yalniz **izleme** icindir, hicbir adimda onay/etkilesim beklemez
 - **Kanit izolasyonu**: her zaman `/tmp/<isim>/` — repo'ya kanit/credential sizmaz
-- **Karar felsefesi**: muhafazakar — supheliysen uygulama, sor (`ask-first` kurali)
+- **Plan onayi**: Adim 2 final raporu sonrasi **her durumda** plan moduna girilir (`EnterPlanMode` → plan dosyasina cozum plani → `ExitPlanMode` onayi); eski "KESIN→uygula / BELIRSIZ→sor" karari kaldirildi, tek onay noktasi plan modudur
+- **Karar felsefesi**: muhafazakar — plan onaylanmadan uygulamaya gecilmez; belirsizlik varsa plan modunda `AskUserQuestion` ile netlestir (`ask-first` kurali)
 - **Hedef baglama (`/goal`)**: hedef dogrulanabilir tek bitis durumuna sahip + cok turlu ise Adim 1'de `/goal`'a baglamayi ONER (set etme, kullanici onayiyla); koşulu Adim 4 kanit ciktilariyla kanitlanabilir yaz (`workflow` kurali)
 - **Sub-agent siniri**: Adim 0b (kaynak analizi) ve Adim 2 (kok-neden) **asla** `Task`/sub-agent'a verilmez — baglamdan kopar, kritik analiz bozulur. `Task` yalniz `obsidian-searcher` on aramasi ve Adim 4 kanit-uretiminde (playwright vb.) kullanilabilir
 

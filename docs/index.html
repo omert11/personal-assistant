@@ -590,18 +590,18 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- issue-workflow -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="circle-dot"></i></div><div><div class="etitle">issue-workflow</div></div></div>
       <div class="ebody">
-        <p><strong>Bir kaynağı (Zammad ticket / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → izole worktree açar → <code>effort: max</code> ultrathink ile kök-neden analizi yapar → çözüm <strong>kesinse uygular, belirsizse durup sorar</strong> → kanıt toplar → kanıt klasörünü Zed ile açıp onay bekler.</p>
+        <p><strong>Bir kaynağı (Zammad ticket / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → izole worktree açar → <code>effort: max</code> ultrathink ile kök-neden analizi yapar → <strong>plan moduna girip çözüm planını onaya sunar</strong> → kanıt toplar → kanıt klasörünü Zed ile açıp onay bekler.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'i çöz", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/issue-workflow &lt;ref|metin&gt;</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
           <li><code>0a</code> — <code>CLAUDE.local.md</code> "## Issue Workflow" alanını oku (proje-özel komut/port/test/akış notu)</li>
           <li><code>0b</code> — kaynağı tam analiz et (zammad-cli / Read / markitdown / WebFetch / diji-log-search)</li>
           <li><code>1</code> — worktree aç + <code>/tmp/&lt;isim&gt;/REPORT.md</code> oluştur, Zed ile aç (canlı takip — onay <em>beklemez</em>); hedef doğrulanabilir + çok turlu ise <code>/goal</code>'a bağlamayı <em>öner</em></li>
           <li><code>2</code> — kök-neden analizi, <strong>ultrathink</strong> (canlı "Anlık Bulgular" → final temiz rapor)</li>
-          <li><code>3</code> — kesin → uygula | belirsiz → AskUserQuestion (muhafazakar)</li>
+          <li><code>3</code> — <strong>plan moduna geç</strong> (<code>EnterPlanMode</code> → plan dosyasına çözüm planı → <code>ExitPlanMode</code> onayı); <em>her durumda</em> — eski kesin/belirsiz kararı kalktı, tek onay noktası plan modu</li>
           <li><code>4</code> — test ortamı hazırla → <strong>unique port + arka plan</strong> → test → kanıt (görselde <strong>screenshot zorunlu</strong>) → uygulamayı <strong>durdur</strong></li>
           <li><code>5</code> — <code>zed</code> ile aç → onay → <code>commit</code> skill</li>
         </ul></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Worktree mantığı <code>worktree</code>, teslimat <code>commit</code> skill'e delege (DRY). <strong>Adım 0b (kaynak analizi) ve Adım 2 (kök-neden) asla sub-agent'a verilmez</strong> — bağlamdan kopmamak için ana ajan kendi context'inde yapar. Test ortamı worktree'de izole, unique port ile arka planda çalışır ve bitince durdurulur. Proje-özel başlatma/test komutları <code>CLAUDE.local.md</code> "## Issue Workflow" alanından okunur. Kök-neden kesin değilse durup sorar; kanıt her zaman <code>/tmp</code> altında.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Worktree mantığı <code>worktree</code>, teslimat <code>commit</code> skill'e delege (DRY). <strong>Adım 0b (kaynak analizi) ve Adım 2 (kök-neden) asla sub-agent'a verilmez</strong> — bağlamdan kopmamak için ana ajan kendi context'inde yapar. Test ortamı worktree'de izole, unique port ile arka planda çalışır ve bitince durdurulur. Proje-özel başlatma/test komutları <code>CLAUDE.local.md</code> "## Issue Workflow" alanından okunur. Kök-neden raporu yazılınca <strong>plan moduna girilip çözüm planı onaya sunulur</strong> (her durumda); kanıt her zaman <code>/tmp</code> altında.</p></div>
       </div>
     </div>
 
