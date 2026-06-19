@@ -196,6 +196,35 @@ def ensure_skill_from_repo(name: str, owner_repo: str) -> bool:
     return False
 
 
+def ensure_skill_clone(name: str, owner_repo: str) -> bool:
+    """Install a multi-file skill (SKILL.md + reference dirs at repo root) into
+    ~/.claude/skills/ via shallow clone. Unlike ensure_skill_from_repo (single
+    SKILL.md from skills/<name>/), this copies the whole repo tree minus .git."""
+    skill_dst = CLAUDE_DIR / "skills" / name
+    if (skill_dst / "SKILL.md").exists():
+        skip(f"{name} skill kurulu")
+        return True
+    if not have("git"):
+        err(f"git yok — {name} skill atlandı")
+        return False
+    tmp = Path(tempfile.mkdtemp())
+    clone_dir = tmp / name
+    with console.status(f"[yellow]{name} skill clone ({owner_repo})[/yellow]"):
+        run(
+            f"git clone --depth 1 https://github.com/{owner_repo}.git {clone_dir} "
+            f"&& rm -rf {clone_dir}/.git"
+        )
+    if (clone_dir / "SKILL.md").exists():
+        skill_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(clone_dir), str(skill_dst))
+        shutil.rmtree(tmp, ignore_errors=True)
+        ok(f"{name} skill kuruldu: {skill_dst}")
+        return True
+    shutil.rmtree(tmp, ignore_errors=True)
+    warn(f"{name} skill clone başarısız")
+    return False
+
+
 def ensure_env_vars(label: str, prompts: list[tuple[str, str, bool]], comment: str) -> bool:
     """Sync env vars to ~/.zshrc and ~/.claude/settings.json.
 
@@ -658,6 +687,16 @@ def section_playwright_cli():
             warn("playwright-cli skill bulunamadı — manuel: playwright-cli install --skills")
 
 
+def section_playwright_best_practices():
+    """Install the playwright-best-practices skill (currents.dev, MIT).
+
+    A multi-file skill (SKILL.md + 60+ reference docs) for writing proper
+    @playwright/test E2E/component/API/visual specs. Complements playwright-cli
+    (live automation) — this one is the spec-authoring best-practices guide."""
+    section("Playwright Best Practices skill (currents.dev)")
+    ensure_skill_clone("playwright-best-practices", "currents-dev/playwright-best-practices-skill")
+
+
 def section_context7_cli():
     """Install ctx7 CLI globally and configure Claude Code in CLI+Skills mode.
 
@@ -769,6 +808,7 @@ def main():
     section_app_store_mcp()
     section_context7_cli()
     section_playwright_cli()
+    section_playwright_best_practices()
     section_po_cli()
     section_vikunja_cli()
     section_zammad_cli()

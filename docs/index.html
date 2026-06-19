@@ -340,7 +340,7 @@ zed --diff a.ts b.ts</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="globe"></i></div><div><div class="etitle">browser-testing</div><div class="emeta">Frontend Test</div></div></div>
       <div class="ebody">
         <p><strong>Tarayıcı otomasyonu ve frontend testi için MCP yerine Playwright CLI (<code>playwright-cli</code>) kullanılır.</strong></p>
-        <p>CLI token-efficient ve Microsoft'un coding agent'lar için önerdiği yol — MCP playwright kaldırıldı. Snapshot + ref tabanlı etkileşim (a11y tree token maliyeti yok). Test suite için ayrıca <code>@playwright/test</code>.</p>
+        <p>CLI token-efficient ve Microsoft'un coding agent'lar için önerdiği yol — MCP playwright kaldırıldı. Snapshot + ref tabanlı etkileşim (a11y tree token maliyeti yok). Kalıcı <code>@playwright/test</code> spec yazımı için ise <code>playwright-best-practices</code> skill'i kurulur (currents.dev, MIT — POM, locator, assertion, flaky debug, CI/CD rehberi).</p>
         <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>playwright-cli open https://example.com
 playwright-cli snapshot
 playwright-cli click e15
@@ -735,7 +735,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="terminal"></i></div><div><div class="etitle">setup.sh <span class="ev">+ setup.py</span></div><div class="emeta">Tek komutla kurulum</div></div></div>
       <div class="ebody">
         <p><strong>Tüm stack'i tek komutla kuran idempotent installer.</strong> <code>setup.sh</code> önce <code>uv</code> yoksa kurar, sonra <code>setup.py</code>'yi <code>rich</code>/<code>questionary</code> bağımlılıklarıyla ephemeral venv'de çalıştırır (global kirletmeden).</p>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Ne kurar</div><p>settings.json + statusline, Homebrew prerequisites, Python CLI araçları (uv tool), Obsidian vault + CLI, local MCP repo'ları, <code>vikunja-cli</code>, <code>zammad-cli</code>, <code>po-cli</code>, Playwright CLI, Context7 CLI, Claude Code MCP server'ları ve interaktif credential prompt'ları.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Ne kurar</div><p>settings.json + statusline, Homebrew prerequisites, Python CLI araçları (uv tool), Obsidian vault + CLI, local MCP repo'ları, <code>vikunja-cli</code>, <code>zammad-cli</code>, <code>po-cli</code>, Playwright CLI, <code>playwright-best-practices</code> skill'i, Context7 CLI, Claude Code MCP server'ları ve interaktif credential prompt'ları.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="play"></i> Çalıştırma</div><pre><code>./setup.sh              # uv kurup başlatır
 # idempotent — tekrar çalıştırılabilir, mevcut olanı atlar</code></pre></div>
       </div>
@@ -797,6 +797,7 @@ CLAUDE.local.md → Vikunja proje ID</code></pre></div>
         <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Destekleyici stack</div><ul>
           <li><strong>uv</strong> — Python paket/script yöneticisi; <code>setup.py</code>, <code>crawl2md</code> ve tüm Python akışlarının temeli (pip yasak, kural gereği).</li>
           <li><strong>Playwright CLI</strong> — tarayıcı otomasyonu ve frontend testi (<code>browser-testing</code> kuralı; MCP yerine CLI).</li>
+          <li><strong>playwright-best-practices</strong> — <code>@playwright/test</code> ile E2E/component/API/visual spec yazımı için harici skill (currents.dev, MIT); <code>~/.claude/skills/</code> altına klonlanır.</li>
           <li><strong>Context7 (ctx7)</strong> — kütüphane/framework dökümanını canlı çeker; <code>obsidian-doc-source</code> library modunda zorunlu.</li>
           <li><strong>Zammad (zammad-cli)</strong> — helpdesk ticket yönetimi; <code>user-message</code> ile ticket yanıtı üretimi.</li>
           <li><strong>markitdown</strong> — PDF/Office/ses/görsel → markdown; <code>crawl2md</code> ve <code>obsidian-doc-source</code> dosya kaynaklarında.</li>
