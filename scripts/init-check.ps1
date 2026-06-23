@@ -12,7 +12,7 @@ if (-not (Test-Path "CLAUDE.local.md")) {
     $Missing += "CLAUDE.local.md"
 } else {
     $content = Get-Content "CLAUDE.local.md" -Raw
-    if ($content -notmatch "Vikunja") { $Missing += "Vikunja ID" }
+    # NOT: Gorev takibi (Plane) OPSIYONELDIR — zorunlu alan degil.
     if ($content -notmatch "Solo") { $Missing += "Solo ID" }
     if ($content -notmatch "Obsidian Folder") { $Missing += "Obsidian Folder" }
 }

@@ -123,14 +123,14 @@ Her dosyayı oku, değişen kodla alakalı kuralları bul. Sabit liste tutma —
 
 İhlal varsa bulgu olarak topla. Alakasız rule dosyası varsa atla.
 
-#### 3e. Vikunja Görev Bağlantısı
-`CLAUDE.local.md`'de Vikunja proje ID varsa:
+#### 3e. Plane Issue Bağlantısı (opsiyonel)
+`CLAUDE.local.md`'de **Plane proje (UUID) tanımlıysa** (yoksa bu adımı ATLA — görev takibi opsiyonel):
 ```
-vikunja-cli task list --filter "done = false" --json ile aktif görevleri getir
+plane-cli issue list --project <UUID> --json ile açık issue'ları getir
 ```
-Yapılan değişikliklerle uyuşan bir görev var mı tespit et:
-- **Var**: ID'sini sakla (sonra kapat)
-- **Yok**: bulgu olarak işaretle (yeni görev önerisi için)
+Yapılan değişikliklerle uyuşan bir issue var mı tespit et:
+- **Var**: issue UUID'sini sakla (sonra completed state'e çek)
+- **Yok**: bulgu olarak işaretle (yeni issue önerisi için)
 
 #### 3f. Obsidian Kayıt İhtiyacı
 `CLAUDE.local.md`'de `Obsidian Folder` varsa bu commit'te kaydedilmesi kayda değer bir şey var mı tespit et (dar kriter — kanonik tanım: `agents/obsidian-writer.md` append guard):
@@ -162,9 +162,9 @@ Aktif olanları (koşul sağlanan) sıraya koy, ilk 4'ünü tek blokta sor:
 - question: "Test yazılmamış: [dosyalar]. Ne yapalım?"
 - options: ["Test yaz", "Testsiz devam et"]
 
-**S3 — Vikunja** (proje ID varsa)
-- Görev varsa: header "Vikunja", question "Görev #X'i kapatayım mı?", options ["Evet kapat (DONE)", "Açık bırak"]
-- Görev yoksa: question "Bu değişiklik için Vikunja'da görev oluşturayım mı (DONE olarak)?", options ["Evet", "Hayır"]
+**S3 — Plane** (proje UUID tanımlıysa; yoksa bu soruyu sorma)
+- Issue varsa: header "Plane", question "PROJ-X issue'sunu kapatayım mı (completed)?", options ["Evet kapat (completed)", "Açık bırak"]
+- Issue yoksa: question "Bu değişiklik için Plane'de issue oluşturayım mı (completed olarak)?", options ["Evet", "Hayır"]
 
 **S4 — Teslimat** (branch'e göre değişir)
 
@@ -266,17 +266,23 @@ EOF
 )"
 ```
 
-### 10. Vikunja Kapatma
+### 10. Plane Issue Kapatma
 
-Soru 3'te "Evet kapat" seçildiyse (`--done` değer zorunlu: `true`/`false`):
+Plane state UUID tabanlıdır — kapatma = issue'yu **completed group** state'ine çekmek (boolean değil).
+Önce projenin completed state UUID'sini çöz:
 ```
-vikunja-cli --json task update <id> --done true
+plane-cli state list --project <UUID> --json   # group == "completed" olan state'in id'sini al
 ```
 
-Görev yoksa ve "Evet" seçildiyse (create pozisyonel argüman alır, `--done` flag'i YOK — önce create, sonra update):
+Soru 3'te "Evet kapat" seçildiyse:
 ```
-vikunja-cli --json task create <pid> "<özet>" --description "<detay>"
-vikunja-cli --json task update <yeni-id> --done true
+plane-cli --json issue update <issue-UUID> --project <UUID> --state <completed-state-UUID>
+```
+
+Issue yoksa ve "Evet" seçildiyse (önce create, sonra completed state'e çek):
+```
+plane-cli --json issue create "<özet>" --project <UUID> --description "<detay>"
+plane-cli --json issue update <yeni-issue-UUID> --project <UUID> --state <completed-state-UUID>
 ```
 
 ## Kritik Kurallar

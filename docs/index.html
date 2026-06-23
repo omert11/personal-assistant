@@ -304,7 +304,7 @@ python manage.py runserver</code></pre></div>
     <!-- init -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="clipboard-check"></i></div><div><div class="etitle">init</div><div class="emeta">Oturum Başı Kontrol</div></div></div>
       <div class="ebody">
-        <p><strong>Her konuşmanın ilk mesajında proje yapılandırması (CLAUDE.md/local + Vikunja/Solo/Obsidian ID'leri) denetlenir; sorun bildirilirse Vikunja görevi kontrol edilir ve geçmiş Learnings ön-aranır.</strong></p>
+        <p><strong>Her konuşmanın ilk mesajında proje yapılandırması (CLAUDE.md/local + Solo/Obsidian ID'leri) denetlenir; Plane proje tanımlıysa sorun bildirilince ilgili issue kontrol edilir ve geçmiş Learnings ön-aranır.</strong></p>
         <p>5 madde kontrol edilir; eksikse "⚠️ Eksik Yapılandırma: <code>/project-init</code>" notu eklenir. Kullanıcı somut görev verince ve Obsidian Folder tanımlıysa, göreve başlamadan önce <code>obsidian-searcher</code> background çağrılarak geçmiş bilgi aranır (selamlaşma/kavramsal soruda tetiklenmez).</p>
       </div>
     </div>
@@ -321,7 +321,7 @@ python manage.py runserver</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="git-commit-horizontal"></i></div><div><div class="etitle">before-commit</div><div class="emeta">Teslimat Kapısı</div></div></div>
       <div class="ebody">
         <p><strong>Her commit/push/PR/branch teslimat isteğinde mutlaka <code>commit</code> skill'i çalıştırılır; manuel <code>git commit</code> yasaktır.</strong></p>
-        <p>Skill teslimat öncesi tüm kontrolleri (code-review, test, rules uyumu, Vikunja, son onay) zaten yürütür — böylece tutarlı kalite kapısı her teslimatta uygulanır.</p>
+        <p>Skill teslimat öncesi tüm kontrolleri (code-review, test, rules uyumu, Plane issue, son onay) zaten yürütür — böylece tutarlı kalite kapısı her teslimatta uygulanır.</p>
       </div>
     </div>
 
@@ -398,7 +398,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- init-check -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="search-check"></i></div><div><div class="etitle">init-check.sh</div><div class="emeta">SessionStart · + .ps1</div></div></div>
       <div class="ebody">
-        <p><strong>CLAUDE.md/CLAUDE.local.md varlığını ve Vikunja/Solo/Obsidian Folder tanımlarını denetleyip tek satırlık sonuç (<code>INIT_OK</code> / <code>INIT_MISSING</code> / <code>INIT_MALFORMED</code>) basar.</strong></p>
+        <p><strong>CLAUDE.md/CLAUDE.local.md varlığını ve Solo/Obsidian Folder tanımlarını denetleyip tek satırlık sonuç (<code>INIT_OK</code> / <code>INIT_MISSING</code> / <code>INIT_MALFORMED</code>) basar.</strong></p>
         <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>hook-state.sh</code> source edilip ortak <code>hook_obsidian_folder</code> yüklenir. Esnek pattern (<code>Obsidian.*Folder</code>) bitişik VE markdown-tablo formatını yakalar. Satır var ama değer çıkmıyorsa MALFORMED (sessiz tuzak yakalanır). Öncelik: eksik &gt; bozuk &gt; OK. Windows'ta <code>init-check.ps1</code> karşılığı.</p></div>
         <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Eksik/bozuk yapılandırma oturum başında yakalanır; entegrasyonlar sessizce devre dışı kalmaz, <code>/project-init</code> ile tamamlanır.</p></div>
       </div>
@@ -464,9 +464,9 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- commit -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="git-commit-horizontal"></i></div><div><div class="etitle">commit</div></div></div>
       <div class="ebody">
-        <p><strong>Kod değişikliklerini commit etmeden önce kapsamlı kalite kapısı kurar.</strong> Tüm analizi (code-review, test, rules uyumu, Vikunja, Obsidian) sessizce yapar, bulguları biriktirir, tek toplu soru bloğunda sunar, onay sonrası seçilen teslimatı (commit/push/PR/merge) uygular.</p>
+        <p><strong>Kod değişikliklerini commit etmeden önce kapsamlı kalite kapısı kurar.</strong> Tüm analizi (code-review, test, rules uyumu, Plane issue, Obsidian) sessizce yapar, bulguları biriktirir, tek toplu soru bloğunda sunar, onay sonrası seçilen teslimatı (commit/push/PR/merge) uygular.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"commit", "push et", "PR oluştur", "branch aç", <code>/commit</code>. <code>before-commit</code> kuralı gereği manuel <code>git commit</code> yerine zorunludur.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → branch tespit → <b>code review (zorunlu)</b> → test → rules tara → Vikunja eşleştir → Obsidian → tek soru bloğu → dosyaları tek tek stage + Co-Authored-By commit → teslimat. Review, built-in <code>/code-review</code> skill'iyle çalıştırılır; effort değişikliğin karmaşıklığına göre seçilir (<code>low</code>/<code>medium</code>/<code>high</code>).</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → branch tespit → <b>code review (zorunlu)</b> → test → rules tara → Plane issue eşleştir → Obsidian → tek soru bloğu → dosyaları tek tek stage + Co-Authored-By commit → teslimat. Review, built-in <code>/code-review</code> skill'iyle çalıştırılır; effort değişikliğin karmaşıklığına göre seçilir (<code>low</code>/<code>medium</code>/<code>high</code>).</p></div>
         <div class="block example"><div class="bt"><i data-lucide="shield-alert"></i> Öne çıkan</div><p>Code review <strong>atlanamaz</strong> — "hızlıca commit" dense bile çalışır. Effort <b>işin karmaşıklığına göre kalibre edilir</b> ve <b>küçük/lokal diff'te düşük effort</b> yönünde eğilimlidir: tek-birkaç dosyada dar kapsamlı değişiklik (küçük mantık/test/docs/config dahil) <code>low</code> (küçük diff varsayılanı), birden çok dosyaya yayılan orta ölçekli iş <code>medium</code>, karmaşık/güvenlik-kritik/data-mutating kod <code>high</code>; <code>xhigh</code>/<code>max</code> sadece kullanıcı açıkça isterse. Yukarı seviye ancak diff somut bir üst-kriteri karşılarsa seçilir — "ne olur ne olmaz" gerekçesiyle yükseltilmez. Bulgular küçük diye filtrelenemez/yumuşatılamaz; uncertain bulgular bile listelenir, false-positive kararını kullanıcı verir. Asla <code>--amend</code>, asla force push, asla <code>git add -A</code>.</p></div>
       </div>
     </div>
@@ -484,9 +484,9 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- project-init -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="folder-plus"></i></div><div><div class="etitle">project-init</div></div></div>
       <div class="ebody">
-        <p><strong>Bir projeyi Claude Code ekosistemine entegre eder</strong> — CLAUDE.md/local, solo.yml, .gitignore eksiklerini tespit edip tamamlar, Vikunja/Solo/Obsidian entegrasyonlarını kurar.</p>
+        <p><strong>Bir projeyi Claude Code ekosistemine entegre eder</strong> — CLAUDE.md/local, solo.yml, .gitignore eksiklerini tespit edip tamamlar, Plane (opsiyonel)/Solo/Obsidian entegrasyonlarını kurar.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"projeyi kur", "init", "setup", "CLAUDE.md oluştur". <code>init.md</code> oturum başı eksik tespit edince otomatik önerir.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Durum tespiti → manifest'ten stack çıkarımı → eksik listesi → toplu soru bloğu → stack'e uygun dosya üretimi → entegrasyon (vikunja project create, Solo, Obsidian klasör).</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Durum tespiti → manifest'ten stack çıkarımı → eksik listesi → toplu soru bloğu → stack'e uygun dosya üretimi → entegrasyon (plane project create, Solo, Obsidian klasör).</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Obsidian klasörü yeni oluşunca <code>obsidian-init</code> otomatik tetiklenir; mevcut seçilince önce sorar. Override etmez, sadece eksik doldurur. Stack belirsizse durur ve sorar.</p></div>
       </div>
     </div>
@@ -735,7 +735,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="terminal"></i></div><div><div class="etitle">setup.sh <span class="ev">+ setup.py</span></div><div class="emeta">Tek komutla kurulum</div></div></div>
       <div class="ebody">
         <p><strong>Tüm stack'i tek komutla kuran idempotent installer.</strong> <code>setup.sh</code> önce <code>uv</code> yoksa kurar, sonra <code>setup.py</code>'yi <code>rich</code>/<code>questionary</code> bağımlılıklarıyla ephemeral venv'de çalıştırır (global kirletmeden).</p>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Ne kurar</div><p>settings.json + statusline, Homebrew prerequisites, Python CLI araçları (uv tool), Obsidian vault + CLI, local MCP repo'ları, <code>vikunja-cli</code>, <code>plane-cli</code>, <code>po-cli</code>, Playwright CLI, <code>playwright-best-practices</code> skill'i, Context7 CLI, Claude Code MCP server'ları ve interaktif credential prompt'ları.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Ne kurar</div><p>settings.json + statusline, Homebrew prerequisites, Python CLI araçları (uv tool), Obsidian vault + CLI, local MCP repo'ları, <code>plane-cli</code>, <code>po-cli</code>, Playwright CLI, <code>playwright-best-practices</code> skill'i, Context7 CLI, Claude Code MCP server'ları ve interaktif credential prompt'ları.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="play"></i> Çalıştırma</div><pre><code>./setup.sh              # uv kurup başlatır
 # idempotent — tekrar çalıştırılabilir, mevcut olanı atlar</code></pre></div>
       </div>
@@ -750,14 +750,14 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       </div>
     </div>
 
-    <!-- vikunja -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="list-checks"></i></div><div><div class="etitle">Vikunja</div><div class="emeta">vikunja-cli · görev yönetimi</div></div></div>
+    <!-- plane -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="list-checks"></i></div><div><div class="etitle">Plane</div><div class="emeta">plane-cli · proje/issue yönetimi</div></div></div>
       <div class="ebody">
-        <p><strong>Nedir:</strong> Açık kaynak, self-hosted bir görev/proje yönetim aracı (Todoist/Asana alternatifi). Plugin <code>vikunja-cli</code> binary'si üzerinden REST API'sine bağlanır.</p>
-        <p><strong>Ne işe yarar:</strong> Görev listeleme, oluşturma, durum güncelleme, atama ve yorum — terminalden çıkmadan iş takibi.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>init.md</code> kuralı: kullanıcı bir sorun bildirince ilgili Vikunja görevi aranır, yoksa oluşturma teklif edilir. <code>commit</code> skill'i: değişiklikle uyuşan görev tespit edilip kapatılabilir. <code>vikunja-cli</code> skill'i doğrudan task yönetimi sağlar.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yapılandırma</div><pre><code>~/.zshrc → VIKUNJA_API_URL + VIKUNJA_API_TOKEN
-CLAUDE.local.md → Vikunja proje ID</code></pre></div>
+        <p><strong>Nedir:</strong> Açık kaynak, self-hosted bir proje/issue yönetim aracı (Jira/Linear alternatifi). Plugin <code>plane-cli</code> binary'si üzerinden REST API'sine bağlanır.</p>
+        <p><strong>Ne işe yarar:</strong> Issue/project/cycle/module listeleme, oluşturma, state güncelleme, atama ve yorum — terminalden çıkmadan iş takibi.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><strong>Opsiyonel</strong> — <code>CLAUDE.local.md</code>'de Plane proje UUID tanımlıysa: <code>init.md</code> kuralı sorun bildirilince ilgili issue'yu arar; <code>commit</code> skill'i değişiklikle uyuşan issue'yu completed state'e çekebilir. Tanımlı değilse Claude native <code>TaskCreate</code> ile takip yeterli.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yapılandırma</div><pre><code>~/.zshrc → PLANE_URL + PLANE_API_KEY + PLANE_WORKSPACE_SLUG
+CLAUDE.local.md → Plane proje UUID (opsiyonel)</code></pre></div>
       </div>
     </div>
 

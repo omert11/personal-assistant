@@ -1,7 +1,7 @@
 ---
 name: project-init
-description: CLAUDE.md/CLAUDE.local.md/solo.yml eksiklerini interaktif tamamlar (Vikunja+Solo dahil).
-when_to_use: Trigger — "projeyi kur", "init", "proje baslat", "yapilandirma", "setup", "CLAUDE.md olustur", "solo.yml ekle", "vikunja projesi ac". Konusma basinda eksik yapilandirma tespit edilirse otomatik onerilir.
+description: CLAUDE.md/CLAUDE.local.md/solo.yml eksiklerini interaktif tamamlar (Plane+Solo dahil).
+when_to_use: Trigger — "projeyi kur", "init", "proje baslat", "yapilandirma", "setup", "CLAUDE.md olustur", "solo.yml ekle", "plane projesi ac". Konusma basinda eksik yapilandirma tespit edilirse otomatik onerilir.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
@@ -37,7 +37,7 @@ HAS_GITIGNORE=$([ -f ".gitignore" ] && echo true || echo false)
 IS_GIT=$([ -d ".git" ] && echo true || echo false)
 
 # CLAUDE.local.md içinde ID'ler var mı
-VIKUNJA_ID=$(grep -oE "Vikunja.*ID:\s*\K[0-9]+" CLAUDE.local.md 2>/dev/null || echo "")
+PLANE_PROJECT=$(grep -oE "Plane.*Proje[^:]*:\s*\K[a-f0-9-]+" CLAUDE.local.md 2>/dev/null || echo "")
 SOLO_ID=$(grep -oE "Solo.*ID:\s*\K[0-9]+" CLAUDE.local.md 2>/dev/null || echo "")
 OBSIDIAN_FOLDER=$(grep -oE "Obsidian Folder:\s*\K.+" CLAUDE.local.md 2>/dev/null || echo "")
 ```
@@ -64,7 +64,7 @@ Hangi işlemler gerekli:
 - `CLAUDE.local.md` yok mu → oluşturulacak
 - `solo.yml` yok mu → oluşturulacak
 - `.gitignore` yok veya `CLAUDE.local.md` içinde yok mu → eklenecek
-- Vikunja ID yok mu → proje oluşturulacak (sorulacak)
+- Plane proje yok mu → **opsiyonel** (sorulacak; istenmezse görev takibi TaskCreate ile yürür)
 - Solo ID yok mu → oluşturulacak (sorulacak)
 - Obsidian Folder yok mu → vault içinde klasör oluşturulacak (sorulacak)
 - Projeye özel bilgiler → sorulacak
@@ -81,7 +81,7 @@ Hangi işlemler gerekli:
 
 **Soru Grubu 2 — Entegrasyonlar**
 
-- **Vikunja**: header "Vikunja", question "Vikunja'da proje oluşturayım mı?", options ["Evet, oluştur", "Mevcut projeyi seç", "Hayır"]
+- **Plane** (opsiyonel): header "Plane", question "Plane'de proje oluşturayım mı (görev takibi)?", options ["Mevcut projeyi seç", "Evet, oluştur", "Hayır (TaskCreate yeterli)"]
 - **Solo**: header "Solo", question "Solo projesi oluşturayım mı?", options ["Evet (boş solo.yml)", "Hayır"]
 - **Obsidian**: header "Obsidian", question "Obsidian vault içinde proje klasörü oluşturayım mı?", options ["Evet, oluştur", "Mevcut klasörü seç", "Hayır"]
 
@@ -120,7 +120,7 @@ Cevaplara göre sessizce:
 Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 
 ## Entegrasyonlar (CLI / MCP)
-{PROJEYE UYGUN ARAÇLAR — örneğin Django projesiyse vikunja-cli, solo (CLI), ctx7 (CLI), gh}
+{PROJEYE UYGUN ARAÇLAR — örneğin Django projesiyse plane-cli, solo (CLI), ctx7 (CLI), gh}
 
 ## Kod Konvansiyonları
 {STACK'E ÖZEL — örn Django: pre-commit + black + isort + dijilint; Go: golangci-lint; Rust: clippy}
@@ -139,8 +139,9 @@ Gereksiz bölümleri atlama: kullanıcının verdiği bilgiyle gerekeni yaz, yap
 ```markdown
 # Local Yapılandırma
 
-## Vikunja
-- **Proje**: {AD} (ID: {VIKUNJA_ID})
+## Plane
+- **Proje**: {AD}
+- **Plane Proje UUID**: {PLANE_PROJECT}
 
 ## Solo
 - **Proje**: {AD} (ID: {SOLO_ID})
@@ -181,20 +182,22 @@ Duplicate eklememek için önce grep ile kontrol et.
 
 ### 6. Entegrasyon İşlemleri
 
-#### Vikunja (seçildiyse)
+#### Plane (seçildiyse — opsiyonel)
 
 **Evet, oluştur:**
 ```
-vikunja-cli project create --title "<isim>" --json ile yeni proje oluştur
-ID'yi al, CLAUDE.local.md'ye yaz
+plane-cli project create "<isim>" "<IDENT>" --json ile yeni proje oluştur (IDENT = kısa kod, örn. PA)
+Dönen UUID'yi al, CLAUDE.local.md'ye "Plane Proje UUID" olarak yaz
 ```
 
 **Mevcut projeyi seç:**
 ```
-vikunja-cli project list --json ile listele
+plane-cli project list --json ile listele (UUID + identifier)
 AskUserQuestion ile seçtir (options olarak projeleri göster)
-Seçileni CLAUDE.local.md'ye yaz
+Seçilenin UUID'sini CLAUDE.local.md'ye yaz
 ```
+
+**Hayır:** Plane bölümü yazılmaz; görev takibi TaskCreate ile yürür.
 
 #### Solo (seçildiyse)
 
@@ -249,7 +252,7 @@ Skill bitince kısa bir özet:
   - .gitignore güncellendi (2 satır)
 
 ✅ Entegrasyonlar:
-  - Vikunja: Proje "X" oluşturuldu (ID: 42)
+  - Plane: Proje "X" oluşturuldu (UUID: ...)
 
 📝 Sonraki adımlar:
   - solo.yml process'lerini doldur

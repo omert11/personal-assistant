@@ -139,11 +139,11 @@ Konuma göre:
 - **MCP**: `claude mcp list`
 - **Agent**: `/agents`
 
-### Adım 7: Vikunja Görev Önerisi
+### Adım 7: Plane Issue Önerisi (opsiyonel)
 
-Eğer projede Vikunja entegrasyonu varsa (`CLAUDE.local.md`'de proje ID), `AskUserQuestion` ile:
-- header: "Vikunja"
-- question: "Bu extension için Vikunja görevi oluşturayım mı?"
+Eğer projede Plane entegrasyonu varsa (`CLAUDE.local.md`'de Plane proje UUID), `AskUserQuestion` ile:
+- header: "Plane"
+- question: "Bu extension için Plane issue oluşturayım mı?"
 - options: ["Evet", "Hayır"]
 
 ## Kritik Hatırlatmalar
