@@ -623,19 +623,20 @@ def section_vikunja_cli():
     )
 
 
-def section_zammad_cli():
-    """Install zammad-cli + skill, replacing legacy zammad-mcp."""
-    section("zammad-cli (Zammad helpdesk)")
-    if not ensure_rust_cli_release("zammad-cli", "omert11/zammad-cli"):
+def section_plane_cli():
+    """Install plane-cli + skill."""
+    section("plane-cli (Plane project management)")
+    if not ensure_rust_cli_release("plane-cli", "omert11/plane-cli"):
         return
-    ensure_skill_from_repo("zammad-cli", "omert11/zammad-cli")
+    ensure_skill_from_repo("plane-cli", "omert11/plane-cli")
     ensure_env_vars(
-        "ZAMMAD",
+        "PLANE",
         [
-            ("ZAMMAD_URL", "ZAMMAD_URL (örn. https://support.example.com)", False),
-            ("ZAMMAD_TOKEN", "ZAMMAD_TOKEN", True),
+            ("PLANE_URL", "PLANE_URL (örn. https://support.example.com — /api/v1 EKLEME)", False),
+            ("PLANE_API_KEY", "PLANE_API_KEY (plane_api_...)", True),
+            ("PLANE_WORKSPACE_SLUG", "PLANE_WORKSPACE_SLUG (örn. diji-tech)", False),
         ],
-        "Zammad CLI (replaces zammad-mcp)",
+        "Plane CLI (project management)",
     )
 
 
@@ -773,7 +774,7 @@ def section_credentials():
     guide.add_column("MCP", style="cyan")
     guide.add_column("Yapılacak")
     guide.add_row("WhatsApp", "github.com/omert11/whatsapp-mcp README — QR okut, bridge başlat")
-    guide.add_row("Zammad",   "~/.zshrc → ZAMMAD_URL + ZAMMAD_TOKEN (zammad-cli kullanır)")
+    guide.add_row("Plane",    "~/.zshrc → PLANE_URL + PLANE_API_KEY + PLANE_WORKSPACE_SLUG (plane-cli kullanır)")
     guide.add_row("Vikunja",  "~/.zshrc → VIKUNJA_API_URL + VIKUNJA_API_TOKEN (vikunja-cli kullanır)")
     guide.add_row("Google",   "Claude Code → /mcp → claude.ai servisi seç → Authenticate")
     console.print(guide)
@@ -811,7 +812,7 @@ def main():
     section_playwright_best_practices()
     section_po_cli()
     section_vikunja_cli()
-    section_zammad_cli()
+    section_plane_cli()
     section_settings()
     section_statusline()
     section_register_mcps()

@@ -141,7 +141,7 @@ WRITE_MODE: overwrite|new_version   # çakışma kararından (yoksa 'create')
 provenance: |
   ## Kaynak ve Edinim
   - **Birincil kaynak**: <kaynak + edinim yöntemi: Context7 library ID + sorgu sayısı / Stoplight-OpenAPI export / mail eki + dönüştürme yöntemi / WebFetch / crawl2md>
-  - **İlgili referans**: <Zammad ticket no / mail konu-ID + varsa orijinal dosya yolu (örn. ~/Downloads/<dosya>.eml)>
+  - **İlgili referans**: <Plane issue (PROJ-N) / mail konu-ID + varsa orijinal dosya yolu (örn. ~/Downloads/<dosya>.eml)>
   - **Credential'lar**: [[<credential-learnings-notu>]]   # varsa
   - **Doğrulama**: <✅/❌ + tarih + kısa sonuç (örn. "CreateTokenV2 ✅ 2026-06-11, token alındı")>
 

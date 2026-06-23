@@ -10,7 +10,7 @@ allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUs
 
 # Issue Workflow — Analiz → Izole Worktree → Coz → Kanit → Onay
 
-Verilen bir **kaynagi** (Zammad ticket, serbest metin, dokuman, gorsel, mail, log)
+Verilen bir **kaynagi** (Plane issue, serbest metin, dokuman, gorsel, mail, log)
 uctan uca cozer: tam baglam cikarir, izole worktree'de calisir, kok-neden analizi yapar,
 cozum **kesinse** uygular / **belirsizse** durup sorar, calismayi kanitlarla teyit eder,
 kanit klasorunu acip onay bekler.
@@ -57,7 +57,7 @@ Kullanicinin verdigi her kaynagi **tek tek, tam** incele. Hicbirini atlama, ozet
 
 | Kaynak tipi | Nasil al |
 |---|---|
-| **Zammad ticket no** (`#61618`, `61618`) | `zammad-cli` skill → `ticket get` + `ticket articles` (tum yazismalar) + ekler. Ekli gorsel/dosya varsa indir ve oku |
+| **Plane issue** (`PROJ-123`, `61618`) | `plane-cli` skill → `issue get-id PROJ-123` (UUID coz) + `issue get` + `comment list` (tum yazismalar) + ekler. Ekli gorsel/dosya varsa indir ve oku |
 | **Serbest metin / mesaj** | Dogrudan oku, talebi/sikayeti madde madde cikar |
 | **Gorsel** (ekran goruntusu, hata diyalogu) | `Read` ile gor — hata metni, kod, ekran durumu, URL'leri cikar. TR hata mesaji ise orijinal msgid'i `grep ... locale/*/LC_MESSAGES/*.po` ile bul |
 | **Dokuman** (PDF/Word/HTML/dosya) | `markitdown <dosya> > /tmp/src.md` ile markdown'a cevir, sonra oku. URL ise `WebFetch` |
@@ -76,7 +76,7 @@ Kullanicinin verdigi her kaynagi **tek tek, tam** incele. Hicbirini atlama, ozet
 ## Adim 1 — Worktree ac ve o ortama gec (worktree skill'e delege)
 
 Issue'dan **anlamli, kebab-case** bir isim turet:
-- Zammad ticket → `fix-<ticketno>` (orn `fix-61618`)
+- Plane issue → `fix-<issue-ident>` (orn `fix-proj-123`)
 - Bug → `fix-<kisa-konu>` (orn `fix-payment-timeout`)
 - Feature → `feat-<kisa-konu>`
 
@@ -288,7 +288,7 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 
 ```
 0a. CLAUDE.local.md "## Issue Workflow" alanini oku  (varsa proje-ozel komut/port/test/akis notu)
-0b. Kaynagi tam analiz et + contexte al              (zammad-cli / Read / markitdown / WebFetch / diji-log-search)
+0b. Kaynagi tam analiz et + contexte al              (plane-cli / Read / markitdown / WebFetch / diji-log-search)
 1.  Worktree ac + /tmp/<isim>/REPORT.md ac           (worktree skill; REPORT zed — takip icin, onay DEGIL)
     └─ Hedef dogrulanabilir+coktur ise `/goal`'a baglamayi ONER (opsiyonel; workflow kurali)
 2.  Kok-neden analizi — ULTRATHINK                   (effort: max; canli "Anlik Bulgular" → "Final Rapor")
