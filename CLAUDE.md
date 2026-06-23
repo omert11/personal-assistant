@@ -25,7 +25,7 @@ Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 
 ## Entegrasyonlar (CLI / MCP)
 
-- `vikunja-cli` — görev/proje yönetimi (CLI binary; CLAUDE.local.md'de proje ID, env'de `VIKUNJA_API_URL`/`VIKUNJA_API_TOKEN`)
+- `plane-cli` — görev/proje yönetimi (CLI binary; CLAUDE.local.md'de Plane proje UUID, env'de `PLANE_URL`/`PLANE_API_KEY`/`PLANE_WORKSPACE_SLUG`)
 - `solo` — process yönetimi (CLI binary, HTTP control plane; bu plugin repo'su için çalışan process yok)
 - `obsidian` — vault okuma/yazma CLI (proje belleği)
 - `ctx7` — kütüphane dokümantasyonu CLI

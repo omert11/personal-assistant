@@ -16,7 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null)"
 
 # CLAUDE.local.md kontrolu
 #
-# UYARI — FORMAT: Anahtar kelimeler ("Obsidian Folder", "Vikunja", "Solo") farkli
+# UYARI — FORMAT: Anahtar kelimeler ("Obsidian Folder", "Solo") farkli
 # yazim bicimlerinde tanimlanabilir; bu yuzden BITISIK string ("Obsidian Folder")
 # yerine ESNEK pattern ("Obsidian.*Folder") kullanilir. Desteklenen formatlar:
 #   - "- **Obsidian Folder**: x"           (bitisik, personal-assistant)
@@ -24,10 +24,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null)"
 # Bitisik grep tablo formatini KACIRIR ve yanlis "eksik" uyarisi verir (b2b-dmc
 # bug'i). Bu kontrol scripts/hook-state.sh:hook_obsidian_folder() ile AYNI
 # format mantigini kullanmali — yeni bir format eklenirse iki yeri de guncelle.
+# NOT: Gorev takibi (Plane) OPSIYONELDIR — zorunlu alan degil, kontrol edilmez.
 if [ ! -f "CLAUDE.local.md" ]; then
   MISSING+=("CLAUDE.local.md")
 else
-  grep -q "Vikunja" CLAUDE.local.md 2>/dev/null || MISSING+=("Vikunja ID")
   grep -q "Solo" CLAUDE.local.md 2>/dev/null || MISSING+=("Solo ID")
 
   # Obsidian Folder: once VAR MI, sonra FORMAT DOGRU MU (deger cikarilabiliyor mu).

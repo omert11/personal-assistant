@@ -4,21 +4,24 @@ Her konuşmanın ilk mesajında, ne sorulursa sorulsun, önce şunları kontrol 
 
 1. `CLAUDE.md` mevcut mu
 2. `CLAUDE.local.md` mevcut mu
-3. `CLAUDE.local.md` içinde Vikunja proje ID tanımlı mı
-4. `CLAUDE.local.md` içinde Solo proje ID tanımlı mı
-5. `CLAUDE.local.md` içinde Obsidian Folder tanımlı mı
+3. `CLAUDE.local.md` içinde Solo proje ID tanımlı mı
+4. `CLAUDE.local.md` içinde Obsidian Folder tanımlı mı
 
-Bu 5 maddenin herhangi biri eksikse, ilk çıktının sonuna ayrı bir bölüm olarak ekle:
+Bu 4 maddenin herhangi biri eksikse, ilk çıktının sonuna ayrı bir bölüm olarak ekle:
 
 > ⚠️ **Eksik Yapılandırma**: Eksikleri tamamlamak için `/project-init` komutunu çalıştırabilirsiniz.
 
-## Vikunja Görev Kontrolü
+> NOT: Görev takibi (Plane proje) **opsiyoneldir** — tanımlı değilse uyarı verilmez, Claude native TaskCreate/TaskUpdate yeterlidir.
 
-Eğer kullanıcı bir sorun/hata/görev bildiriyorsa ve `CLAUDE.local.md`'de Vikunja proje ID tanımlıysa:
+## Plane Görev Kontrolü (opsiyonel)
 
-1. Vikunja'da bu sorunla ilgili mevcut bir görev var mı kontrol et
-2. Görev varsa: görevi referans al ve üzerinden ilerle
-3. Görev yoksa: `AskUserQuestion` ile sor (header: "Vikunja", question: "Bu sorun için Vikunja'da görev bulunamadı. Oluşturayım mı?", options: ["Evet", "Hayır"])
+Eğer kullanıcı bir sorun/hata/görev bildiriyorsa ve `CLAUDE.local.md`'de Plane proje (UUID) tanımlıysa:
+
+1. Plane'de bu sorunla ilgili mevcut bir issue var mı kontrol et (`plane-cli issue search`)
+2. Issue varsa: referans al ve üzerinden ilerle
+3. Issue yoksa: `AskUserQuestion` ile sor (header: "Plane", question: "Bu sorun için Plane'de issue bulunamadı. Oluşturayım mı?", options: ["Evet", "Hayır"])
+
+Plane proje tanımlı DEĞİLSE bu kontrol atlanır (TaskCreate ile takip yeterli).
 
 ## Obsidian Learnings Ön Arama
 

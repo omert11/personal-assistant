@@ -474,7 +474,7 @@ def section_prereq():
     pkgs = [("uv", "uv"), ("node", "node"), ("gh", "gh"), ("jq", "jq")]
     with_progress("Brew paketleri", [(p, (lambda p=p, c=c: ensure_brew(p, c))) for p, c in pkgs])
     if not have("docker"):
-        warn("docker yok — Vikunja vb. dependency'ler için gerekli. Kurulum: https://www.docker.com/products/docker-desktop/")
+        warn("docker yok — bazı dependency'ler için gerekli olabilir. Kurulum: https://www.docker.com/products/docker-desktop/")
     else:
         skip("docker")
 
@@ -605,22 +605,6 @@ def section_app_store_mcp():
         source="omert11/app-store-mcp",
     )
     info("Fastlane gerekli — eksikse: brew install fastlane")
-
-
-def section_vikunja_cli():
-    """Install vikunja-cli + skill, replacing legacy vikunja-mcp."""
-    section("vikunja-cli (Vikunja task management)")
-    if not ensure_rust_cli_release("vikunja-cli", "omert11/vikunja-cli"):
-        return
-    ensure_skill_from_repo("vikunja-cli", "omert11/vikunja-cli")
-    ensure_env_vars(
-        "VIKUNJA",
-        [
-            ("VIKUNJA_API_URL", "VIKUNJA_API_URL", False),
-            ("VIKUNJA_API_TOKEN", "VIKUNJA_API_TOKEN", True),
-        ],
-        "Vikunja CLI (replaces vikunja-mcp)",
-    )
 
 
 def section_plane_cli():
@@ -775,7 +759,6 @@ def section_credentials():
     guide.add_column("Yapılacak")
     guide.add_row("WhatsApp", "github.com/omert11/whatsapp-mcp README — QR okut, bridge başlat")
     guide.add_row("Plane",    "~/.zshrc → PLANE_URL + PLANE_API_KEY + PLANE_WORKSPACE_SLUG (plane-cli kullanır)")
-    guide.add_row("Vikunja",  "~/.zshrc → VIKUNJA_API_URL + VIKUNJA_API_TOKEN (vikunja-cli kullanır)")
     guide.add_row("Google",   "Claude Code → /mcp → claude.ai servisi seç → Authenticate")
     console.print(guide)
 
@@ -811,7 +794,6 @@ def main():
     section_playwright_cli()
     section_playwright_best_practices()
     section_po_cli()
-    section_vikunja_cli()
     section_plane_cli()
     section_settings()
     section_statusline()
