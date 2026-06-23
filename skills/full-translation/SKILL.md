@@ -92,7 +92,7 @@ po-cli --json analyze <po> > /tmp/<proj>-i18n/<lang>.<domain>.analysis.json
 
 > ⚠️ `--json` **GLOBAL flag** — `po-cli --json analyze ...` doğru. Alt komuttan sonra (`po-cli analyze ... --json`) çalışmaz.
 
-İstatistik özeti çıkar (`statistics.untranslated` + `statistics.fuzzy`). Tümü 0 ise dur ("tüm diller temiz"). zsh'de dil listesini **array** olarak ver (`LANGS=(ar de ...)`), düz string word-splitting'e güvenme.
+İstatistik özeti çıkar (`statistics.untranslated` + `statistics.fuzzy`). Tümü 0 ise çeviri adımlarını (4–5) atla ama **DURMA** — **Adım 6 (compile) + Adım 7 (commit) yine de çalışır** (aşağıdaki "Çeviri Yoksa Bile Derle & Gönder" kuralı). zsh'de dil listesini **array** olarak ver (`LANGS=(ar de ...)`), düz string word-splitting'e güvenme.
 
 ### Adım 4 — Çeviri: iş **entry sayısına** göre paylaştırılır (dil başına DEĞİL)
 
@@ -102,7 +102,7 @@ po-cli --json analyze <po> > /tmp/<proj>-i18n/<lang>.<domain>.analysis.json
 
 **4b — Eşik kararı:**
 
-- **`TOTAL == 0`** → dur ("tüm diller temiz").
+- **`TOTAL == 0`** → çeviri YOK ama **DURMA**. Adım 4–5'i atla, doğrudan **Adım 6 (compile) → Adım 7 (commit)**'e geç. makemessages `.po` dosyalarını çeviri içeriği değişmese bile yeniden formatlayabilir (line-wrap, header, kaynak konum yorumları); bunlar derlenip `.po`+`.mo` birlikte commit edilir. Gerekçe: dağıtılan `.mo` dosyaları `.po` ile **senkron** kalmalı — derleme atlanırsa runtime'da eski `.mo` kullanılır. (Detaylı kural: aşağıdaki "Çeviri Yoksa Bile Derle & Gönder".)
 - **`TOTAL ≤ 200`** → **Workflow KURMA.** Tek ajanlık iştir; orchestrator (sen) ilgili analiz json'larını **Read** edip entry'leri aşağıdaki kurallarla **kendin** çevirir ve her `<lang>.<domain>.translations.json` dosyasını **kendin** yazarsın. Paralel ajan/Workflow gereksiz overhead'dir.
 - **`TOTAL > 200`** → `Workflow` tool ile **chunk başına 1 ajan**. Chunk'lama **dil sınırında kesilir** (aşağıdaki 4c).
 
@@ -214,6 +214,22 @@ perl -0777 -i -pe 's/\n#, fuzzy\nmsgid ""\nmsgstr ""\n+/\n/g' <po>   # ZORUNLU t
 
 ### Adım 6 — compile + re-analyze (yakınsama döngüsü)
 
+> **⛔ Çeviri Yoksa Bile Derle & Gönder — ZORUNLU.** `TOTAL == 0` (hiç untranslated/fuzzy yok) çıksa bile
+> **compile + commit ATLANMAZ.** Adım 1 (makemessages) `.po` dosyalarını çeviri içeriği değişmese dahi
+> yeniden formatlar: gettext **line-wrap** noktalarını kaydırır, `POT-Creation-Date`/header'ı tazeler, kaynak
+> konum yorumlarını (`#: app/file.py:123`) ve obsolete (`#~`) bloklarını yeniden sıralar. Bu değişen `.po`
+> derlenip **`.po` + `.mo` birlikte** gönderilmelidir.
+>
+> **Gerekçe:** Diji projelerinde `.mo` **tracked** ve runtime gettext **`.mo`'yu okur** (`.po`'yu değil). `.po`
+> commit edilip `.mo` derlenmeden gönderilirse — ya da hiç commit edilmezse — dağıtılan `.mo` `.po` ile
+> **desenkron** kalır; sunucu eski derlemeyi kullanır. Bu yüzden "çeviri değişmedi" gerekçesiyle compile/commit
+> atlamak **yasak** — `python manage.py compilemessages` her akışta koşulsuz çalışır, çıktısı commit'lenir.
+> (Kullanıcı talebi, 2026-06-22: "çeviri olmasa bile derle yolla".)
+>
+> **Tek istisna — gerçekten SIFIR diff:** `git status --porcelain -- 'locale/**/*.po'` **boşsa** (makemessages
+> hiçbir `.po`'ya dokunmadıysa) commit edilecek bir şey yoktur; bu durumda akış temiz sonlanır. `.po` diff'i
+> **varsa** (kozmetik olsa bile) → compile + commit **zorunlu**.
+
 ```bash
 # Önce hızlı fatal taraması (dosya bazlı hata gösterir):
 msgfmt --check <po> -o /dev/null 2>&1 | grep -v "warning:"     # boşsa OK
@@ -231,7 +247,7 @@ python manage.py compilemessages                               # .po → .mo
 
 ### Adım 7 — commit skill
 
-Tüm diller temiz (`untranslated=0`, çevrilebilir `fuzzy=0`) olunca `commit` skill tetikle. `.mo` dosyaları Diji projelerinde **tracked** (gitignore'da değil) → `.po` + `.mo` birlikte commit'lenir. `.po`/`.mo` non-kod olduğu için commit skill code-review'i atlar.
+`.po` diff'i varsa (çeviri yapıldıysa **VEYA** sadece makemessages yeniden formatladıysa — Adım 6'daki "Çeviri Yoksa Bile Derle & Gönder" kuralı) `commit` skill tetikle. `.mo` dosyaları Diji projelerinde **tracked** (gitignore'da değil) → `.po` + `.mo` birlikte commit'lenir. `.po`/`.mo` non-kod olduğu için commit skill code-review'i atlar. Sadece `git status` `.po` için **tamamen boşsa** commit atlanır (commit edilecek değişiklik yok).
 
 ## Komut Referansı (po-cli)
 

@@ -121,6 +121,34 @@ grep -qxF '.claude/worktrees/' "$REPO_ROOT/.gitignore" 2>/dev/null \
 git -C "$REPO_ROOT" remote set-head origin -a
 ```
 
+#### Büyük gitignore'lu asset dizinleri → SYMLINK (kopyalama değil)
+
+`.worktreeinclude` dosyaları **kopyalar**. Yüzlerce/binlerce dosyalı, sık güncellenen
+asset dizinleri (örn. yüklenen logolar, medya, generated cache) için kopyalama hem
+disk israfı (her worktree × N MB) hem de bayatlama (kopya anındaki halde kalır) demek.
+Bu tür dizinleri `.worktreeinclude`'a EKLEME — bunun yerine worktree oluşturulduktan
+sonra ana repo'daki dizine **symlink** kur (tek kaynak, anında güncel, disk israfı yok):
+
+```bash
+# Worktree oluştuktan sonra (new akışı sonrası), her büyük asset dizini için:
+# WT_PATH = yeni worktree kök dizini, REPO_ROOT = ana repo kökü
+link_asset_dir() {  # $1 = repo-relative asset dir (örn. backend/cmd/api/uploads)
+  local rel="$1" src="$REPO_ROOT/$1" dst="$WT_PATH/$1"
+  [ -e "$src" ] || return 0                 # ana repo'da yoksa atla
+  [ -e "$dst" ] && return 0                  # zaten varsa (symlink/kopya) dokunma
+  mkdir -p "$(dirname "$dst")"
+  ln -s "$src" "$dst"
+  echo "→ symlink: $rel"
+}
+# Proje-spesifik asset dizinleri (CLAUDE.local.md/CLAUDE.md'den veya bilinen yoldan):
+#   b2b-dmc: backend/cmd/api/uploads (airline-logos vb. ~1132 dosya)
+link_asset_dir "backend/cmd/api/uploads"
+```
+
+> Symlink gitignore'lu hedefi gösterdiğinden commit'e girmez; ana repo asset'i
+> güncellenince tüm worktree'ler anında güncel görür. `new` akışında worktree
+> oluştuktan sonra bu adımı çalıştır (idempotent — zaten varsa atlar).
+
 ### `parallel <sayı> <görev-açıklaması>`
 
 N subagent'ı ayrı worktree'lerde paralel başlat. **Task** tool'unu `isolation: "worktree"` ile tek mesajda N kez çağır:

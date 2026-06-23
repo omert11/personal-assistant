@@ -78,16 +78,17 @@ Review **built-in `/code-review` skill'i** ile çalıştırılır — `code-revi
 
 ##### Effort Seçimi — Karmaşıklığa Göre Kalibre Et
 
-Effort, **yapılan işin karmaşıklığına** göre seçilir — gereksiz yüksek effort verme (zaman/token israfı), karmaşık işte düşük effort'a kaçma (kaçan bug). `git diff --stat` + diff içeriğine bakıp karar ver, `code-review` skill'ini seçtiğin seviyeyle çağır:
+Effort, **yapılan işin karmaşıklığına** göre seçilir — gereksiz yüksek effort verme (zaman/token israfı), karmaşık işte düşük effort'a kaçma (kaçan bug). `git diff --stat` + diff içeriğine bakıp karar ver, `code-review` skill'ini seçtiğin seviyeyle çağır. Varsayılan eğilim **küçük/lokal diff'te düşük effort** yönünde; yükseltme için diff'in somut bir üst-kriteri karşılaması gerekir:
 
 | Effort | Ne zaman |
 |---|---|
-| `low` | Tek-birkaç satırlık trivial değişiklik: typo, rename, sabit/string güncelleme, import düzeltme |
-| `medium` (varsayılan) | Sıradan feature/fix: birkaç dosya, sınırlı mantık değişikliği |
-| `high` | Karmaşık mantık, çok dosyaya yayılan değişiklik, güvenlik-kritik kod, data-mutating işlem (migration, ödeme, silme), concurrency/race riski |
+| `low` (küçük diff varsayılanı) | Tek-birkaç dosyada lokal, dar kapsamlı değişiklik: typo/rename/import, sabit/string güncelleme, küçük mantık eklemesi/düzeltmesi, test/docs/config değişikliği — kritik olmayan ve yan etkisi sınırlı işler |
+| `medium` | Sıradan feature/fix: birden çok dosyaya yayılan, gerçek iş mantığı taşıyan orta ölçekli değişiklik |
+| `high` | Karmaşık mantık, geniş yüzeye yayılan değişiklik, güvenlik-kritik kod, data-mutating işlem (migration, ödeme, silme), concurrency/race riski |
 | `xhigh`/`max` | Sadece kullanıcı açıkça isterse — skill kendi inisiyatifiyle seçmez |
 
-- Kararsızsan bir üst seviyeyi seç (eksik review > fazla review maliyetinden pahalı).
+- **Küçük/lokal diff'lerde `low`'da kal** — birkaç satır veya tek bir dar değişiklik için `medium`'a yükseltme; gereksiz yüksek effort zaman/token israfıdır.
+- Yukarı seviyeyi ancak değişiklik **gerçekten** üst kriterlerden birine giriyorsa seç (data-mutating, güvenlik, geniş yüzey, karmaşık mantık) — "ne olur ne olmaz" gerekçesiyle değil.
 - Effort seçimi review'in **dürüstlüğünü** etkilemez: seçilen seviyenin verdiği TÜM bulgular yine ham haliyle sunulur.
 
 ##### Çağrı
