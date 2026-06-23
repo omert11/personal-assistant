@@ -590,11 +590,11 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- issue-workflow -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="circle-dot"></i></div><div><div class="etitle">issue-workflow</div></div></div>
       <div class="ebody">
-        <p><strong>Bir kaynağı (Zammad ticket / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → izole worktree açar → <code>effort: max</code> ultrathink ile kök-neden analizi yapar → <strong>plan moduna girip çözüm planını onaya sunar</strong> → kanıt toplar → kanıt klasörünü Zed ile açıp onay bekler.</p>
+        <p><strong>Bir kaynağı (Plane issue / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → izole worktree açar → <code>effort: max</code> ultrathink ile kök-neden analizi yapar → <strong>plan moduna girip çözüm planını onaya sunar</strong> → kanıt toplar → kanıt klasörünü Zed ile açıp onay bekler.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'i çöz", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/issue-workflow &lt;ref|metin&gt;</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
           <li><code>0a</code> — <code>CLAUDE.local.md</code> "## Issue Workflow" alanını oku (proje-özel komut/port/test/akış notu)</li>
-          <li><code>0b</code> — kaynağı tam analiz et (zammad-cli / Read / markitdown / WebFetch / diji-log-search)</li>
+          <li><code>0b</code> — kaynağı tam analiz et (plane-cli / Read / markitdown / WebFetch / diji-log-search)</li>
           <li><code>1</code> — worktree aç + <code>/tmp/&lt;isim&gt;/REPORT.md</code> oluştur, Zed ile aç (canlı takip — onay <em>beklemez</em>); hedef doğrulanabilir + çok turlu ise <code>/goal</code>'a bağlamayı <em>öner</em></li>
           <li><code>2</code> — kök-neden analizi, <strong>ultrathink</strong> (canlı "Anlık Bulgular" → final temiz rapor)</li>
           <li><code>3</code> — <strong>plan moduna geç</strong> (<code>EnterPlanMode</code> → plan dosyasına çözüm planı → <code>ExitPlanMode</code> onayı); <em>her durumda</em> — eski kesin/belirsiz kararı kalktı, tek onay noktası plan modu</li>
@@ -618,7 +618,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-square"></i></div><div><div class="etitle">user-message</div></div></div>
       <div class="ebody">
         <p><strong>Müşteri/acenta tarafına kanal-agnostik mesaj üretir</strong> (ticket/email/panel/WhatsApp/SMS/push). Stil rehberini her çalıştırmada okur, onaya sunar, revize gelirse hem düzeltir hem stil dosyasına öğrenim işler.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"müşteri mesajı yaz", "acentaya mesaj", "zammad cevap", "duyuru yaz", "whatsapp mesajı", "sms yaz".</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"müşteri mesajı yaz", "acentaya mesaj", "plane yorumu", "duyuru yaz", "whatsapp mesajı", "sms yaz".</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Stil rehberini <b>oku</b> (yoksa dur) → kanal belirle → bağlam topla → mesaj üret (self-check: teknik terim/iç link sızdı mı, kanal uzunluğu) → onay → revize ise yeniden üret + stil dosyasına ders ekle.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>E-posta kanalı zengin HTML</strong> üretir (vurgulu tablo, kalın, liste) ve sistem varsayılan programıyla (<code>open</code>) açıp <code>AskUserQuestion</code> ile onay alır; diğer kanallar düz metin + <code>zed --wait</code>. Stil dosyası <strong>tek doğruluk kaynağı</strong> (bellekten yazmaz). <strong>Revize = öğrenim</strong>: her düzeltme kalıcı ders olur. <strong>Yabancı dil kuralı</strong>: Türkçe dışı mesajda önizleme iki dilli sunulur (orijinal + "sadece önizleme, gönderilmeyecek" etiketli Türkçe çeviri); nihai çıktı sadece orijinal dili içerir. Türkçe karakter ASCII karşılığı (s/sh) yasak.</p></div>
       </div>
@@ -735,7 +735,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="terminal"></i></div><div><div class="etitle">setup.sh <span class="ev">+ setup.py</span></div><div class="emeta">Tek komutla kurulum</div></div></div>
       <div class="ebody">
         <p><strong>Tüm stack'i tek komutla kuran idempotent installer.</strong> <code>setup.sh</code> önce <code>uv</code> yoksa kurar, sonra <code>setup.py</code>'yi <code>rich</code>/<code>questionary</code> bağımlılıklarıyla ephemeral venv'de çalıştırır (global kirletmeden).</p>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Ne kurar</div><p>settings.json + statusline, Homebrew prerequisites, Python CLI araçları (uv tool), Obsidian vault + CLI, local MCP repo'ları, <code>vikunja-cli</code>, <code>zammad-cli</code>, <code>po-cli</code>, Playwright CLI, <code>playwright-best-practices</code> skill'i, Context7 CLI, Claude Code MCP server'ları ve interaktif credential prompt'ları.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Ne kurar</div><p>settings.json + statusline, Homebrew prerequisites, Python CLI araçları (uv tool), Obsidian vault + CLI, local MCP repo'ları, <code>vikunja-cli</code>, <code>plane-cli</code>, <code>po-cli</code>, Playwright CLI, <code>playwright-best-practices</code> skill'i, Context7 CLI, Claude Code MCP server'ları ve interaktif credential prompt'ları.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="play"></i> Çalıştırma</div><pre><code>./setup.sh              # uv kurup başlatır
 # idempotent — tekrar çalıştırılabilir, mevcut olanı atlar</code></pre></div>
       </div>
@@ -799,7 +799,7 @@ CLAUDE.local.md → Vikunja proje ID</code></pre></div>
           <li><strong>Playwright CLI</strong> — tarayıcı otomasyonu ve frontend testi (<code>browser-testing</code> kuralı; MCP yerine CLI).</li>
           <li><strong>playwright-best-practices</strong> — <code>@playwright/test</code> ile E2E/component/API/visual spec yazımı için harici skill (currents.dev, MIT); <code>~/.claude/skills/</code> altına klonlanır.</li>
           <li><strong>Context7 (ctx7)</strong> — kütüphane/framework dökümanını canlı çeker; <code>obsidian-doc-source</code> library modunda zorunlu.</li>
-          <li><strong>Zammad (zammad-cli)</strong> — helpdesk ticket yönetimi; <code>user-message</code> ile ticket yanıtı üretimi.</li>
+          <li><strong>Plane (plane-cli)</strong> — proje/issue yönetimi; <code>user-message</code> ile issue yanıtı üretimi.</li>
           <li><strong>markitdown</strong> — PDF/Office/ses/görsel → markdown; <code>crawl2md</code> ve <code>obsidian-doc-source</code> dosya kaynaklarında.</li>
         </ul></div>
       </div>

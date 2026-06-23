@@ -1,7 +1,7 @@
 ---
 name: user-message
 description: Acentaya/müşteriye kanal-agnostik mesaj üretir (ticket/email/panel/WhatsApp/SMS/push).
-when_to_use: Trigger — "müşteri mesajı yaz", "acentaya mesaj", "müşteriye yaz", "destek talebi yanıtı", "zammad cevap", "ticket reply", "duyuru yaz", "panel duyurusu", "whatsapp mesajı", "sms yaz", "push notification". Stil rehberi `~/Documents/ObsidianVault/user-message-still.md`'den okunur. E-posta kanalı zengin HTML (vurgulu tablo) üretip sistem varsayılan programıyla açar; diğer kanallar zed --wait ile onaya sunulur. Revize stil dosyasına öğrenim olarak eklenir.
+when_to_use: Trigger — "müşteri mesajı yaz", "acentaya mesaj", "müşteriye yaz", "destek talebi yanıtı", "plane yorumu", "issue cevabı", "duyuru yaz", "panel duyurusu", "whatsapp mesajı", "sms yaz", "push notification". Stil rehberi `~/Documents/ObsidianVault/user-message-still.md`'den okunur. E-posta kanalı zengin HTML (vurgulu tablo) üretip sistem varsayılan programıyla açar; diğer kanallar zed --wait ile onaya sunulur. Revize stil dosyasına öğrenim olarak eklenir.
 allowed-tools: Read, Write, Edit, Bash, AskUserQuestion
 disable-model-invocation: false
 ---
@@ -196,7 +196,7 @@ Read(file_path: "/Users/omerfarukyigin/Documents/ObsidianVault/user-message-stil
 
 ### 8. Self-check ve çıkış
 
-Onaylanmış mesajı tekrar göster, kullanıcıya kanala yapıştırması için hazır metni sun. E-posta dalında ayrıca HTML dosya yolunu (`/tmp/user-message-*.html`) belirt — kullanıcı dosyayı tekrar açabilir veya gövdeye olduğu gibi kopyalayabilir. Skill mesajı doğrudan göndermez (Zammad/WhatsApp/SMS entegrasyonu ayrı skill — kullanıcı isterse `zammad-cli`/`whatsapp` MCP'ye geçer).
+Onaylanmış mesajı tekrar göster, kullanıcıya kanala yapıştırması için hazır metni sun. E-posta dalında ayrıca HTML dosya yolunu (`/tmp/user-message-*.html`) belirt — kullanıcı dosyayı tekrar açabilir veya gövdeye olduğu gibi kopyalayabilir. Skill mesajı doğrudan göndermez (Plane/WhatsApp/SMS entegrasyonu ayrı skill — kullanıcı isterse `plane-cli`/`whatsapp` MCP'ye geçer).
 
 ## Argüman Örnekleri
 
