@@ -124,11 +124,11 @@ Her dosyayı oku, değişen kodla alakalı kuralları bul. Sabit liste tutma —
 İhlal varsa bulgu olarak topla. Alakasız rule dosyası varsa atla.
 
 #### 3e. Plane Issue Bağlantısı (opsiyonel)
-`CLAUDE.local.md`'de **Plane proje (UUID) tanımlıysa** (yoksa bu adımı ATLA — görev takibi opsiyonel):
-```
-plane-cli issue list --project <UUID> --json ile açık issue'ları getir
-```
-Yapılan değişikliklerle uyuşan bir issue var mı tespit et:
+`CLAUDE.local.md`'de **Plane proje (UUID) tanımlıysa** (yoksa bu adımı ATLA — görev takibi opsiyonel).
+
+> **Plane CLI kullanımı `plane-cli` skill'ine devredilir.** Tüm `plane-cli` komut sözdizimi, UUID semantiği (`PROJ-N` → `issue get-id`), `--json` parse, REPLACE (`update --assignees/--labels`) vs incremental (`assignee/label --add`) farkı, enum'lar ve hata kodları için **`plane-cli` skill'inin kurallarına uy** (`~/.claude/skills/plane-cli/SKILL.md`). Bu skill yalnızca **commit'e özgü iş kurallarını** (hangi issue, completed'e çekme, self atama, label tipi, branch-bazlı tarih) tanımlar; çağrıların nasıl yapılacağı `plane-cli` skill'inin sorumluluğundadır.
+
+Açık issue'ları listele (proje UUID ile), yapılan değişikliklerle uyuşan bir issue var mı tespit et:
 - **Var**: issue UUID'sini sakla (sonra hem completed state'e çek hem de eksik alanları doldur — bkz. "Plane Alan Doldurma")
 - **Yok**: bulgu olarak işaretle (yeni issue önerisi için — create sırasında tüm alanlar doldurulur)
 
@@ -272,68 +272,36 @@ EOF
 
 ### 10. Plane Issue Kapatma + Alan Doldurma
 
-Plane state UUID tabanlıdır — kapatma = issue'yu **completed group** state'ine çekmek (boolean değil).
-Önce gerekli UUID'leri çöz (hepsi UUID alır):
-```
-plane-cli member me --json                     # SELF user UUID (şu anki kullanıcı)
-plane-cli state list --project <UUID> --json   # group == "completed" olan state'in id'sini al
-plane-cli label list --project <UUID> --json   # "hata"/"geliştirme" label UUID'lerini bul
-```
+> **CLI sözdizimi `plane-cli` skill'inden gelir.** Aşağıdaki adımlar **ne yapılacağını** (hangi işlem, hangi alan) söyler; UUID çözme, `--json` parse, `create`/`update`/`assignee --add`/`label --add` komutlarının tam sözdizimi, REPLACE vs incremental farkı ve hata kodları için **`plane-cli` skill'inin kurallarına uy**. Burada komutları tekrar yazma — `plane-cli` skill'i kanonik kaynaktır.
 
-Sonra **"Plane Alan Doldurma Kuralları"** bölümüne göre alanları hazırla (self, tarihler, label).
+Plane state UUID tabanlıdır — **kapatma = issue'yu `completed` group state'ine çekmek** (boolean değil). Gereken UUID'leri `plane-cli` ile çöz: SELF user (member me), `completed` group state (state list), `hata`/`geliştirme` label (label list). Sonra **"Plane Alan Doldurma Kuralları"** bölümüne göre alanları hazırla (self, tarihler, label).
 
 #### Yeni Issue (Soru 3'te "Evet oluştur" seçildiyse)
-0'dan oluşturulurken **tüm alanlar tek `create` çağrısında** verilir (self assignee + tarihler + label), sonra completed state'e çekilir:
-```
-plane-cli --json issue create "<özet>" --project <UUID> \
-  --description "<detay>" \
-  --assignees <SELF-UUID> \
-  --labels <LABEL-UUID> \
-  --start-date <START> --target-date <TARGET>
-plane-cli --json issue update <yeni-issue-UUID> --project <UUID> --state <completed-state-UUID>
-```
+0'dan oluşturulurken **tüm alanlar tek `issue create` çağrısında** verilir (self assignee + tarihler + label), sonra ayrı bir `issue update` ile `completed` group state'ine çekilir. Priority **set edilmez**.
 
 #### Mevcut Issue (Soru 3'te "Evet kapat" seçildiyse)
-Mevcut issue'da **eksik alanlar tamamlanır** (var olanlar korunur — `update --assignees/--labels` REPLACE yaptığı için **kullanma**; incremental `assignee/label --add` kullan):
+Mevcut issue'da **eksik alanlar tamamlanır, dolu olanlar korunur**. Liste alanlarında (assignee/label) **incremental ekleme** kullan (REPLACE yapan `update --assignees/--labels` değil — bkz. `plane-cli` skill'i):
 
-1. Issue'nun mevcut halini al, eksikleri tespit et:
-   ```
-   plane-cli --json issue get <issue-UUID> --project <UUID>
-   ```
-2. **Self assignee yoksa** ekle (mevcut atananları korur):
-   ```
-   plane-cli --json issue assignee <issue-UUID> --project <UUID> --add <SELF-UUID>
-   ```
-3. **Label yoksa** ekle (mevcut label'ları korur):
-   ```
-   plane-cli --json issue label <issue-UUID> --project <UUID> --add <LABEL-UUID>
-   ```
-4. **Tarihler boşsa** doldur (sadece eksik olanı; dolu olana dokunma):
-   ```
-   plane-cli --json issue update <issue-UUID> --project <UUID> --start-date <START> --target-date <TARGET>
-   ```
-5. Completed state'e çek:
-   ```
-   plane-cli --json issue update <issue-UUID> --project <UUID> --state <completed-state-UUID>
-   ```
+1. Issue'nun mevcut halini al (`issue get`), eksik alanları tespit et.
+2. **Self assignee yoksa** incremental ekle (`issue assignee --add`; mevcut atananları korur).
+3. **Label yoksa** incremental ekle (`issue label --add`; mevcut label'ları korur).
+4. **Tarihler boşsa** doldur (`issue update` ile sadece eksik olanı; dolu olana dokunma).
+5. `completed` group state'ine çek (`issue update --state`).
 
 ### 10a. Plane Alan Doldurma Kuralları
 
-İssue oluşturulurken/güncellenirken aşağıdaki alanlar şu kurallarla doldurulur. **Öncelik (priority) set EDİLMEZ** — bu skill priority'ye dokunmaz.
+İssue oluşturulurken/güncellenirken aşağıdaki alanlar şu kurallarla doldurulur. **Öncelik (priority) set EDİLMEZ** — bu skill priority'ye dokunmaz. CLI komutlarının tam sözdizimi için `plane-cli` skill'ine bak.
 
 #### Assignee — Self
-- `plane-cli member me --json` ile şu anki kullanıcının UUID'sini al.
-- **Yeni issue**: `create --assignees <SELF-UUID>`.
-- **Mevcut issue**: atananlar arasında self yoksa `issue assignee --add <SELF-UUID>` ile ekle (REPLACE yapan `update --assignees` kullanma).
+- `plane-cli` skill'i üzerinden `member me` ile şu anki kullanıcının UUID'sini al.
+- **Yeni issue**: `create` çağrısında self assignee ver.
+- **Mevcut issue**: atananlar arasında self yoksa **incremental** (`issue assignee --add`) ile ekle — REPLACE yapan `update --assignees` kullanma.
 
 #### Label — hata / geliştirme
 - Tipi **agent kendisi belirler**: review/commit ettiği işin doğasına göre bir **bug fix** ise `hata`, yeni özellik/iyileştirme/refactor/chore ise `geliştirme`. Kullanıcıya ayrıca sorma — yaptığın işi zaten biliyorsun.
-- `label list` ile UUID'sini çöz. **Label projede yoksa oluştur**, sonra ata:
-  ```
-  plane-cli --json label create "hata" --project <UUID>          # veya "geliştirme"
-  ```
-- **Yeni issue**: `create --labels <LABEL-UUID>`.
-- **Mevcut issue**: o label yoksa `issue label --add <LABEL-UUID>` ile ekle (REPLACE yapan `update --labels` kullanma).
+- `label list` ile UUID'sini çöz. **Label projede yoksa `plane-cli` ile oluştur** (`label create "hata"` veya `"geliştirme"`), sonra ata.
+- **Yeni issue**: `create` çağrısında label ver.
+- **Mevcut issue**: o label yoksa **incremental** (`issue label --add`) ile ekle — REPLACE yapan `update --labels` kullanma.
 
 #### Tarihler — start-date / target-date (ISO 8601, `YYYY-MM-DD`)
 Branch durumuna göre:
@@ -363,4 +331,6 @@ Branch durumuna göre:
 - `~/.claude/rules/before-commit.md` — bu skill'in temel kuralları
 - `~/.claude/rules/coding.md` — kod kalite kuralları
 - `~/.claude/rules/ask-first.md` — AskUserQuestion kullanım kuralları
+- `~/.claude/rules/plane.md` — Plane ID semantiği + CLI kuralları
+- `plane-cli` skill — Plane CLI komut sözdizimi (adım 3e/10/10a buna devreder)
 - `worktree` skill (varsa) — worktree teslim akışı
