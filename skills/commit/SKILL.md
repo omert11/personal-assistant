@@ -3,7 +3,7 @@ name: commit
 description: Commit oncesi kalite kontrol + teslimat secenekleri (commit, push, PR, branch).
 when_to_use: Trigger — "commit", "commit at", "push et", "PR olustur", "branch ac", "degisiklikleri kaydet", "kodu gonder", "/commit". Her kod teslimat/kaydetme isteginde tetiklenir.
 disable-model-invocation: false
-allowed-tools: Bash(git *), Bash(gh *), Read, Grep, Glob, AskUserQuestion, Task
+allowed-tools: Bash(git *), Bash(gh *), Bash(plane-cli *), Read, Grep, Glob, AskUserQuestion, Task
 ---
 
 # Commit Skill
@@ -129,8 +129,10 @@ Her dosyayı oku, değişen kodla alakalı kuralları bul. Sabit liste tutma —
 plane-cli issue list --project <UUID> --json ile açık issue'ları getir
 ```
 Yapılan değişikliklerle uyuşan bir issue var mı tespit et:
-- **Var**: issue UUID'sini sakla (sonra completed state'e çek)
-- **Yok**: bulgu olarak işaretle (yeni issue önerisi için)
+- **Var**: issue UUID'sini sakla (sonra hem completed state'e çek hem de eksik alanları doldur — bkz. "Plane Alan Doldurma")
+- **Yok**: bulgu olarak işaretle (yeni issue önerisi için — create sırasında tüm alanlar doldurulur)
+
+Her iki durumda da issue oluşturma/güncelleme **"Plane Alan Doldurma Kuralları"** bölümüne göre alanları (self assignee, tarihler, label) set eder.
 
 #### 3f. Obsidian Kayıt İhtiyacı
 `CLAUDE.local.md`'de `Obsidian Folder` varsa bu commit'te kaydedilmesi kayda değer bir şey var mı tespit et (dar kriter — kanonik tanım: `agents/obsidian-writer.md` append guard):
@@ -163,8 +165,10 @@ Aktif olanları (koşul sağlanan) sıraya koy, ilk 4'ünü tek blokta sor:
 - options: ["Test yaz", "Testsiz devam et"]
 
 **S3 — Plane** (proje UUID tanımlıysa; yoksa bu soruyu sorma)
-- Issue varsa: header "Plane", question "PROJ-X issue'sunu kapatayım mı (completed)?", options ["Evet kapat (completed)", "Açık bırak"]
-- Issue yoksa: question "Bu değişiklik için Plane'de issue oluşturayım mı (completed olarak)?", options ["Evet", "Hayır"]
+- Issue varsa: header "Plane", question "PROJ-X issue'sunu kapatayım mı (completed)? Eksik alanlar (self atama, tarihler, label) da tamamlanır.", options ["Evet kapat (completed)", "Açık bırak"]
+- Issue yoksa: question "Bu değişiklik için Plane'de issue oluşturayım mı (completed olarak)? Self atanır, tarih + label set edilir.", options ["Evet", "Hayır"]
+
+"Evet" seçilirse 10. adımda issue oluşturma/güncelleme **10a Alan Doldurma Kuralları**'na göre yapılır (self assignee, tarihler, label; priority'ye dokunulmaz).
 
 **S4 — Teslimat** (branch'e göre değişir)
 
@@ -266,24 +270,82 @@ EOF
 )"
 ```
 
-### 10. Plane Issue Kapatma
+### 10. Plane Issue Kapatma + Alan Doldurma
 
 Plane state UUID tabanlıdır — kapatma = issue'yu **completed group** state'ine çekmek (boolean değil).
-Önce projenin completed state UUID'sini çöz:
+Önce gerekli UUID'leri çöz (hepsi UUID alır):
 ```
+plane-cli member me --json                     # SELF user UUID (şu anki kullanıcı)
 plane-cli state list --project <UUID> --json   # group == "completed" olan state'in id'sini al
+plane-cli label list --project <UUID> --json   # "hata"/"geliştirme" label UUID'lerini bul
 ```
 
-Soru 3'te "Evet kapat" seçildiyse:
-```
-plane-cli --json issue update <issue-UUID> --project <UUID> --state <completed-state-UUID>
-```
+Sonra **"Plane Alan Doldurma Kuralları"** bölümüne göre alanları hazırla (self, tarihler, label).
 
-Issue yoksa ve "Evet" seçildiyse (önce create, sonra completed state'e çek):
+#### Yeni Issue (Soru 3'te "Evet oluştur" seçildiyse)
+0'dan oluşturulurken **tüm alanlar tek `create` çağrısında** verilir (self assignee + tarihler + label), sonra completed state'e çekilir:
 ```
-plane-cli --json issue create "<özet>" --project <UUID> --description "<detay>"
+plane-cli --json issue create "<özet>" --project <UUID> \
+  --description "<detay>" \
+  --assignees <SELF-UUID> \
+  --labels <LABEL-UUID> \
+  --start-date <START> --target-date <TARGET>
 plane-cli --json issue update <yeni-issue-UUID> --project <UUID> --state <completed-state-UUID>
 ```
+
+#### Mevcut Issue (Soru 3'te "Evet kapat" seçildiyse)
+Mevcut issue'da **eksik alanlar tamamlanır** (var olanlar korunur — `update --assignees/--labels` REPLACE yaptığı için **kullanma**; incremental `assignee/label --add` kullan):
+
+1. Issue'nun mevcut halini al, eksikleri tespit et:
+   ```
+   plane-cli --json issue get <issue-UUID> --project <UUID>
+   ```
+2. **Self assignee yoksa** ekle (mevcut atananları korur):
+   ```
+   plane-cli --json issue assignee <issue-UUID> --project <UUID> --add <SELF-UUID>
+   ```
+3. **Label yoksa** ekle (mevcut label'ları korur):
+   ```
+   plane-cli --json issue label <issue-UUID> --project <UUID> --add <LABEL-UUID>
+   ```
+4. **Tarihler boşsa** doldur (sadece eksik olanı; dolu olana dokunma):
+   ```
+   plane-cli --json issue update <issue-UUID> --project <UUID> --start-date <START> --target-date <TARGET>
+   ```
+5. Completed state'e çek:
+   ```
+   plane-cli --json issue update <issue-UUID> --project <UUID> --state <completed-state-UUID>
+   ```
+
+### 10a. Plane Alan Doldurma Kuralları
+
+İssue oluşturulurken/güncellenirken aşağıdaki alanlar şu kurallarla doldurulur. **Öncelik (priority) set EDİLMEZ** — bu skill priority'ye dokunmaz.
+
+#### Assignee — Self
+- `plane-cli member me --json` ile şu anki kullanıcının UUID'sini al.
+- **Yeni issue**: `create --assignees <SELF-UUID>`.
+- **Mevcut issue**: atananlar arasında self yoksa `issue assignee --add <SELF-UUID>` ile ekle (REPLACE yapan `update --assignees` kullanma).
+
+#### Label — hata / geliştirme
+- Tipi **agent kendisi belirler**: review/commit ettiği işin doğasına göre bir **bug fix** ise `hata`, yeni özellik/iyileştirme/refactor/chore ise `geliştirme`. Kullanıcıya ayrıca sorma — yaptığın işi zaten biliyorsun.
+- `label list` ile UUID'sini çöz. **Label projede yoksa oluştur**, sonra ata:
+  ```
+  plane-cli --json label create "hata" --project <UUID>          # veya "geliştirme"
+  ```
+- **Yeni issue**: `create --labels <LABEL-UUID>`.
+- **Mevcut issue**: o label yoksa `issue label --add <LABEL-UUID>` ile ekle (REPLACE yapan `update --labels` kullanma).
+
+#### Tarihler — start-date / target-date (ISO 8601, `YYYY-MM-DD`)
+Branch durumuna göre:
+- **Feature branch'teyse** (`IS_MAIN=false`): `start-date` = branch'in açıldığı/ilk commit tarihi, `target-date` = bugün.
+  ```bash
+  START=$(git log "$DEFAULT_BRANCH".."$CURRENT_BRANCH" --format=%cs --reverse 2>/dev/null | head -1)
+  [ -z "$START" ] && START=$(git log -1 --format=%cs "$(git merge-base "$DEFAULT_BRANCH" "$CURRENT_BRANCH")" 2>/dev/null)
+  [ -z "$START" ] && START=$(date +%Y-%m-%d)
+  TARGET=$(date +%Y-%m-%d)
+  ```
+- **Ana branch'teyse** (`IS_MAIN=true`): `start-date` = `target-date` = bugün (`date +%Y-%m-%d`).
+- **Mevcut issue güncellemesinde**: yalnızca **boş** olan tarih alanını doldur — issue'da zaten dolu olan `start_date`/`target_date` değerine **dokunma**.
 
 ## Kritik Kurallar
 
