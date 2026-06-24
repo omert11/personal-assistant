@@ -1,5 +1,15 @@
 # Django
 
+## Template Yorumları — `{% comment %}` ZORUNLU
+
+Django template (`.html`) dosyalarında yorum için **`{# ... #}` KULLANMAK YASAK**, her zaman `{% comment %} ... {% endcomment %}` kullanılır. `{# #}` çok satıra yayıldığında veya içinde `#}`, `{{`, `{%` gibi karakterler geçtiğinde parser yorumu erken kapatır ve render hatası verir. `{% comment %}` içeriği ham metin sayar (içindeki etiketler parse edilmez) ve HTML çıktısına sızmaz.
+
+```django
+{% comment %}
+açıklama buraya — çok satır, özel karakter sorun değil
+{% endcomment %}
+```
+
 ## F7 Çeviri Sistemi
 Projede standart django/djangojs domain'lerine ek olarak `djangof7` adında özel bir çeviri domain'i var. Bu domain F7 framework'üne özel çevirileri yönetir.
 
