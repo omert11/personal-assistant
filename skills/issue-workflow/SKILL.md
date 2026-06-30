@@ -24,7 +24,7 @@ kanit klasorunu acip onay bekler.
 > ana baglamdan kopar — yanlis/eksik analiz uretir. Bu iki adimi **her zaman ana ajan kendi
 > context'inde, `effort: max` ile** yapar. `Task` tool bu adimlarda kullanilmaz.
 > (Tek istisna: Adim 0'da `obsidian-searcher` *on aramasi* — analiz yapmaz, sadece gecmis notu
-> context'e GETIRIR; ve `diji-log-search`/`worktree`/`commit` gibi **skill delegasyonlari** —
+> context'e GETIRIR; ve `diji-logs`/`worktree`/`commit` gibi **skill delegasyonlari** —
 > bunlar sub-agent degil, ayri skill cagrilaridir.)
 
 ---
@@ -61,7 +61,7 @@ Kullanicinin verdigi her kaynagi **tek tek, tam** incele. Hicbirini atlama, ozet
 | **Serbest metin / mesaj** | Dogrudan oku, talebi/sikayeti madde madde cikar |
 | **Gorsel** (ekran goruntusu, hata diyalogu) | `Read` ile gor — hata metni, kod, ekran durumu, URL'leri cikar. TR hata mesaji ise orijinal msgid'i `grep ... locale/*/LC_MESSAGES/*.po` ile bul |
 | **Dokuman** (PDF/Word/HTML/dosya) | `markitdown <dosya> > /tmp/src.md` ile markdown'a cevir, sonra oku. URL ise `WebFetch` |
-| **Log / hata ciktisi** | Diji b2c projesiyse `diji-log-search` skill'e delege et (basket lifecycle); degilse Grep ile ilgili log dosyalarini tara |
+| **Log / hata ciktisi** | VictoriaLogs erisimi olan diji projesiyse `diji-logs` skill'e delege et (LogsQL arama); kapsamli tarama gerekiyorsa `log-triage`; degilse Grep ile ilgili log dosyalarini tara |
 
 **Cikti — kisa bir baglam ozeti** (kullaniciya goster):
 - Ne isteniyor / ne bozuk (somut, tek cumle)
@@ -288,7 +288,7 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 
 ```
 0a. CLAUDE.local.md "## Issue Workflow" alanini oku  (varsa proje-ozel komut/port/test/akis notu)
-0b. Kaynagi tam analiz et + contexte al              (plane-cli / Read / markitdown / WebFetch / diji-log-search)
+0b. Kaynagi tam analiz et + contexte al              (plane-cli / Read / markitdown / WebFetch / diji-logs)
 1.  Worktree ac + /tmp/<isim>/REPORT.md ac           (worktree skill; REPORT zed — takip icin, onay DEGIL)
     └─ Hedef dogrulanabilir+coktur ise `/goal`'a baglamayi ONER (opsiyonel; workflow kurali)
 2.  Kok-neden analizi — ULTRATHINK                   (effort: max; canli "Anlik Bulgular" → "Final Rapor")
@@ -304,7 +304,7 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 
 - **Worktree**: mantik `worktree` skill'de — bu skill sadece `new <isim>` cagirir, isim turetir
 - **Teslimat**: commit/push/PR mantigi `commit` skill'de — `before-commit` kurali geregi manuel git yok
-- **Log analizi**: diji b2c projede `diji-log-search` skill'e delege (basket lifecycle)
+- **Log analizi**: VictoriaLogs erisimi olan diji projede `diji-logs` skill'e delege (LogsQL arama), kapsamli tarama icin `log-triage`
 - **Kaynak donusum**: PDF/Office → `markitdown`, URL → `WebFetch`, gorsel → `Read`
 - **Local alan**: `CLAUDE.local.md` **"## Issue Workflow"** bolumu ise baslarken (Adim 0a) okunur — proje-ozel baslatma/test/port komutlari ve kullanici-ozel akis notlari oraya yazilir
 - **Test ortami**: worktree'de izole hazirlanir, **unique port** ile arka planda (`run_in_background`) calisir, testler bitince **mutlaka durdurulur** (orphan process yok)

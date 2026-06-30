@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 13 kural, 8 hook, 16 skill, 8 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 13 kural, 8 hook, 17 skill, 8 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -196,7 +196,7 @@
     <div class="hero-stats">
       <div class="stat"><div class="num">13</div><div class="lbl">Kural</div></div>
       <div class="stat"><div class="num">8</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">16</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">17</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">8</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -560,13 +560,23 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       </div>
     </div>
 
-    <!-- diji-log-search -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="search-code"></i></div><div><div class="etitle">diji-log-search</div></div></div>
+    <!-- diji-logs -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="search-code"></i></div><div><div class="etitle">diji-logs</div></div></div>
       <div class="ebody">
-        <p><strong>Diji tabanlı b2c Django projelerde bir basket'in (UserBookingBasket) tüm yaşam döngüsünü prod <code>AppLog</code> tablosundan çıkarır, özetler, sorunu teşhis eder.</strong> Ref verilmezse hata mesajından/ekran görüntüsünden ilgili basket'i kendisi bulur.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu hata alındı son loglara bak", "bu hata mesajını araştır", "&lt;ref&gt; sepetini incele", "ödeme neden başarısız", "provider logları", <code>/diji-log-search</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Ortamı <code>CLAUDE.local.md</code>'den oku → mod belirle (<code>lifecycle</code>/<code>provider</code>/<code>payment</code>/<code>raw</code>/<code>find</code>/<code>diagnose</code>) → <code>scripts/diji_log_search.py</code>'yi prod'a scp → <code>manage.py shell &lt;</code> ile çalıştır (param env var ile) → LogReader sağlık kontrolü → kronolojik rapor.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>find modu</strong> "mesaj → kod → basket → trace" zincirini tek komuta indirir. Marka/proje adı hardcode edilmez (domain her zaman <code>CLAUDE.local.md</code>'den). Çıktı <code>/tmp</code>'e yazılır (canlı credential içerebilir, Zed ile açılmaz).</p></div>
+        <p><strong>Scope (dijiscope) tipi bir scoped VictoriaLogs erişim API'si üzerinden log arar, sayar ve teşhis eder.</strong> Kullanıcı projeyi seçer; skill LogsQL pipe'ı kurup <code>/api/logs/query/</code> ya da <code>/api/logs/count/</code> çağırır, sonucu özetler.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"&lt;proje&gt; loglarına bak", "son N dk/saat hata var mı", "şu hatayı VL'de ara", "log sorgula", "logsql", "hata sayısını zamanla göster", <code>/diji-logs</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Credential'ı <code>~/.config/diji-logs/env</code>'den oku (tekrar sormaz) → <code>projects/</code> ile erişilebilir projeleri listele → mod belirle (query / count / stats) → LogsQL pipe kur (<code>references/logsql.md</code>) → <code>scripts/query.sh</code> ile sorgula → ham JSON'u özetle.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Mimari sözleşme</strong>: kullanıcı asla ham stream-selector veremez; sunucu <code>(env, project)</code>'i scope'a göre doğrular, sen yalnız <code>|</code> sonrası narrowing pipe gönderirsin. Token scope'ludur (kapsam dışı proje → 403). DB/AppLog basket analizi DEĞİL — yalnız VictoriaLogs/LogsQL.</p></div>
+      </div>
+    </div>
+
+    <!-- log-triage -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="list-checks"></i></div><div><div class="etitle">log-triage</div></div></div>
+      <div class="ebody">
+        <p><strong>Bir diji-logs projesinin son N saatlik logunu zaman pencerelerine böler, her pencereyi çok açıdan paralel analiz eder, bulguları doğrular ve onayla Plane'e issue açar.</strong> Proje-bağımsız — değişen tek şey hedef proje ve Plane proje UUID'si.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"logları analiz et", "son N saatte sorun var mı", "log triage", "loglardan issue çıkar", <code>/log-triage &lt;proje&gt; &lt;süre&gt;</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>fetch_windows.sh</code> ile pencereleri stratified çek (ERROR/WARN ham + DEBUG/SQL aggregate) → tek <strong>Workflow</strong> ile pencere×açı paralel agent (sonnet) → dedup + canlı sorgu ile doğrula → 4 katmanlı tablo sun → <code>log-triage</code> label'ı ile Plane eşleştir → katman katman onay → sırayla issue aç.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>4 standart açı</strong> (hata / perf / akış / hijyen) her pencerede paralel taranır. Sahte ERROR (ErrRecordNotFound) ayıklanır, PII/credential sızıntısı işaretlenir. Her issue ≥1 ham log örneği + provenance taşır (sonraki oturum sıfırdan kazmasın). Issue açma workflow DEĞİL — HTML escape için Claude sırayla açar.</p></div>
       </div>
     </div>
 
@@ -594,7 +604,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'i çöz", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/issue-workflow &lt;ref|metin&gt;</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
           <li><code>0a</code> — <code>CLAUDE.local.md</code> "## Issue Workflow" alanını oku (proje-özel komut/port/test/akış notu)</li>
-          <li><code>0b</code> — kaynağı tam analiz et (plane-cli / Read / markitdown / WebFetch / diji-log-search)</li>
+          <li><code>0b</code> — kaynağı tam analiz et (plane-cli / Read / markitdown / WebFetch / diji-logs)</li>
           <li><code>1</code> — worktree aç + <code>/tmp/&lt;isim&gt;/REPORT.md</code> oluştur, Zed ile aç (canlı takip — onay <em>beklemez</em>); hedef doğrulanabilir + çok turlu ise <code>/goal</code>'a bağlamayı <em>öner</em></li>
           <li><code>2</code> — kök-neden analizi, <strong>ultrathink</strong> (canlı "Anlık Bulgular" → final temiz rapor)</li>
           <li><code>3</code> — <strong>plan moduna geç</strong> (<code>EnterPlanMode</code> → plan dosyasına çözüm planı → <code>ExitPlanMode</code> onayı); <em>her durumda</em> — eski kesin/belirsiz kararı kalktı, tek onay noktası plan modu</li>

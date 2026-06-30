@@ -1,7 +1,7 @@
 {
   "name": "personal-assistant",
-  "version": "1.52.1",
-  "description": "Kisisel asistan plugin'i — init kontrolleri, oturum yonetimi, extension builder, commit, project-init, worktree, obsidian docs, user-message, diji-log-search, design-brief, global rules",
+  "version": "1.54.0",
+  "description": "Kisisel asistan plugin'i — init kontrolleri, oturum yonetimi, extension builder, commit, project-init, worktree, obsidian docs, user-message, diji-logs, log-triage, design-brief, global rules",
   "author": {
     "name": "Omer Faruk Yigin"
   },
@@ -24,9 +24,13 @@
     "ticket-resolution",
     "user-message",
     "customer-message",
-    "diji-log-search",
-    "basket-lifecycle",
-    "applog",
+    "diji-logs",
+    "victorialogs",
+    "logsql",
+    "log-search",
+    "log-triage",
+    "log-analysis",
+    "incident-triage",
     "plane",
     "project-management",
     "design-brief",
