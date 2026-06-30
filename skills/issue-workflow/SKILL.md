@@ -73,6 +73,44 @@ Kullanicinin verdigi her kaynagi **tek tek, tam** incele. Hicbirini atlama, ozet
 
 ---
 
+## Adim 0c — Plane issue'yu ISLEME AL (kaynak Plane issue ise; OTOMATIK)
+
+Adim 0b'de kaynak bir **Plane issue** ise (`PROJ-123` / numerik ref ile verildi ve UUID cozuldu),
+**worktree acmadan ve analize gecmeden ONCE** issue'yu isleme alinmis duruma getir. Bu, `commit`
+skill'inin **kapama** mantiginin (Adim 10/10a) **baslangic** karsiligidir: kapama issue'yu
+`completed`'e ceker, bu adim `started`'a ceker; ayni alan-doldurma felsefesini paylasir.
+
+> Kaynak Plane issue **degilse** (serbest metin, gorsel, log, mail) bu adim **atlanir** — issue
+> yoksa isleme alinacak bir sey de yok. Plane proje tanimli degilse de atlanir.
+
+> **CLI sozdizimi `plane-cli` skill'inden gelir.** Asagidaki adimlar **ne yapilacagini** (hangi islem,
+> hangi alan) soyler; UUID cozme, `--json` parse, `state list` ile group state cozme, `assignee --add`
+> incremental vs REPLACE farki ve hata kodlari icin **`plane-cli` skill'inin kurallarina uy**.
+
+**Onay sorma — otomatik uygula.** Issue kullanici tarafindan zaten bu skill'e verildi; isleme alma
+dusuk riskli ve geri alinabilir. `ask-first` kuralinin onay gerektiren "destructive/irreversible"
+sinifina girmez. State/alan degisiklikleri sessizce yapilir, sonra kullaniciya tek satir bildirilir
+(orn "PROJ-123 isleme alindi: started + self atandi + start_date=bugun").
+
+Sirayla (her birini `plane-cli` skill'i uzerinden, `--json` ile):
+
+1. **Issue'nun mevcut halini al** (`issue get`) — assignee'ler, `start_date`, mevcut state group'unu gor.
+2. **Zaten `started`/`completed`/`cancelled` ise state'e DOKUNMA.** Issue zaten ilerleme/bitmis
+   durumda ise tekrar `started`'a cekme — yalnizca `backlog`/`unstarted` group'undaki issue'yu
+   `started`'a cek (`state list` ile projedeki `started` group state UUID'sini coz → `issue update --state`).
+3. **Assignee yoksa self ata** — atananlar listesi bossa `member me` ile SELF UUID'sini al,
+   **incremental** ekle (`issue assignee --add`; REPLACE yapan `update --assignees` KULLANMA).
+   Zaten atanan(lar) varsa **dokunma** — baskasinin issue'suna kendini ekleme.
+4. **`start_date` bossa bugunu ata** — `issue update --start-date $(date +%Y-%m-%d)` (ISO 8601).
+   `start_date` zaten doluysa **dokunma** (commit kapama mantigindaki "dolu tarihe dokunma" kurali ile ayni).
+
+> **Idempotent davran**: bu skill ayni issue icin tekrar calistirilabilir (BELIRSIZ → geri don
+> dongusu, yeniden deneme). Her alanda "zaten dolu/zaten started ise dokunma" kurali, tekrar
+> calistirmada mevcut degerleri/atamalari bozmamayi garantiler. Label/priority/target-date'e bu
+> adimda **dokunulmaz** — onlar `commit` skill'inin kapama adiminin (Adim 10a) sorumlulugundadir.
+
+---
+
 ## Adim 1 — Worktree ac ve o ortama gec (worktree skill'e delege)
 
 Issue'dan **anlamli, kebab-case** bir isim turet:
@@ -289,6 +327,7 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 ```
 0a. CLAUDE.local.md "## Issue Workflow" alanini oku  (varsa proje-ozel komut/port/test/akis notu)
 0b. Kaynagi tam analiz et + contexte al              (plane-cli / Read / markitdown / WebFetch / diji-logs)
+0c. Plane issue ise ISLEME AL — OTOMATIK              (started state + self atama + start_date=bugun; bos/uygun olana dokun, dolu olani koru)
 1.  Worktree ac + /tmp/<isim>/REPORT.md ac           (worktree skill; REPORT zed — takip icin, onay DEGIL)
     └─ Hedef dogrulanabilir+coktur ise `/goal`'a baglamayi ONER (opsiyonel; workflow kurali)
 2.  Kok-neden analizi — ULTRATHINK                   (effort: max; canli "Anlik Bulgular" → "Final Rapor")
@@ -303,6 +342,11 @@ Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
 ## Entegrasyon Notlari
 
 - **Worktree**: mantik `worktree` skill'de — bu skill sadece `new <isim>` cagirir, isim turetir
+- **Plane isleme alma (Adim 0c)**: kaynak Plane issue ise worktree'den ONCE issue `started`'a cekilir,
+  assignee yoksa self atanir, `start_date` bossa bugun yazilir — **otomatik, onaysiz**, idempotent
+  ("zaten dolu/started ise dokunma"). Bu, `commit` skill'inin kapama (Adim 10/10a) mantiginin baslangic
+  karsiligidir; CLI sozdizimi `plane-cli` skill'inden gelir. Label/priority/target-date bu adimda set
+  EDILMEZ — onlar kapama adiminin sorumlulugu
 - **Teslimat**: commit/push/PR mantigi `commit` skill'de — `before-commit` kurali geregi manuel git yok
 - **Log analizi**: VictoriaLogs erisimi olan diji projede `diji-logs` skill'e delege (LogsQL arama), kapsamli tarama icin `log-triage`
 - **Kaynak donusum**: PDF/Office → `markitdown`, URL → `WebFetch`, gorsel → `Read`
