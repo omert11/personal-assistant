@@ -22,6 +22,15 @@ agent(prompt, { label: 'translate:ar', phase: 'Translate', model: 'sonnet', sche
 
 - `subagent_type`/`agentType` ile named plugin agent çağrılıyorsa frontmatter modeli geçerlidir — ayrıca model geçirme.
 
+## Fable Üst Sınırı — Workflow/Subagent'a Fable Devredilmez
+
+Ana oturum modeli **Fable** (`claude-fable-5`) ise, oluşturulan hiçbir workflow `agent()` çağrısı veya subagent fable ile çalıştırılmaz — **üst sınır `opus`**:
+
+- Workflow script'inde `opts.model` boş bırakmak ana modeli (fable) devralır → fable oturumunda **her** `agent()` çağrısına açık model yaz; en yükseği `'opus'`.
+- Agent frontmatter'ındaki `inherit` de fable oturumunda fable'ı devralır → derin muhakeme gerektiren agent'larda `inherit` yerine açık `opus` tercih et.
+- Kural işin tipinden bağımsızdır — code-review dahil tüm workflow/subagent işleri için geçerli.
+- Görev tipi eşlemesi yine geçerli: haiku/sonnet yeterliyse onları seç. `opus` yalnızca **üst sınırdır**, varsayılan değildir.
+
 ## Maliyet Referansı
 
 - haiku ≈ Opus'un ~1/25'i, sonnet ≈ ~1/5'i

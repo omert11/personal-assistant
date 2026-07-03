@@ -24,23 +24,25 @@ Kullanıcı agente **doğrulanabilir bir bitiş durumu olan, çok turlu / uzun s
 - **Öner­me**: Tek-shot/kısa işler, bitiş durumu belirsiz/öznel hedefler (ör. "kodu güzelleştir"), veya kullanıcının her adımı görmek istediği işler. Bunlarda görev takibi (yukarıdaki TaskCreate akışı) yeterli.
 - **`/goal` vs Görev Takibi**: İkisi dik. `/goal` = otonom turlar arası ilerleme (kullanıcı onaylı); TaskCreate = adımların görünür takibi. Uzun hedefte ikisi birlikte kullanılabilir.
 
-## Teammate Kullanımı
-- Kullanıcı "teammate", "takım kur", "team kur", "ekip kur" dediğinde **mutlaka TeamCreate** kullan, sub-agent değil
-- Teammate'ler birbirleriyle mesajlaşabilir, görev listesi paylaşır ve koordineli çalışır
-- Kullanıcı belirtmiyorsa → Sub-Agent yeterli
+## Subagent / Workflow Kullanımı — İşi Kesinleştir, Çıktıyı Doğrula
 
-## Sub-Agent Çağırma — MUTLAK KURAL
-- **Kullanıcı açıkça "subagent", "sub-agent", "alt agent", "agent ile yap" demediği sürece kendi inisiyatifinle sub-agent çağırmak YASAK.**
-- Sub-agent çağırman gerektiğini düşünüyorsan **önce `AskUserQuestion` ile kullanıcıya sor** (header: "Sub-Agent", question: "Bu işi sub-agent ile yapmamı ister misin?", options: ["Evet, sub-agent kullan", "Hayır, kendin yap"]).
-- Onay alınmadan `Task` tool veya herhangi bir `Agent` çağrısı **kesinlikle yapılmaz**.
-- Bu kuralın istisnası yok — "hızlı olur", "paralel çalışır", "context korunur" gibi gerekçeler geçersiz. Önce sor, sonra çağır.
+Subagent/workflow kullanımı serbesttir — task'in zorluğuna göre kendi inisiyatifinle karar verebilirsin. Büyük bir işi parçalara ayırıp dağıtmak her zaman avantajlıdır. Ancak üç keskin şart var:
 
-### İstisnalar — Onay Gerekmez
-Aşağıdaki durumlarda agent **doğrudan çağrılır, soru sorulmaz, ertelenmez**:
-- **Skill içinden tetiklenen agent çağrıları** (örn. `obsidian-init` → `obsidian-initializer`, `obsidian-note` → `obsidian-writer` append, `crawl2md` → `web-scrape-cleaner`). Skill protokolü gereği çalışır.
-- **Bir agent'ın kendi tanımında belirtilen alt agent çağrıları** (örn. orchestrator agent'ın koordine ettiği alt agent'lar).
-- **Hook veya otomasyon akışı tarafından tetiklenen agent'lar** (örn. Stop hook → writer).
-- Kısaca: agent çağrısı önceden tanımlanmış bir akışın (skill, agent definition, hook) parçasıysa **direkt yürüt**, kullanıcıya sorma.
+### 1. Delegasyondan ÖNCE işi kesinleştir
+- **Yapılacak task'i, kapsamını ve beklenen çıktıyı sen tanımla** — task tanımını agent'in kararına/yorumuna bırakma.
+- Belirsiz/muğlak tanımla agent çağırmak yasak: prompt'ta girdi, kapsam sınırı, beklenen çıktı formatı ve "ne YAPILMAYACAK" net yazılır.
+- İş net değilse önce kendin netleştir (gerekirse kullanıcıya `AskUserQuestion` ile sor), sonra delege et.
+
+### 2. Gereksiz kontrolü önle
+- Agent'in görevi kontrol/doğrulama DEĞİLSE ve çıktıyı zaten sen doğrulayacaksan (şart 3), agent'in kendi kendine review/test/doğrulama turları atmasını **önle** — aynı kontrolün hem subagent'ta hem sende koşması zaman/token israfıdır.
+- Bunu iş tanımıyla sağla: prompt'a net, kesin bir çerçeve yaz — "yalnızca X'i üret/uygula, review/test/doğrulama yapma; kontrol bende" gibi açık sınır koy.
+
+### 3. Çıktıya "doğru değilmiş" gözüyle bak
+- **Subagent/workflow çıktısı doğrulanana kadar güvenilmezdir.** "Yaptım/buldum/geçti" demesi kanıt değildir.
+- Çıktıyı kontrol et: iddia edilen dosya değişikliği, test sonucu veya bulguyu **kendin teyit et** (dosyayı oku, testi/komutu doğrula, bulgunun kaynağına bak).
+- Birden fazla agent çıktısını birleştirirken çelişkileri ayıkla, tekrarları dedup et, boşlukları kapat — **düzgünce birleştir**, ham çıktıları yan yana yapıştırma.
+- **Dürüstçe doğrula**: doğrulayamadığın şeyi doğrulanmış gibi rapor etme; agent hatalı/eksik iş yaptıysa bunu açıkça söyle ve düzelt.
+- Skill/agent-tanımı/hook akışının parçası olan çağrılar tanımlandığı gibi yürür — ama çıktı doğrulama şartı onlar için de geçerlidir.
 
 ## Bloklayan İş Çalıştırma Modu — Her Zaman Background (İstisnasız)
 

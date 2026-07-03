@@ -138,12 +138,23 @@ karşılaştırma sadece bu skill'in geçmiş bulgularına bakar.
    plane-cli --json label create "log-triage" --project <UUID> --color "#e11d48"
    ```
    Label UUID'sini sonraki adımlar için sakla.
-2. **Mevcut label'lı issue'ları çek**: `issue list --project <UUID>` çıktısını **`log-triage`
-   label'ına göre filtrele** (her issue'nun `labels` alanında label UUID'si var mı). Free-text
-   `issue search` bazı self-hosted instance'larda boş döner → label-filtreli liste daha güvenilir.
-3. Her bulguyu bu **filtrelenmiş** liste başlıklarıyla karşılaştır. Tabloda "Plane'de var mı?"
-   kolonunu doldur (yoksa "YOK", varsa `PROJ-N`). Eşleşen bulgu için yeni issue açma —
+2. **Mevcut label'lı issue'ları çek.** ⚠️ **KRİTİK — `issue list` `labels` alanını serialize
+   ETMEZ** (her zaman boş `[]` döner; bu Plane self-hosted'ın bilinen davranışıdır). Bu yüzden
+   label eşleştirmeyi **asla `issue list` çıktısının `labels` alanına dayandırma** — yoksa skill
+   "hiç log-triage issue yok" sanıp **her çalıştırmada duplicate açar.** İki güvenilir yol:
+   - **Tercih edilen — server-side label filtresi**: `issue list` label'a göre filtreleyen bir
+     flag/parametre destekliyorsa onu kullan (`plane-cli issue list --help` ile doğrula).
+   - **Fallback — `issue get` ile doğrula**: `issue list`'ten aday issue ID'lerini al, sonra her
+     birini `plane-cli --json issue get <uuid> --project <UUID>` ile çek — `get` çıktısı `labels`
+     alanını **dolu** döndürür. Label UUID'si `get`'in `labels` listesinde varsa o issue
+     `log-triage` etiketli sayılır.
+3. Her bulguyu bu **label-doğrulanmış** liste başlıklarıyla karşılaştır. Tabloda "Plane'de var
+   mı?" kolonunu doldur (yoksa "YOK", varsa `PROJ-N`). Eşleşen bulgu için yeni issue açma —
    gerekiyorsa mevcut issue'ya yorum/güncelleme öner.
+
+> **Neden bu kadar vurgu?** Geçmiş çalıştırmada (`vesentur-web`, VSN-20..29) `issue list`
+> `labels: []` döndürdüğü için "label eklenmemiş" yanlış teşhisi kondu; oysa `create` label'ı
+> zaten eklemişti (`issue get` ile teyit edildi). `list`'e güvenme, `get` ile doğrula.
 
 ---
 
@@ -175,7 +186,18 @@ Seçenekler = o katmandaki bulgular (label kısa, description'da kanıt+öncelik
    "$HOME/.../log-triage/scripts/create_issue.sh" \
      "<proj_uuid>" "<state_uuid>" "<priority>" "<html_dosyası>" "<başlık>" "<label_uuid>"
    ```
-5. Açılan `PROJ-N`'leri kullanıcıya katman tablosu olarak özetle.
+   > ⚠️ **Başlığa `[log-triage]` (veya başka) metin prefix'i EKLEME.** Etiketleme **yalnız
+   > `log-triage` label'ı** ile yapılır — 6. argüman zaten label'ı bağlar. Başlığa tag koymak
+   > gereksiz gürültü yaratır ve label ile çift işaretleme olur. Başlık = sadece sorunun kendisi
+   > (örn. `Ödeme callback POST body maskesiz loglanıyor — KVKK/PCI`, `[log-triage]` YOK).
+   > **Label UUID'sini boş bırakma** — 6. argüman verilmezse issue etiketsiz açılır ve sonraki
+   > çalıştırma eşleştiremez.
+5. **Create sonrası label'ı doğrula (`get` ile, `list` ile DEĞİL).** `create_issue.sh`
+   `PROJ-N OK` yazdıysa label eklenmiştir; teyit gerekiyorsa **`issue get <uuid>`** ile bak
+   (Adım 5.2'deki uyarı: `issue list` `labels` alanını boş döndürür, ona güvenme). `FAIL`
+   dönen olursa `plane-cli issue label <uuid> --project <UUID> --add <label_uuid>` ile
+   incremental ekle (bu list'e değil, get'e yansır).
+6. Açılan `PROJ-N`'leri kullanıcıya katman tablosu olarak özetle.
 
 > Priority eşlemesi: Katman1→`urgent`/`high`, Katman2→`high`/`medium`, Katman3→`medium`,
 > Katman4→`medium`/`low` (güvenlik içerenler `high`).
