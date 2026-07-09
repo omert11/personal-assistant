@@ -1,368 +1,315 @@
 ---
 name: issue-workflow
-description: Issue/ticket/doc/gorsel kaynagini analiz eder, worktree acar, cozer, kanit toplar.
-when_to_use: Trigger — "su ticket'i coz", "issue-workflow ile bak", "bu hatayi worktree'de coz", "ticket analiz et ve duzelt", "su dokumandaki sorunu hallet", "/issue-workflow <ref|metin>". Bir issue/ticket/dokuman/gorsel/mesaj kaynagi verilip uctan uca (analiz → izole worktree → cozum → kanit → onay) cozulmesi istendiginde. Tek seferlik kucuk duzeltmeler icin gerekmez; kok-neden analizi + izolasyon + kanit gerektiren islerde.
+description: Issue/ticket/doc/gorsel kaynagini interaktif artifact akisiyla analiz eder, cozer, kanitlar.
+when_to_use: Trigger — "su ticket'i coz", "issue-workflow ile bak", "bu hatayi worktree'de coz", "ticket analiz et ve duzelt", "su dokumandaki sorunu hallet", "/issue-workflow <ref|metin>". Bir issue/ticket/dokuman/gorsel/mesaj kaynagi verilip uctan uca (kaynak → artifact analiz → plan → cozum → kanit → commit) cozulmesi istendiginde. Tek seferlik kucuk duzeltmeler icin gerekmez; kok-neden analizi + izolasyon + kanit gerektiren islerde.
 argument-hint: <ticket-ref | serbest-metin | dosya-yolu>
 disable-model-invocation: false
 effort: max
-allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, WebFetch, EnterWorktree, ExitWorktree, EnterPlanMode, ExitPlanMode, Skill
+allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, WebFetch, Artifact, Workflow, EnterWorktree, ExitWorktree, EnterPlanMode, ExitPlanMode, Skill
 ---
 
-# Issue Workflow — Analiz → Izole Worktree → Coz → Kanit → Onay
+# Issue Workflow — Kaynak → Artifact Analiz → Plan → Cozum → Kanit → Commit
 
-Verilen bir **kaynagi** (Plane issue, serbest metin, dokuman, gorsel, mail, log)
-uctan uca cozer: tam baglam cikarir, izole worktree'de calisir, kok-neden analizi yapar,
-cozum **kesinse** uygular / **belirsizse** durup sorar, calismayi kanitlarla teyit eder,
-kanit klasorunu acip onay bekler.
+Verilen bir **kaynagi** (Plane issue, serbest metin, dokuman, gorsel, mail, log) uctan uca cozer.
+Akisin omurgasi **tek buyuyen bir Artifact**'tir: analiz gruplar halinde yazilir, her grupta
+kullaniciyla sohbet edilir, kullanici onay verene kadar o adimda kalinir. Cozum izole worktree'de
+uygulanir, kanitlarla teyit edilir, teslimat `commit` skill'e devredilir.
 
-> **Bu skill yalniz isleri SIRALAR — agir mantigi (worktree, commit) ayri skill'lere delege eder.**
-> Worktree → `worktree` skill. Teslimat → `commit` skill. DRY.
-
-> ## ⚠ Sub-agent YASAGI — Adim 0 ve Adim 2
-> **Kaynak analizi (Adim 0) ve kok-neden analizi (Adim 2) ASLA sub-agent'a yaptirilmaz.**
-> Bulgular ve analiz bu isin kritik cekirdegidir; sub-agent izole context'te calisir ve
-> ana baglamdan kopar — yanlis/eksik analiz uretir. Bu iki adimi **her zaman ana ajan kendi
-> context'inde, `effort: max` ile** yapar. `Task` tool bu adimlarda kullanilmaz.
-> (Tek istisna: Adim 0'da `obsidian-searcher` *on aramasi* — analiz yapmaz, sadece gecmis notu
-> context'e GETIRIR; ve `diji-logs`/`worktree`/`commit` gibi **skill delegasyonlari** —
-> bunlar sub-agent degil, ayri skill cagrilaridir.)
+> **Bu skill yalniz isleri SIRALAR — agir mantigi ayri skill'lere delege eder.**
+> Worktree → `worktree` skill. Teslimat → `commit` skill. Log → `diji-logs` skill.
+> Plane → `plane-cli` skill. Artifact tasarimi → `artifact-design` skill. DRY.
 
 ---
 
-## Adim 0a — Skille ozel local alani oku (ILK IS)
+## Durus — Agent Uzmandir
 
-Ise baslamadan once `CLAUDE.local.md`'de **"## Issue Workflow"** bolumu var mi bak:
+Kullanici **istek/talep** bildirir; agent **mimar/muhendis/ureticidir** — en dogru yolu agent belirler.
+Kullanicinin istegini sorgusuz uygulamaya zorlanma; istegin arkasindaki ihtiyaci coz ve en dogru
+cozumu tasarla. Bu durus akisin her adiminda gecerlidir:
+
+- **En estetik yolu arastir** — ilk calisan cozumde durma; "daha zarif/basit yol var mi?" (coding kurali)
+- **Global standartlara bak** — benzer sorunlar sektorde/framework'te nasil cozuluyor; yerlesik pattern varsa onu tercih et
+- **Yapisal imkansizliklari durust degerlendir** — mimari olarak olmayacak seyi "olur" deme; kisiti acikca raporla
+- **Ek kazanim gordugunde raporla** — cozum sirasinda fark edilen iyilestirme/firsat gizlenmez, artifact'e islenir
+- **Kolay olani degil DOGRU olani sec** — kolay cozum ileride daha fazla is cikarir; sorun simdi, en dogru sekilde cozulur
+
+> ## ⚠ Sub-agent YASAGI — Adim 2 ve Adim 4
+> **Kaynak analizi (Adim 2) ve durum/yol-haritasi analizi (Adim 4) ASLA sub-agent'a yaptirilmaz.**
+> Bulgular ve analiz bu isin kritik cekirdegidir; sub-agent izole context'te calisir ve ana
+> baglamdan kopar — yanlis/eksik analiz uretir. Bu iki adimi **her zaman ana ajan kendi
+> context'inde, `effort: max` ile** yapar. (Istisna: `obsidian-searcher` *on aramasi* — analiz
+> yapmaz, gecmis notu context'e GETIRIR; ve `diji-logs`/`worktree`/`commit`/`plane-cli` gibi
+> **skill delegasyonlari** — bunlar sub-agent degil, ayri skill cagrilaridir.)
+
+---
+
+## Artifact Kurallari (Adim 3, 4, 8'de gecerli)
+
+Kullanici gorsel grafik/akis/karsilastirma ile cok daha hizli anlar — **artifact gorsel-agir,
+metin kisa-net** olmalidir:
+
+- **Ilk yayindan ONCE `artifact-design` skill'ini yukle** (Artifact tool zorunlulugu) — efor
+  kalibrasyonu ve tasarim temelleri oradan gelir
+- **TEK artifact, buyuyerek**: ayni dosya yoluna (scratchpad altinda `<isim>-analiz.html`) yazilir,
+  her grupta yeni bolumler EKLENIR ve ayni URL'e redeploy edilir. Grup basina yeni artifact ACILMAZ.
+  Favicon sabit tutulur (orn "🔧")
+- **Gorsel yogun**: akis diyagramlari (inline SVG/CSS), once/sonra karsilastirmalari, durum
+  rozetleri, mimari semalar, tablolar. Uzun paragraf yerine sema + kisa madde
+- **Kanit gorselleri** (Adim 8): screenshot'lar `data:` URI ile GOMULUR — dis kaynak CSP'de yasak
+- **Bolum numaralari korunur** (B1..B11) — kullanici bolume numarayla atif yapabilir
+- Kullanici duzenleme/istek bildirdiginde: dosyayi `Edit` ile guncelle → ayni path'e redeploy →
+  degisikligi tek cumleyle bildir
+
+**Sohbet kapisi deseni** (Adim 3, 4, 8 sonunda): artifact yayinlandiktan sonra `AskUserQuestion`
+ile sor (header: "Akis"):
+- options: `["Akisa devam et", "Duzenleme/istek var"]` (Adim 8'de: `["Commit skill calistir", "Duzenleme/istek var", "Iptal"]`)
+- "Duzenleme/istek var" → istegi al, artifact'i guncelle, TEKRAR sor. Kullanici devam diyene
+  kadar bu adimda kalinir — sohbete devam edilir, akis ilerletilmez.
+
+---
+
+## Adim 1 — CLAUDE.local.md "## Issue Workflow" alanini oku (ILK IS)
 
 ```bash
 grep -n "## Issue Workflow" CLAUDE.local.md 2>/dev/null
 ```
 
-Varsa **tamamini oku ve uygula** — bu projedeki akisa ozel talimatlar burada tanimlidir:
+Varsa **tamamini oku ve uygula** — proje-ozel talimatlar buradadir:
 - **Uygulama baslatma komutu** (orn `uv run manage.py runserver`, `npm run dev`, `go run .`)
 - **Test komutlari** (orn `pytest`, `npm test`, ozel e2e komutu)
-- **Port stratejisi** / ortam degiskenleri (varsayilan port, baska gerekli servisler)
+- **Port stratejisi** / ortam degiskenleri
 - **Bagimlilik kurulum** adimlari (worktree'de calistirilacak)
-- **Kullanici-ozel akis notlari** (bu projede dikkat edilecekler)
+- **Kullanici-ozel akis notlari**
 
-> Bu bolum **yoksa** zorlama — genel akisla devam et. Kullanici akisa ozel bir sey eklemek isterse
-> (veya is sirasinda boyle bir ihtiyac dogarsa), `CLAUDE.local.md`'ye **"## Issue Workflow"** bolumu
-> ekle/guncelle ki sonraki calismalar bunu otomatik okusun. Sablon Ek bolumde.
+> Bolum **yoksa** zorlama — genel akisla devam et. Is sirasinda proje-ozel bir ihtiyac dogarsa
+> `CLAUDE.local.md`'ye bu bolumu ekle/guncelle (sablon Ek'te) ki sonraki calismalar otomatik okusun.
 
 ---
 
-## Adim 0b — Kaynagi tam analiz et ve contexte al (ATLANAMAZ, ANA AJAN)
+## Adim 2 — Kaynak toplama (ATLANAMAZ, ANA AJAN)
 
-Kullanicinin verdigi her kaynagi **tek tek, tam** incele. Hicbirini atlama, ozetle gecme.
-**Bu adim sub-agent'a verilmez** — kaynagi ana ajan kendi context'inde okur (yukaridaki sub-agent yasagi).
+Kullanicinin verdigi her kaynagi **tek tek, tam detayli** incele — gorseller dahil. Hicbirini
+atlama, ozetle gecme. **Sub-agent'a verilmez.**
 
 | Kaynak tipi | Nasil al |
 |---|---|
-| **Plane issue** (`PROJ-123`, `61618`) | `plane-cli` skill → `issue get-id PROJ-123` (UUID coz) + `issue get` + `comment list` (tum yazismalar) + ekler. Ekli gorsel/dosya varsa indir ve oku |
+| **Plane issue** (`PROJ-123`, `61618`) | `plane-cli` skill → `issue get-id` (UUID coz) + `issue get` + `comment list` (tum yazismalar) + ekler. Ekli gorsel/dosya varsa indir ve oku |
 | **Serbest metin / mesaj** | Dogrudan oku, talebi/sikayeti madde madde cikar |
 | **Gorsel** (ekran goruntusu, hata diyalogu) | `Read` ile gor — hata metni, kod, ekran durumu, URL'leri cikar. TR hata mesaji ise orijinal msgid'i `grep ... locale/*/LC_MESSAGES/*.po` ile bul |
 | **Dokuman** (PDF/Word/HTML/dosya) | `markitdown <dosya> > /tmp/src.md` ile markdown'a cevir, sonra oku. URL ise `WebFetch` |
-| **Log / hata ciktisi** | VictoriaLogs erisimi olan diji projesiyse `diji-logs` skill'e delege et (LogsQL arama); kapsamli tarama gerekiyorsa `log-triage`; degilse Grep ile ilgili log dosyalarini tara |
+| **Log / hata ciktisi** | VictoriaLogs erisimi olan diji projesiyse `diji-logs` skill'e delege (LogsQL arama); kapsamli tarama icin `log-triage`; degilse Grep ile log dosyalarini tara |
 
-**Cikti — kisa bir baglam ozeti** (kullaniciya goster):
-- Ne isteniyor / ne bozuk (somut, tek cumle)
-- Hangi modul/dosya/endpoint ilgili gorunuyor
-- Verilen tum kaynaklarda gecen anahtar veriler (ref, hata kodu, kullanici, tarih)
+> Obsidian vault tanimliysa `obsidian-searcher` agent'ini `run_in_background: true` ile cagir
+> (QUERY: sorunun ozeti) — onceki oturum bu sorunu cozmus olabilir.
 
-> Obsidian vault tanimliysa baslamadan once `obsidian-searcher` agent'ini `run_in_background: true`
-> ile cagir (QUERY: sorunun ozeti) — onceki oturum bu sorunu cozmus olabilir.
+Cikti: anahtar veriler (ref, hata kodu, kullanici, tarih, modul/dosya/endpoint) context'te hazir —
+Adim 3 artifact'inin hammaddesi.
 
 ---
 
-## Adim 0c — Plane issue'yu ISLEME AL (kaynak Plane issue ise; OTOMATIK)
+## Adim 3 — Artifact Grup 1 (B1–B3) + sohbet kapisi
 
-Adim 0b'de kaynak bir **Plane issue** ise (`PROJ-123` / numerik ref ile verildi ve UUID cozuldu),
-**worktree acmadan ve analize gecmeden ONCE** issue'yu isleme alinmis duruma getir. Bu, `commit`
-skill'inin **kapama** mantiginin (Adim 10/10a) **baslangic** karsiligidir: kapama issue'yu
-`completed`'e ceker, bu adim `started`'a ceker; ayni alan-doldurma felsefesini paylasir.
+`artifact-design` skill'ini yukle, sonra artifact'in ilk uc bolumunu yaz ve yayinla:
 
-> Kaynak Plane issue **degilse** (serbest metin, gorsel, log, mail) bu adim **atlanir** — issue
-> yoksa isleme alinacak bir sey de yok. Plane proje tanimli degilse de atlanir.
+- **B1 — Suanki Durum**: sistemin bugunku davranisi — akis semasi, ilgili modul haritasi, varsa hata/ekran gorseli
+- **B2 — Ne Isteniyor**: talep — somut, madde madde; once/sonra karsilastirma gorseli uygunsa
+- **B3 — Neden Isteniyor**: ihtiyacin koku — is degeri, etkilenen kullanici/akis, aciliyet
 
-> **CLI sozdizimi `plane-cli` skill'inden gelir.** Asagidaki adimlar **ne yapilacagini** (hangi islem,
-> hangi alan) soyler; UUID cozme, `--json` parse, `state list` ile group state cozme, `assignee --add`
-> incremental vs REPLACE farki ve hata kodlari icin **`plane-cli` skill'inin kurallarina uy**.
-
-**Onay sorma — otomatik uygula.** Issue kullanici tarafindan zaten bu skill'e verildi; isleme alma
-dusuk riskli ve geri alinabilir. `ask-first` kuralinin onay gerektiren "destructive/irreversible"
-sinifina girmez. State/alan degisiklikleri sessizce yapilir, sonra kullaniciya tek satir bildirilir
-(orn "PROJ-123 isleme alindi: started + self atandi + start_date=bugun").
-
-Sirayla (her birini `plane-cli` skill'i uzerinden, `--json` ile):
-
-1. **Issue'nun mevcut halini al** (`issue get`) — assignee'ler, `start_date`, mevcut state group'unu gor.
-2. **Zaten `started`/`completed`/`cancelled` ise state'e DOKUNMA.** Issue zaten ilerleme/bitmis
-   durumda ise tekrar `started`'a cekme — yalnizca `backlog`/`unstarted` group'undaki issue'yu
-   `started`'a cek (`state list` ile projedeki `started` group state UUID'sini coz → `issue update --state`).
-3. **Assignee yoksa self ata** — atananlar listesi bossa `member me` ile SELF UUID'sini al,
-   **incremental** ekle (`issue assignee --add`; REPLACE yapan `update --assignees` KULLANMA).
-   Zaten atanan(lar) varsa **dokunma** — baskasinin issue'suna kendini ekleme.
-4. **`start_date` bossa bugunu ata** — `issue update --start-date $(date +%Y-%m-%d)` (ISO 8601).
-   `start_date` zaten doluysa **dokunma** (commit kapama mantigindaki "dolu tarihe dokunma" kurali ile ayni).
-
-> **Idempotent davran**: bu skill ayni issue icin tekrar calistirilabilir (BELIRSIZ → geri don
-> dongusu, yeniden deneme). Her alanda "zaten dolu/zaten started ise dokunma" kurali, tekrar
-> calistirmada mevcut degerleri/atamalari bozmamayi garantiler. Label/priority/target-date'e bu
-> adimda **dokunulmaz** — onlar `commit` skill'inin kapama adiminin (Adim 10a) sorumlulugundadir.
+Yayinla → **sohbet kapisi** (yukaridaki desen). Kullanici "Akisa devam et" diyene kadar bu adimda
+kal: duzenleme/istek al, artifact'i guncelle, tekrar sor. Kaynak anlayisinda yanlislik varsa
+burada duzeltilir — sonraki adimlar bu uc bolumun uzerine kurulur.
 
 ---
 
-## Adim 1 — Worktree ac ve o ortama gec (worktree skill'e delege)
+## Adim 4 — Artifact Grup 2 (B4–B7): Tam durum + yol haritasi (ULTRATHINK, ANA AJAN)
 
-Issue'dan **anlamli, kebab-case** bir isim turet:
+> Bu adimda **derin dusun** — `effort: max` aktif. Yuzeysel ilk hipotezde durma; kodu/logu/sorunu
+> gerekli gordugun kadar incele (`Grep`/`Glob`/`Read`/`Bash`). Kok nedeni belirle — semptomu degil.
+> Global standartlari ve en estetik cozum yolunu arastir (Durus bolumu). **Sub-agent kullanma.**
+
+Analiz bitince ayni artifact'e dort bolum EKLE ve redeploy et:
+
+- **B4 — Ne Hazir / Ne Yapilacak / Nasil Yapilacak**: mevcut altyapida hazir olanlar; yapilacak
+  isler; her isin nasil yapilacagi — yol haritasi semasi/asama diyagrami ile
+- **B5 — Oneriler / Iyilestirmeler**: talebin otesinde gorulen iyilestirme firsatlari (uzman gozu)
+- **B6 — Acik Konular**: kararlastirilmasi gereken her sey — secenekleriyle
+- **B7 — Riskler / Durust Avantajlar / Durust Dezavantajlar / Zayif Yonler**: risk matrisi;
+  cozumun artilari-eksileri SUSLENMEDEN; yapisal imkansizlik varsa acikca
+
+**Acik konularin TAMAMI bu adimda kapatilir**: her B6 maddesi icin `AskUserQuestion` ile karar al
+(secenekler + onerilen isaretli), karari artifact'e isle. Riskler kullaniciya durustce bildirilir.
+
+Sonra **sohbet kapisi** — kullanici "Akisa devam et" diyene kadar bu adimda kal.
+
+---
+
+## Adim 5 — Worktree ac + Plan modu
+
+Kaynaktan **anlamli, kebab-case** isim turet:
 - Plane issue → `fix-<issue-ident>` (orn `fix-proj-123`)
-- Bug → `fix-<kisa-konu>` (orn `fix-payment-timeout`)
-- Feature → `feat-<kisa-konu>`
+- Bug → `fix-<kisa-konu>`, Feature → `feat-<kisa-konu>`
 
-`worktree` skill'inin `new <isim>` akisini kullan (icinde `EnterWorktree({ name })` var):
+`worktree` skill'inin `new <isim>` akisini kullan (`Skill(worktree, "new <isim>")` veya dogrudan
+`EnterWorktree({ name })`). Session cwd worktree'ye gecer; `/tmp/<isim>/` kanit klasorunun yeridir.
 
-```
-Skill(worktree, "new <isim>")
-```
-
-veya dogrudan: `EnterWorktree({ name: "<isim>" })`. Session cwd otomatik worktree'ye gecer.
-
-Worktree adini ve path'ini **not al** — `/tmp/<isim>/` hem takip raporunun hem (Adim 4) kanit klasorunun yeridir.
-
-### Takip raporunu HEMEN olustur ve ac
-
-Analize **baslamadan once** `/tmp/<isim>/REPORT.md` dosyasini olustur ve `zed` ile ac.
-Bu rapor **sadece takip icindir** — kullanici isterse canli izler. Asla onay beklenmez,
-rapor olusturuldugu icin durulmaz; bulgular kesinse bu rapor uzerinden durmadan devam edilir.
-
-```bash
-EVID=/tmp/<isim>
-mkdir -p "$EVID"
-cat > "$EVID/REPORT.md" <<'EOF'
-# Issue Workflow — <isim>
-
-> Canli takip raporu. Calisma ilerledikce guncellenir. Onay/etkilesim icin DEGIL, sadece izleme icin.
-
-## 1. Anlik Bulgular
-_(analiz ilerledikce buraya islenir — gozlemler, hipotezler, denenenler)_
-
-## 2. Final Rapor
-_(calisma bitince temiz ozet buraya yazilir)_
-EOF
-zed "$EVID/REPORT.md"
-```
-
-Iki bolum:
-- **1. Anlik Bulgular** — Adim 2 boyunca her yeni gozlem/hipotez/dogrulama `Edit` ile eklenir (akan kayit, dagillik normal)
-- **2. Final Rapor** — Adim 2 sonunda temiz, ozet final yazilir (kok neden + cozum + yan etki + kesinlik)
-
-### Hedefi `/goal`'a baglamayi oner (opsiyonel — `workflow` kurali)
-
-Kullanicinin verdigi hedef **dogrulanabilir tek bir bitis durumuna** sahipse (orn "ticket'taki tum
-adimlar gecene kadar duzelt", "test suite yesil olana kadar migrate et", "verilen 3 hatanin hepsi
-giderilene kadar"), bu hedefi `/goal` ile koşula baglamayi **kullaniciya oner** — kendin set etme.
-`/goal` Claude'u koşul saglanana kadar turlar arasi otonom calistirir (her tur kucuk model denetler).
-
-`AskUserQuestion` ile sor:
-- header: "Goal"
-- question: "Bu issue'yu `/goal` ile koşula baglayip kanit/onay asamasina kadar otonom ilerleteyim mi?"
-- options: ["Evet, /goal ile bagla", "Hayir, normal akis"]
-
-Onay gelirse koşulu somut yaz — orn `/goal fix-<ref> worktree'sinde kok neden duzeltildi, ilgili test
-PASS ($EVID/test-output.txt), gorsel degisiklikte before/after screenshot uretildi; veya 20 turdan
-sonra dur`. Evaluator komut calistirmaz; koşulu Adim 4 kanit dosyalarinin transcript'e yansiyan
-ciktilariyla **kanitlanabilir** yaz. **Onay sorulari (Adim 3 plan onayi, Adim 5 kanit onayi) hedefi
-bozmaz** — `/goal` o turlarda da kullaniciya doner; otonomi yalnizca onay arasi adimlari hizlandirir.
-
-> Hedef tek-shot/kucukse veya bitis durumu oznelse `/goal` ONERME — Adim 1'deki REPORT takibi yeterli.
-
----
-
-## Adim 2 — Kok-neden analizi (ultrathink — `effort: max`, ANA AJAN)
-
-> Bu adimda **derin dusun**. Skill frontmatter'i `effort: max` ile ultrathink'i zaten aktif eder.
-> Yuzeysel ilk hipotezde durma — kodu/logu/sorunu **gerekli gordugun kadar** incele.
-> **Sub-agent kullanma** — analizi ana ajan kendi context'inde yapar (yukaridaki yasak). Kod okuma,
-> hipotez kurma ve dogrulama `Task`'a degil dogrudan `Grep`/`Read`/`Bash`'e dayanir.
-
-1. Ilgili kodu oku (`Grep`/`Glob`/`Read`) — call site'lar, ilgili model/handler/serializer
-2. Sorunu **uret/dogrula** — mumkunse hatayi yeniden gozlemle (log, test, API cagrisi)
-3. **Kok nedeni** belirle — semptom degil, sebebi. Birden cok hipotez varsa her birini ele/dogrula
-4. Yan etki yuzeyini cikar — bu degisiklik baska neyi etkiler?
-
-> Analiz boyunca her anlamli gozlem/hipotez/dogrulamayi `REPORT.md`'nin **"1. Anlik Bulgular"**
-> bolumune `Edit` ile **akarken** isle. Bu canli kayit takip icindir — yazmak icin durma/sorma.
-
-**Analiz bitince** `REPORT.md`'nin **"2. Final Rapor"** bolumunu temiz doldur (ayrica kullaniciya da goster):
-- Kok neden (kanitiyla: hangi satir/log/davranis)
-- Onerilen cozum (somut: hangi dosyada ne degisecek)
-- Yan etki / risk degerlendirmesi
-- **Kesinlik**: KESIN | BELIRSIZ
-
-> Rapor **onay mekanizmasi DEGIL** — final yazildi diye durma, dogrudan Adim 3'e (plan modu) gec.
-> Kesinlik KESIN olsa da BELIRSIZ olsa da fark etmez; bir sonraki adimda plan moduna girilip cozum
-> plani kullaniciya sunulur. Raporu ayrica burada kullaniciya gostermen yeterli — "onayliyor musun?"
-> diye burada SORMA, onay plan modunda (Adim 3) alinir.
-
----
-
-## Adim 3 — Plan moduna gec ve plan onayi al (HER DURUMDA)
-
-Final rapor yazilinca **kesinlik fark etmeksizin** (KESIN de BELIRSIZ de) plan moduna gir ve cozum
-planini kullaniciya onaya sun. Eski "KESIN ise sormadan uygula / BELIRSIZ ise AskUserQuestion ile sor"
-karar mekanizmasi **kaldirilmistir** — tek onay noktasi plan modudur.
+Sonra **plan moduna gir** ve tam plani yaz:
 
 ```
 EnterPlanMode()
 ```
 
-Plan modu sistem mesajinda belirtilen **plan dosyasina** cozum planini yaz; Adim 2'nin kok-neden
-analizinden ureyen somut adimlari icersin:
-- **Kok neden** (1-2 cumle, kanitiyla)
-- **Yapilacak degisiklikler** (hangi dosyada ne degisecek — madde madde)
-- **Yan etki / risk** ve nasil dogrulanacagi
-- **Kesinlik** ve varsa **belirsizlik/alternatif yollar** (kullanicinin karar vermesi gereken noktalar)
-
-Belirsizlik varsa once `AskUserQuestion` ile alternatifleri netlestir (plan modu icinde), sonra
-plani kesinlestir. Plan hazir olunca onay iste:
+Plan **tum isleri kapsamali** — B4-B7'de kararlastirilanlarin somut uygulamasi:
+- Yapilacak degisiklikler (hangi dosyada ne — madde madde)
+- Kapatilan acik konularin kararlari
+- Yan etki / risk ve nasil dogrulanacagi
+- **Paralelize edilebilir isler**: birbirinden bagimsiz is paketleri varsa `Workflow` ile paralel
+  uygulanacagini planda belirt (token-efficiency kurali: her `agent()` cagrisinda acik `model`,
+  fable oturumunda ust sinir `opus`; dosya cakismasi varsa `isolation: 'worktree'`)
 
 ```
 ExitPlanMode()
 ```
 
-> `ExitPlanMode` plani dosyadan okur ve kullanicidan onay ister — ayrica `AskUserQuestion` ile
-> "onayliyor musun?" diye **SORMA**, onay bu adimda alinir. Plan onaylaninca uygulamaya gecilir.
-
-Uygularken `coding` kurallarina uy: hata wrap, TODO yorumlari, gereksiz workaround yok,
-"daha zarif yol var mi?" self-check.
+> `ExitPlanMode` onayi tek onay noktasidir — ayrica "onayliyor musun?" diye SORMA.
 
 ---
 
-## Adim 4 — Test ortamini hazirla, calistir, kanit topla, kapat
+## Adim 6 — Plane issue'yu ISLEME AL (kaynak Plane issue ise; OTOMATIK, plan onayi sonrasi)
 
-Calisma tamamlaninca cozumu **calisan uygulamada** test et ve kanitla. Klasor:
+Plan onaylandi = is gercekten basliyor → issue simdi isleme alinir. Kaynak Plane issue **degilse**
+veya Plane proje tanimli degilse bu adim atlanir.
+
+> CLI sozdizimi `plane-cli` skill'inden gelir. **Onay sorma — otomatik uygula**, sonra tek satir
+> bildir (orn "PROJ-123 isleme alindi: started + self atandi + start_date=bugun").
+
+Sirayla (`--json` ile):
+1. **Issue'nun mevcut halini al** (`issue get`) — assignee, `start_date`, state group
+2. **Yalnizca `backlog`/`unstarted` ise `started`'a cek** (`state list` → started UUID → `issue update --state`). Zaten started/completed/cancelled ise DOKUNMA
+3. **Assignee bossa self ata** — `member me` → `issue assignee --add` (incremental; REPLACE yapan `update --assignees` KULLANMA). Dolu ise dokunma
+4. **`start_date` bossa bugunu ata** — `issue update --start-date $(date +%Y-%m-%d)`. Dolu ise dokunma
+
+> **Idempotent**: tekrar calistirmada dolu alan/atama bozulmaz. Label/priority/target-date bu
+> adimda set EDILMEZ — onlar `commit` skill'inin kapama adiminin sorumlulugudur.
+
+---
+
+## Adim 7 — Uygula + Test + Kanit
+
+Plani uygula (`coding` kurallari: hata wrap, TODO yorumlari, workaround yok). Planda paralel is
+paketleri tanimlandiysa `Workflow` ile dagit — cikti dogrulamasi sende (`workflow` kurali).
+
+Sonra cozumu **calisan uygulamada** test et ve kanitla:
 
 ```bash
 EVID=/tmp/<isim>
 mkdir -p "$EVID"
 ```
 
-### 4a. Test ortamini worktree'de hazirla
+### 7a. Test ortamini worktree'de hazirla
+Worktree izole kopyadir — uygulamayi burada kur (ana checkout'a dokunma). Komutlar Adim 1'in
+"## Issue Workflow" alanindan; yoksa proje tipinden cikar (Python: `uv venv` + requirements,
+Node: `npm install`, Go: `go build ./...`).
 
-Worktree izole bir kopyadir — uygulamayi **burada** kur ve calistir (ana checkout'a dokunma).
-Komutlar `CLAUDE.local.md` **"## Issue Workflow"** alanindan gelir (Adim 0a); yoksa proje tipinden cikar.
-
-```bash
-# Bagimlilik kurulum (worktree icinde, gerekiyorsa) — orn:
-#   Python:  uv venv && source .venv/bin/activate && uv pip install -r requirements.txt
-#   Node:    npm install
-#   Go:      go build ./...
-```
-
-### 4b. Unique port ile ARKA PLANDA calistir
-
-Ana checkout'taki dev server ile cakismamak icin **unique port** sec ve uygulamayi
-**`run_in_background: true`** ile baslat. PID/port'u `$EVID/`'ye not al.
-
+### 7b. Unique port ile ARKA PLANDA calistir
 ```bash
 PORT=$(python3 -c "import socket;s=socket.socket();s.bind(('',0));print(s.getsockname()[1]);s.close()")
 echo "$PORT" > "$EVID/.port"
-# Arka planda baslat (run_in_background: true) — orn:
+# run_in_background: true ile baslat — orn:
 #   Django: .venv/bin/python manage.py runserver 127.0.0.1:$PORT 2>&1 | tee $EVID/server.log
 #   Node:   PORT=$PORT npm run dev 2>&1 | tee $EVID/server.log
 ```
+Bound port'u bekle (`curl --retry` / port-check), hazir olunca testlere gec.
 
-Bound port'u bekle (`curl --retry` veya port-check), hazir olunca testlere gec.
-
-### 4c. Testleri yap + kanit topla
-
-Soruna uygun araclarla kanit uret (her birini `$EVID/` altina dosya olarak yaz):
-
+### 7c. Testler + kanit dosyalari
 | Sorun tipi | Kanit araci | Cikti |
 |---|---|---|
-| **Gorsel / UI / akis** | `playwright-cli` skill (`PORT`'a baglan) | `$EVID/screenshot-*.png`, adim adim snapshot |
+| **Gorsel / UI / akis** | `playwright-cli` skill (`PORT`'a baglan) | `$EVID/screenshot-*.png` (before/after) |
 | API / backend endpoint | `curl`/`Bash` (`localhost:$PORT`) | `$EVID/api-before.json`, `$EVID/api-after.json` |
 | Mantik / fonksiyon | test (`pytest`/`npm test`) | `$EVID/test-output.txt` (PASS) |
 | Veri / DB / log | shell sorgu | `$EVID/query-result.txt` |
 | Her durum | before/after diff | `$EVID/diff.txt` (`git diff > ...`) |
 
-> **Gorsel degisiklik varsa GORSEL KANIT ZORUNLU.** Degisiklik UI/render/stil/akisi etkiliyorsa
-> `playwright-cli` ile **mutlaka** ekran goruntusu al — mumkunse before/after (`screenshot-before.png`
-> / `screenshot-after.png`). Gorsel kanit olmadan gorsel bir cozum "kanitlanmis" sayilmaz.
+> **Gorsel degisiklikte GORSEL KANIT ZORUNLU** — `playwright-cli` ile screenshot, mumkunse
+> before/after. Gorsel kanit olmadan gorsel cozum "kanitlanmis" sayilmaz.
 
-Ayrica `$EVID/SUMMARY.md` yaz:
-- Kok neden (1-2 cumle)
-- Yapilan degisiklik (dosya + ozet)
-- Her kanit dosyasinin neyi ispatladigi (orn "api-after.json — artik 200 donuyor, onceden 500")
-
-### 4d. Arka plandaki uygulamayi DURDUR (ZORUNLU)
-
-Testler bitince **arka planda calisan uygulamayi mutlaka durdur** — orphan process/port birakma.
-`KillShell`/ilgili background task'i sonlandir; gerekirse `kill $(lsof -ti tcp:$PORT)` ile port'u bosalt.
-Playwright session aciksa `playwright-cli close` ile kapat. Bu adim hata/iptal durumunda da yapilir.
+### 7d. Arka plandaki uygulamayi DURDUR (ZORUNLU)
+Testler bitince background task'i sonlandir (`KillShell`; gerekirse `kill $(lsof -ti tcp:$PORT)`).
+Playwright session aciksa `playwright-cli close`. Hata/iptal durumunda da yapilir — orphan
+process/port birakilmaz.
 
 > Kanit dosyalari canli credential/JWT icerebilir → her zaman `/tmp` altinda, **repo disi**.
+> Artifact'e gomulen gorselleri secerken de credential icermediklerini dogrula.
 
 ---
 
-## Adim 5 — Kanit klasorunu ac ve onay bekle
+## Adim 8 — Artifact Grup 3 (B8–B11) + sohbet kapisi
 
-```bash
-zed /tmp/<isim>
-```
+Ayni artifact'e son dort bolumu EKLE ve redeploy et:
 
-Sonra `AskUserQuestion` ile onay iste:
-- header: "Onay"
-- question: "Kanitlari inceledin mi? Cozum onaylaniyor mu?"
-- options: ["Evet, commit'e gec", "Hayir, degisiklik gerek", "Iptal"]
+- **B8 — Acik Konular (kapanis durumu)**: B6'daki her maddenin verilen karari + uygulanma durumu;
+  is sirasinda dogan yeni acik konu varsa acikca listele
+- **B9 — Kanitlar**: `$EVID/` ciktilari — screenshot'lar `data:` URI ile gomulu, test/diff/API
+  ciktilarindan karar verdirici kisimlar; her kanitin NEYI ispatladigi tek cumleyle
+- **B10 — Ek Kazanclar**: cozum sirasinda elde edilen yan iyilestirmeler (temizlenen kod,
+  kapatilan baska bug, performans kazanci)
+- **B11 — Son Durum / Yeni Akis / Ozellik Tanitimi**: cozum sonrasi sistemin davranisi — yeni
+  akis semasi, once/sonra karsilastirmasi; degisiklik bir ozellikse kisa tanitim
 
-**Evet** → `commit` skill'e delege et (teslimat: commit/push/PR; tum kontrolleri o yapar).
-Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
-**Hayir** → geri bildirimi al, Adim 2-4'e don.
-**Iptal** → worktree'yi `ExitWorktree({ action: "keep" })` ile birak, durumu rapor et.
+Sonra **sohbet kapisi**: `AskUserQuestion` (header: "Akis") — options:
+`["Commit skill calistir", "Duzenleme/istek var", "Iptal"]`.
+
+- **Duzenleme/istek var** → istegi al; kod degisikligi gerekiyorsa Adim 7'ye don (test+kanit
+  yenile), artifact'i guncelle, tekrar sor. Kullanici "commit skill calistir" diyene kadar bu
+  adimda kalinir
+- **Iptal** → worktree'yi `ExitWorktree({ action: "keep" })` ile birak, durumu raporla
+
+---
+
+## Adim 9 — Commit skill
+
+`commit` skill'e delege et (teslimat: commit/push/PR; tum kontrolleri o yapar — `before-commit`
+kurali geregi manuel git yok). Worktree'den PR icin `worktree` skill `pr <isim>` akisi kullanilabilir.
+Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/10a sorumlulugudur.
 
 ---
 
 ## Akis Ozeti
 
 ```
-0a. CLAUDE.local.md "## Issue Workflow" alanini oku  (varsa proje-ozel komut/port/test/akis notu)
-0b. Kaynagi tam analiz et + contexte al              (plane-cli / Read / markitdown / WebFetch / diji-logs)
-0c. Plane issue ise ISLEME AL — OTOMATIK              (started state + self atama + start_date=bugun; bos/uygun olana dokun, dolu olani koru)
-1.  Worktree ac + /tmp/<isim>/REPORT.md ac           (worktree skill; REPORT zed — takip icin, onay DEGIL)
-    └─ Hedef dogrulanabilir+coktur ise `/goal`'a baglamayi ONER (opsiyonel; workflow kurali)
-2.  Kok-neden analizi — ULTRATHINK                   (effort: max; canli "Anlik Bulgular" → "Final Rapor")
-3.  Plan moduna gec — EnterPlanMode → plan yaz → ExitPlanMode onayi  (her durumda; eski KESIN/BELIRSIZ karari kalkti)
-4.  Test ortami hazirla → unique port + arka plan → test → kanit (gorsel degisiklikte SCREENSHOT zorunlu) → uygulamayi DURDUR
-5.  zed ile ac → AskUserQuestion onay → commit skill
+1. CLAUDE.local.md "## Issue Workflow" oku          (proje-ozel komut/port/test/akis notu)
+2. Kaynak toplama — TAM detay, ANA AJAN             (plane-cli / Read / markitdown / WebFetch / diji-logs)
+3. Artifact B1+B2+B3 yayinla → SOHBET KAPISI        ("Akisa devam et" gelene kadar duzenle/sohbet)
+4. Artifact B4+B5+B6+B7 — ULTRATHINK, ANA AJAN      (acik konular KAPATILIR, riskler durust) → SOHBET KAPISI
+5. Worktree ac (worktree skill) + EnterPlanMode     (tam plan; Workflow ile paralelize edilebilir) → ExitPlanMode onayi
+6. Plane issue ise ISLEME AL — OTOMATIK             (started + self + start_date; dolu olana dokunma; idempotent)
+7. Uygula → test ortami → unique port + arka plan → kanit ($EVID; gorselde SCREENSHOT zorunlu) → DURDUR
+8. Artifact B8+B9+B10+B11 yayinla → SOHBET KAPISI   ("Commit skill calistir" gelene kadar duzenle/sohbet)
+9. commit skill                                      (teslimat + Plane kapama orada)
 ```
-
-> REPORT.md (takip, onay beklemez) ile Adim 5 kanit-onayi farkli seylerdir: rapor analizi izlemek
-> icin akarken yazilir; Adim 5 onayi cozum uygulandiktan sonra kanitlar uzerinden alinir.
 
 ## Entegrasyon Notlari
 
-- **Worktree**: mantik `worktree` skill'de — bu skill sadece `new <isim>` cagirir, isim turetir
-- **Plane isleme alma (Adim 0c)**: kaynak Plane issue ise worktree'den ONCE issue `started`'a cekilir,
-  assignee yoksa self atanir, `start_date` bossa bugun yazilir — **otomatik, onaysiz**, idempotent
-  ("zaten dolu/started ise dokunma"). Bu, `commit` skill'inin kapama (Adim 10/10a) mantiginin baslangic
-  karsiligidir; CLI sozdizimi `plane-cli` skill'inden gelir. Label/priority/target-date bu adimda set
-  EDILMEZ — onlar kapama adiminin sorumlulugu
-- **Teslimat**: commit/push/PR mantigi `commit` skill'de — `before-commit` kurali geregi manuel git yok
-- **Log analizi**: VictoriaLogs erisimi olan diji projede `diji-logs` skill'e delege (LogsQL arama), kapsamli tarama icin `log-triage`
-- **Kaynak donusum**: PDF/Office → `markitdown`, URL → `WebFetch`, gorsel → `Read`
-- **Local alan**: `CLAUDE.local.md` **"## Issue Workflow"** bolumu ise baslarken (Adim 0a) okunur — proje-ozel baslatma/test/port komutlari ve kullanici-ozel akis notlari oraya yazilir
-- **Test ortami**: worktree'de izole hazirlanir, **unique port** ile arka planda (`run_in_background`) calisir, testler bitince **mutlaka durdurulur** (orphan process yok)
-- **Gorsel kanit**: gorsel/UI degisikliginde `playwright-cli` ekran goruntusu **zorunlu** (mumkunse before/after)
-- **Takip raporu**: `/tmp/<isim>/REPORT.md` calisma basinda olusur, zed ile acilir, analiz akarken guncellenir — yalniz **izleme** icindir, hicbir adimda onay/etkilesim beklemez
-- **Kanit izolasyonu**: her zaman `/tmp/<isim>/` — repo'ya kanit/credential sizmaz
-- **Plan onayi**: Adim 2 final raporu sonrasi **her durumda** plan moduna girilir (`EnterPlanMode` → plan dosyasina cozum plani → `ExitPlanMode` onayi); eski "KESIN→uygula / BELIRSIZ→sor" karari kaldirildi, tek onay noktasi plan modudur
-- **Karar felsefesi**: muhafazakar — plan onaylanmadan uygulamaya gecilmez; belirsizlik varsa plan modunda `AskUserQuestion` ile netlestir (`ask-first` kurali)
-- **Hedef baglama (`/goal`)**: hedef dogrulanabilir tek bitis durumuna sahip + cok turlu ise Adim 1'de `/goal`'a baglamayi ONER (set etme, kullanici onayiyla); koşulu Adim 4 kanit ciktilariyla kanitlanabilir yaz (`workflow` kurali)
-- **Sub-agent siniri**: Adim 0b (kaynak analizi) ve Adim 2 (kok-neden) **asla** `Task`/sub-agent'a verilmez — baglamdan kopar, kritik analiz bozulur. `Task` yalniz `obsidian-searcher` on aramasi ve Adim 4 kanit-uretiminde (playwright vb.) kullanilabilir
+- **Delegasyon**: worktree → `worktree` skill, teslimat → `commit` skill, log → `diji-logs`
+  (kapsamli tarama `log-triage`), Plane → `plane-cli` skill, artifact tasarimi → `artifact-design` skill
+- **Artifact**: TEK dosya, buyuyerek; ayni path'e redeploy = ayni URL; gorsel-agir, metin kisa;
+  favicon sabit; ilk yayindan once `artifact-design` yuklenir; kanit gorselleri `data:` URI
+- **Sohbet kapilari**: Adim 3, 4, 8 — kullanici acik onay verene kadar adimda kalinir, artifact
+  uzerinde iterasyon yapilir. Onay sorusu her zaman `AskUserQuestion` ile (`ask-first` kurali)
+- **Sub-agent siniri**: Adim 2 (kaynak) ve Adim 4 (analiz) asla sub-agent'a verilmez; `Task`
+  yalniz `obsidian-searcher` on aramasi ve Adim 7 kanit uretiminde kullanilabilir
+- **Plan onayi**: tek onay noktasi `ExitPlanMode` (Adim 5); acik konular ondan ONCE (Adim 4,
+  B6) kapatilmis olur — plan modunda yeni tartisma acilmaz
+- **Plane isleme alma**: plan onayi SONRASI (Adim 6) — otomatik, onaysiz, idempotent; kapama
+  `commit` skill'de
+- **Test ortami**: worktree'de izole, unique port, arka plan, is bitince ZORUNLU durdurma
+- **Kanit izolasyonu**: her zaman `/tmp/<isim>/` — repo'ya kanit/credential sizmaz; artifact'e
+  gomulen gorselde credential kontrolu
+- **Durus**: agent uzman — dogru olani sec, esteti arastir, global standarda bak, imkansizi
+  durust soyle, ek kazanimi raporla
 
 ## Ek — `CLAUDE.local.md` "## Issue Workflow" Sablonu
 
-Bu bolumu calisilan projenin `CLAUDE.local.md`'sine ekle (proje-ozel; commit edilmez). Skill Adim 0a'da okur.
+Bu bolumu calisilan projenin `CLAUDE.local.md`'sine ekle (proje-ozel; commit edilmez). Skill Adim 1'de okur.
 
 ```markdown
 ## Issue Workflow
