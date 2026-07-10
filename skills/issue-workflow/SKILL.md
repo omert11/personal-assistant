@@ -166,6 +166,15 @@ Plan **tum isleri kapsamali** — B4-B7'de kararlastirilanlarin somut uygulamasi
   uygulanacagini planda belirt (token-efficiency kurali: her `agent()` cagrisinda acik `model`,
   fable oturumunda ust sinir `opus`; dosya cakismasi varsa `isolation: 'worktree'`)
 
+> ⛔ **Fable Model Baraji (MUTLAK, esnetilemez):** Ana oturum modeli Fable ise hicbir workflow
+> `agent()` cagrisi veya subagent fable ile calistirilmaz — ust sinir `opus`. Kendi yazdigin
+> script'lerde her `agent()` cagrisina acik `model` yaz. **Hazir/named workflow'lar
+> (`Workflow({name: ...})`, built-in code-review dahil) fable oturumunda dogrudan launch
+> EDILMEZ** — once script kopyasina model override yaz, `scriptPath` ile calistir; kopya
+> mumkun degilse launch etme, kullaniciya `AskUserQuestion` ile sor. Ayni baraj bu akisin
+> cagirdigi `commit` skill'inin code-review adimi icin de gecerlidir (kanitlanmis ihlal
+> maliyeti: 2026-07-10, 20 agent x fable ~ 2M token, harcama limiti asimi).
+
 ```
 ExitPlanMode()
 ```
@@ -196,7 +205,9 @@ Sirayla (`--json` ile):
 ## Adim 7 — Uygula + Test + Kanit
 
 Plani uygula (`coding` kurallari: hata wrap, TODO yorumlari, workaround yok). Planda paralel is
-paketleri tanimlandiysa `Workflow` ile dagit — cikti dogrulamasi sende (`workflow` kurali).
+paketleri tanimlandiysa `Workflow` ile dagit — cikti dogrulamasi sende (`workflow` kurali;
+fable oturumunda Adim 5'teki **Fable Model Baraji** aynen gecerli: her `agent()` acik model,
+named workflow'a dogrudan launch yok).
 
 Sonra cozumu **calisan uygulamada** test et ve kanitla:
 

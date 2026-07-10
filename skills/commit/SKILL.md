@@ -57,6 +57,17 @@ git diff
 
 Review **built-in `/code-review` skill'i** ile çalıştırılır — `code-review` skill'ini effort seviyesiyle çağır (örn. `/code-review high`; effort seçimi aşağıda "Effort Seçimi"). Skill'in tüm akışını ve verdiği bulguları olduğu gibi al; kendi workflow/subagent kurma.
 
+##### ⛔ Fable Model Barajı (MUTLAK — token-efficiency kuralı, esnetilemez)
+
+Ana oturum modeli **Fable** (`claude-fable-5`) ise, code-review'un yönlendirdiği `Workflow({name: "code-review"})` hazır script'i **DOĞRUDAN LAUNCH EDİLMEZ** — hazır script `agent()` çağrılarında model taşımaz, tüm agent'lar fable'ı devralır (kanıtlanmış maliyet: 2026-07-10, 20 agent × fable ≈ 2M token, harcama limiti aşımı). Zorunlu prosedür:
+
+1. Workflow script'ini kopyala (önceki launch'ın `workflows/scripts/code-review-*.js` kaydı veya dry-launch + anında `TaskStop`).
+2. Kopyadaki **her** `agent()` çağrısına açık `model` yaz: finder/mekanik fazlar `'sonnet'`, verify/synthesize `'opus'`.
+3. `Workflow({scriptPath: "<kopya>"})` ile çalıştır.
+4. Script'e erişilemiyorsa launch ETME — `AskUserQuestion` ile kullanıcıya bildir (inline review alternatifi / fable'a rağmen devam / iptal). Açık onay olmadan fable'lı launch yasak.
+
+Bu baraj "review zorunlu" kuralını gevşetmez: review yine yapılır, yalnızca fable devri engellenir.
+
 ##### Dürüst Review — KESKİN KURAL
 
 **Kod bir kere review edilir, bir daha edilmeyecek.** Bu yüzden review **dürüst, eksiksiz ve kolaya kaçmadan** yapılmalı. Bulunan hiçbir bulgu **görmezden gelinemez** veya **atlanması gerekli görülemez**.
