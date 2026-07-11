@@ -274,29 +274,28 @@ python manage.py runserver</code></pre></div>
     <!-- django -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="server-cog"></i></div><div><div class="etitle">django</div><div class="emeta">Diji Django Standartları</div></div></div>
       <div class="ebody">
-        <p><strong>Diji'nin Django projelerine özgü çeviri domain'i (<code>djangof7</code>), proje yapısı, Elasticsearch reindex komutları ve admin konvansiyonlarını standartlaştırır.</strong></p>
-        <p>Standart <code>django</code>/<code>djangojs</code>'e ek olarak <code>djangof7</code> domain'i F7 framework çevirilerini yönetir. Mobil repo <code>./mobile/&lt;repo&gt;/</code>, loglar <code>server/logs/</code>, logolar <code>assets/app/</code> altında. Admin: ortak kullanıcı (credential local-rules), SmartAdmin template; B2C'de Django Admin <code>superadmin/</code>, panel <code>admin/</code>.</p>
-        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Elasticsearch Reindex</div><pre><code>python manage.py elastic_reindex_hotel
-# _flight _car _transfer _bus _tour _ferry varyantları</code></pre></div>
+        <p><strong>Diji'nin Django projelerine özgü çeviri domain'i (<code>djangof7</code>), proje yapısı, uv kurulum reçeteleri ve mobil publish domain pre-flight kuralını standartlaştırır.</strong></p>
+        <p>Template yorumları <code>{% comment %}</code> ile zorunlu. Standart <code>django</code>/<code>djangojs</code>'e ek olarak <code>djangof7</code> domain'i F7 framework çevirilerini yönetir. Mobil repo <code>./mobile/&lt;repo&gt;/</code>, loglar <code>server/logs/</code>, logolar <code>assets/app/</code> altında. PR merge = deploy tetiklenir, ek işlem gerekmez. Panel template SmartAdmin; B2C'de Django Admin <code>superadmin/</code>, panel <code>admin/</code>. <strong>Mobil publish öncesi bloklayıcı kontrol:</strong> app'in backend domain'i (<code>window.domain_name</code>) aksi söylenmedikçe MUTLAKA prod olmalı — dev domain'iyle store'a sızma vakası yaşandı.</p>
+        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Kurulum (uv)</div><pre><code>uv python pin 3.13 && uv venv && uv pip install -r requirements.txt
+# 3.11 reçetesi eski projeler için kuralda</code></pre></div>
       </div>
     </div>
 
     <!-- workflow -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="users"></i></div><div><div class="etitle">workflow</div><div class="emeta">Görev Takibi + Goal + Subagent + Background</div></div></div>
       <div class="ebody">
-        <p><strong>Çok adımlı işte görevler <code>TaskCreate</code>/<code>TaskUpdate</code> ile canlı takip edilir; doğrulanabilir uzun hedeflerde <code>/goal</code> önerilir; subagent/workflow task zorluğuna göre serbest — ama iş delegasyondan önce kesinleştirilir ve çıktı doğrulanır; bloklayan HER iş background çalıştırılır.</strong></p>
-        <p><strong>Görev takibi:</strong> 3+ adım / çok dosya / planlı akış başlayınca <code>TaskCreate</code> ile görev listesi açılır, adım başında <code>in_progress</code> bitince <code>completed</code> işaretlenir, yeni iş çıkınca anında görev eklenir. Tek-shot/trivial işte açılmaz.</p>
-        <p><strong>Hedef (<code>/goal</code>):</strong> tek ölçülebilir bitiş durumuna sahip, çok turlu bir hedef verilince Claude bunu <code>/goal</code> ile koşula bağlamayı <em>önerir</em> (kendiliğinden set etmez — koşul sağlanana kadar turlar arası otonom çalıştırır, token harcar). Tek-shot/öznel hedeflerde önerilmez; görev takibi yeterlidir.</p>
-        <p>Kullanıcı "takım kur" derse <code>TeamCreate</code>. Subagent/workflow kullanımı serbest: büyük işi parçalara ayırmak avantajlıdır — ama task tanımı agent'in yorumuna bırakılmaz (girdi, kapsam, beklenen çıktı delegasyondan önce netleştirilir), gereksiz kontrol önlenir (çıktıyı ana agent doğrulayacaksa subagent'a "review/test yapma, kontrol bende" sınırı konur — çifte kontrol israftır) ve çıktıya "doğru değilmiş" gözüyle bakılır: iddialar (dosya değişikliği, test sonucu, bulgu) kendin teyit edilir, parçalar çelişki ayıklanarak birleştirilir, doğrulanamayan şey doğrulanmış gibi raporlanmaz.</p>
-        <p>Çalıştırma kuralı bloklayan tüm işleri kapsar: subagent <strong>her zaman</strong> <code>run_in_background: true</code> (istisnasız); uzun/süreli Bash komutları (build, test, install, dev server, deploy/migration, log tail) background; workflow zaten background döner. Foreground'a düşmek yerine <code>task-notification</code> beklenir. <strong>Tek istisna:</strong> sub-saniye, yan etkisiz, çıktısı anında lazım olan kısa okuma komutları (<code>ls</code>, <code>git status</code>, version check) Bash'te foreground kalabilir.</p>
+        <p><strong>Çok adımlı işte görevler <code>TaskCreate</code>/<code>TaskUpdate</code> ile canlı takip edilir; subagent/workflow task zorluğuna göre serbest — ama iş delegasyondan önce kesinleştirilir ve çıktı doğrulanır.</strong></p>
+        <p><strong>Görev takibi:</strong> 3+ adım / çok dosya / planlı akış başlayınca <code>TaskCreate</code> ile görev listesi açılır ve süreç boyunca canlı tutulur — kullanıcı akışın nerede olduğunu görsün, hiçbir adım unutulmasın.</p>
+        <p><strong>Subagent/workflow — üç keskin şart:</strong> (1) delegasyondan önce iş kesinleştirilir — girdi, kapsam sınırı, beklenen çıktı formatı ve "ne yapılmayacak" prompt'a net yazılır, muğlak tanımla agent çağırmak yasak; (2) gereksiz kontrol önlenir — çıktıyı ana agent doğrulayacaksa subagent'a "review/test yapma, kontrol bende" sınırı konur; (3) çıktıya "doğru değilmiş" gözüyle bakılır — iddialar kendin teyit edilir, parçalar çelişki ayıklanarak birleştirilir, doğrulanamayan şey doğrulanmış gibi raporlanmaz.</p>
+        <p><strong>Çalıştırma:</strong> bloklamayan işler varken bloklayan komut background'a alınır (subagent, uzun Bash, workflow); açık kalması gerekmeyen her Bash komutuna timeout konur.</p>
       </div>
     </div>
 
     <!-- obsidian -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="network"></i></div><div><div class="etitle">obsidian</div><div class="emeta">Bellek Kullanımı</div></div></div>
       <div class="ebody">
-        <p><strong>Proje-spesifik kalıcı bilgi resmi Obsidian CLI ile okunur/yazılır; aramada <code>obsidian-searcher</code>, yapısal yazımda <code>obsidian-writer</code> agent'ı kullanılır.</strong></p>
-        <p>Vault <code>~/Documents/ObsidianVault/&lt;isim&gt;/</code> altında MOC + wikilink yapısındadır. Arama elle yapılmaz — "önce MOC → files → BM25 search → context → oku → sentezle" akışını agent yürütür. BM25 literal arama (vector yok); tek/az terimle başla, TR↔EN sinonim dene, <code>path=</code> ile filtrele. Klasörler: <code>index.md</code>, <code>Learnings/</code>, <code>Journal/</code>. <strong>Doc-source provenance zorunlu</strong>: doc-source ile üretilen her dokümantasyonun <code>index.md</code>'sinde görünür "Kaynak ve Edinim" bölümü şart (kaynak + edinim yöntemi, ticket/mail referansı, credential wikilink'i, canlı doğrulama durumu) — frontmatter <code>source_url</code> tek başına yetmez.</p>
+        <p><strong>Proje-spesifik kalıcı bilgi resmi Obsidian CLI (<code>obsidian</code> komutu) ile okunur/yazılır.</strong></p>
+        <p>Vault <code>~/Documents/ObsidianVault/&lt;isim&gt;/</code> altında MOC + wikilink yapısındadır. Klasör konvansiyonu: <code>index.md</code> (MOC), <code>Stack/Architecture/Recent-Activity/README-Summary</code> (init çıktıları), <code>Learnings/</code> (kalıcı bilgiler), <code>Journal/</code> (oturum özetleri). CLI komutları Obsidian app açıkken çalışır; kapalıysa fallback — okuma <code>Read</code>/<code>Glob</code>/<code>Grep</code> ile direkt filesystem'den, yazma için önce <code>open -a Obsidian</code>.</p>
         <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Karar</div><p>Obsidian → proje-spesifik kalıcı bilgi · <code>~/.claude/memory/</code> → kullanıcı profili · <code>~/.claude/rules/</code> → tüm projeler.</p></div>
       </div>
     </div>
@@ -328,11 +327,9 @@ python manage.py runserver</code></pre></div>
     <!-- cli-tools -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="terminal-square"></i></div><div><div class="etitle">cli-tools</div><div class="emeta">CLI Referansı</div></div></div>
       <div class="ebody">
-        <p><strong>Sık kullanılan CLI araçlarının (Zed, Tailscale, UV, rsvg-convert, markitdown) komut referansını standartlaştırır.</strong></p>
-        <p>Bir cheat-sheet kuralı: Zed dosya/satır/diff/<code>--wait</code>; Tailscale status/up/ping; UV venv/pin/install; rsvg-convert SVG→PNG/PDF; markitdown PDF/Office/ses/görsel/YouTube → markdown.</p>
-        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>rsvg-convert -w 512 -h 512 in.svg -o out.png
-markitdown dosya.pdf -o cikti.md
-zed --diff a.ts b.ts</code></pre></div>
+        <p><strong>Sık kullanılan CLI araçlarının minimal komut referansı.</strong></p>
+        <p>Kural token bütçesi için ince tutulur: <code>markitdown</code> ile dosya → markdown dönüşümü; deploy/release durumu <code>gh</code> watch ile izlenir.</p>
+        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>markitdown dosya.pdf &gt; cikti.md</code></pre></div>
       </div>
     </div>
 
@@ -348,20 +345,11 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       </div>
     </div>
 
-    <!-- b2c-booking-log -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-search"></i></div><div><div class="etitle">b2c-booking-log</div><div class="emeta">Domain Bilgisi</div></div></div>
-      <div class="ebody">
-        <p><strong>Diji B2C rezervasyon loglarının analizi için log dosyaları, DB modelleri, status akışı, logger hiyerarşisi ve bilinen sorunları haritalar.</strong></p>
-        <p>Loglar <code>server/logs/</code> (debug.log, diji.csv, modül csv'leri). Modeller: Booking, BookingItem, UserBookingBasket, AppLog. Status akışı: <code>READY → PREBOOKED → PAYPROCESSING → PROCESSING → SUCCESS</code> (hata: FAIL/CANCEL). Bilinen sorunlar: duplicate finalize race condition, PAYPROCESSING'de takılma, SMS NoneType hatası.</p>
-      </div>
-    </div>
-
     <!-- soloterm -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="square-terminal"></i></div><div><div class="etitle">soloterm</div><div class="emeta">Process Yönetimi</div></div></div>
       <div class="ebody">
         <p><strong>Tekrar eden shell komutları için mutlaka <code>solo.yml</code> oluşturulur ve komutlar <code>solo</code> CLI üzerinden process olarak yönetilir.</strong></p>
-        <p>Bir komut ileride tekrar kullanılabilecekse önce <code>solo.yml</code> kontrol edilir; varsa Solo üzerinden çalıştırılır, yoksa önce eklenir. Process'ler <code>solo processes</code> / <code>solo commands</code> komutlarıyla başlatılabilir, durdurulabilir ve yeniden başlatılabilir.</p>
-        <p><strong>⚠️ Process çıktısı/logu CLI'de YOK:</strong> Solo CLI ve HTTP API process loglarını göstermez (sadece <code>status</code>, <code>pid</code>, <code>uptime</code>). Crash sebebini görmek için Solo app GUI terminal paneli, <code>2>&1 | tee /tmp/&lt;proc&gt;.log</code> ile loglama, <code>curl</code> ile traceback veya foreground <code>Bash</code> gerekir. (Bu kısıt CLI'da düzeltildiğinde uyarı geçersizleşir.)</p>
+        <p>Proje ID <code>CLAUDE.local.md</code>'den alınır; binary <code>~/.local/bin/solo</code> (<code>solo --version</code> ile doğrulanır). Bir komut ileride tekrar kullanılabilecekse önce <code>solo.yml</code> kontrol edilir; varsa Solo üzerinden çalıştırılır, yoksa önce eklenir. Process'ler başlatılabilir, durdurulabilir, yeniden başlatılabilir ve <strong>çıktısı <code>solo processes output</code> ile okunabilir</strong>.</p>
       </div>
     </div>
 
@@ -369,7 +357,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="coins"></i></div><div><div class="etitle">token-efficiency</div><div class="emeta">Model Ekonomisi</div></div></div>
       <div class="ebody">
         <p><strong>Subagent ve Workflow ajanlarında model her zaman bilinçli seçilir — en küçük <em>yeterli</em> model.</strong></p>
-        <p>Agent frontmatter'ına her zaman açık <code>model:</code> yazılır: haiku (mekanik çıkarım/rapor), sonnet (yapısal yazım/çeviri/orchestration), opus/inherit (derin muhakeme). Workflow <code>agent()</code> çağrıları frontmatter kullanmaz — <code>opts.model</code> açıkça belirtilir; named plugin agent (<code>subagent_type</code>) çağrısında frontmatter geçerlidir. Maliyet: haiku ≈ Opus'un ~1/25'i, sonnet ≈ ~1/5'i — paralel fan-out'ta doğrusal çarpan. Ana oturum modeli Fable ise workflow/subagent'lara fable devredilmez — üst sınır <code>opus</code> (code-review dahil, <strong>mutlak/esnetilemez</strong>); fable oturumunda her <code>agent()</code> çağrısına açık model yazılır. Hazır/named workflow'lar (<code>Workflow({name: ...})</code>, built-in code-review dahil) model override taşımadığından fable oturumunda doğrudan launch edilmez — script kopyasına her <code>agent()</code> için açık model yazılıp <code>scriptPath</code> ile çalıştırılır; kopya mümkün değilse launch edilmez, kullanıcıya sorulur.</p>
+        <p>Agent frontmatter'ına her zaman açık <code>model:</code> yazılır (<code>haiku</code>/<code>sonnet</code>/<code>opus</code>/<code>fable</code>, tam ID veya <code>inherit</code>); workflow <code>agent()</code> çağrılarında <code>opts.model</code> açıkça belirtilir. <strong>Mutlak kural — sub/agent fable YASAK:</strong> hiçbir workflow <code>agent()</code> çağrısı veya subagent fable ile çalıştırılmaz; fable oturumunda <code>opts.model</code> boş bırakmak fable'ı devralır, bu yüzden her çağrıya açık model yazılır (en yükseği <code>opus</code>). Hazır/named workflow'lar (<code>Workflow({name: ...})</code>, built-in code-review dahil) model override taşımadığından fable oturumunda doğrudan launch edilmez — script kopyasına her <code>agent()</code> için açık model yazılıp <code>scriptPath</code> ile çalıştırılır (mekanik/finder <code>sonnet</code>, derin verify/judge <code>opus</code>); kopya mümkün değilse launch edilmez, kullanıcıya sorulur.</p>
         <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>agent(prompt, { label: 'translate:ar', model: 'sonnet', schema })</code></pre></div>
       </div>
     </div>
@@ -390,7 +378,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="download"></i></div><div><div class="etitle">load-rules.sh</div><div class="emeta">SessionStart</div></div></div>
       <div class="ebody">
         <p><strong>Oturum başında plugin'in <code>rules/</code> klasöründeki tüm kural dosyalarını <code>~/.claude/rules/</code> altına materialise eder</strong> ve context'e ~19KB ham metin yerine yalnızca kısa bir indeks (dosya adı + tek satır özet) basar.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>set -e</code> fail-fast. Her <code>.md</code> için <code>copy_if_newer</code>: hedef yoksa veya kaynak daha yeniyse (<code>-nt</code> mtime) kopyalanır. Sonra "# Active Rules" başlığı + her kural için bir satır (ilk H2 → H1 → ilk satır, 80 char). Claude Code'un ~2KB hook preview truncation sınırını aşar.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>set -e</code> fail-fast. Her <code>.md</code> için <code>copy_if_newer</code>: hedef yoksa veya kaynak daha yeniyse (<code>-nt</code> mtime) kopyalanır. Manifest tabanlı prune: plugin'in materialise ettiği dosyalar <code>.personal-assistant-manifest</code>'e yazılır; kaynaktan silinen kural bir sonraki oturumda hedeften de silinir — başka araçların yazdığı dosyalara (örn. ctx7'nin <code>context7.md</code>'si) dokunulmaz. Sonra "# Active Rules" başlığı + her kural için bir satır (ilk H2 → H1 → ilk satır, 80 char). Claude Code'un ~2KB hook preview truncation sınırını aşar.</p></div>
         <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Kurallar her oturumda güncel ve sabit yoldan erişilebilir; context bütçesi şişmez — Claude ilgili kuralı gerektiğinde <code>Read</code> ile açar.</p></div>
       </div>
     </div>

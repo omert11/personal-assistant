@@ -33,6 +33,32 @@ done
   [ -f "$f" ] && copy_if_newer "$f"
 done
 
+# Prune rules this plugin materialised earlier but that no longer exist in
+# any source, so deleted rules stop loading into context every session.
+# A manifest limits pruning to plugin-managed files: rules written by other
+# tools into ~/.claude/rules (e.g. ctx7's context7.md) are never touched.
+MANIFEST="$RULES_DST/.personal-assistant-manifest"
+CURRENT=""
+for d in "$RULES_SRC" "$LOCAL_RULES_SRC"; do
+  [ -d "$d" ] || continue
+  for f in "$d"/*.md; do
+    [ -f "$f" ] || continue
+    CURRENT="$CURRENT$(basename "$f")
+"
+  done
+done
+
+if [ -f "$MANIFEST" ]; then
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    if ! printf '%s' "$CURRENT" | grep -qxF "$name"; then
+      rm -f "$RULES_DST/$name"
+    fi
+  done < "$MANIFEST"
+fi
+
+printf '%s' "$CURRENT" | sort -u > "$MANIFEST"
+
 # Build the index
 echo "# Active Rules"
 echo ""
