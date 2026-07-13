@@ -55,18 +55,16 @@ git diff
 - Sadece **non-kod dosyaları** (`.md`, `.json`, `.yml`, `.txt`, asset'ler) değişmişse atlanabilir.
 - Skip sadece kullanıcı **açıkça** "code-review atla" / "skip code-review" / "code-review çalıştırma" derse mümkün — bu durumda bulgu olarak "kullanıcı explicit skip istedi" diye işaretle.
 
-Review **built-in `/code-review` skill'i** ile çalıştırılır — `code-review` skill'ini effort seviyesiyle çağır (örn. `/code-review high`; effort seçimi aşağıda "Effort Seçimi"). Skill'in tüm akışını ve verdiği bulguları olduğu gibi al; kendi workflow/subagent kurma.
+Review **built-in `/code-review` skill'i** ile çalıştırılır — akış **oturum modeline göre** belirlenir (aşağıdaki baraj). Effort seçimi aşağıda "Effort Seçimi". Skill'in tüm akışını ve verdiği bulguları olduğu gibi al; effort tavanını aşan kendi Workflow/subagent kurma.
 
 ##### ⛔ Fable Model Barajı (MUTLAK — token-efficiency kuralı, esnetilemez)
 
-Ana oturum modeli **Fable** (`claude-fable-5`) ise, code-review'un yönlendirdiği `Workflow({name: "code-review"})` hazır script'i **DOĞRUDAN LAUNCH EDİLMEZ** — hazır script `agent()` çağrılarında model taşımaz, tüm agent'lar fable'ı devralır (kanıtlanmış maliyet: 2026-07-10, 20 agent × fable ≈ 2M token, harcama limiti aşımı). Zorunlu prosedür:
+Code-review'un **Workflow-backed** varyantı (`high`/`ultra` → `Workflow({name: "code-review"})`) **hiçbir zaman doğrudan launch EDİLMEZ** — hazır script `agent()` çağrılarında model taşımaz, tüm agent'lar fable'ı devralır (kanıtlanmış maliyet: 2026-07-10, 20 agent × fable ≈ 2M token, harcama limiti aşımı). Bunun yerine tek kural:
 
-1. Workflow script'ini kopyala (önceki launch'ın `workflows/scripts/code-review-*.js` kaydı veya dry-launch + anında `TaskStop`).
-2. Kopyadaki **her** `agent()` çağrısına açık `model` yaz: finder/mekanik fazlar `'sonnet'`, verify/synthesize `'opus'`.
-3. `Workflow({scriptPath: "<kopya>"})` ile çalıştır.
-4. Script'e erişilemiyorsa launch ETME — `AskUserQuestion` ile kullanıcıya bildir (inline review alternatifi / fable'a rağmen devam / iptal). Açık onay olmadan fable'lı launch yasak.
+- **Ana oturum modeli Fable ise** → code-review **tek `general-purpose` subagent** ile `model: opus` verilerek çalıştırılır; subagent `code-review` `medium` akışını (8 finder angle + dedup, verify yok) **kendi context'inde inline** koşar, bulguları JSON döndürür. Yeni Workflow spawn etmez. Ana thread çıktıyı doğrular.
+- **Fable DEĞİLSE** → code-review'u **Claude kendisi inline** çalıştırır (subagent yok), `medium` akışını bu context'te koşar.
 
-Bu baraj "review zorunlu" kuralını gevşetmez: review yine yapılır, yalnızca fable devri engellenir.
+Bu baraj "review zorunlu" kuralını gevşetmez: review yine yapılır, yalnızca fable devri ve kontrolsüz agent fan-out engellenir. Detay: `token-efficiency` kuralı → "Code Review — Tek Kural".
 
 ##### Dürüst Review — KESKİN KURAL
 
@@ -89,22 +87,22 @@ Bu baraj "review zorunlu" kuralını gevşetmez: review yine yapılır, yalnızc
 
 ##### Effort Seçimi — Karmaşıklığa Göre Kalibre Et
 
-Effort, **yapılan işin karmaşıklığına** göre seçilir — gereksiz yüksek effort verme (zaman/token israfı), karmaşık işte düşük effort'a kaçma (kaçan bug). `git diff --stat` + diff içeriğine bakıp karar ver, `code-review` skill'ini seçtiğin seviyeyle çağır. Varsayılan eğilim **küçük/lokal diff'te düşük effort** yönünde; yükseltme için diff'in somut bir üst-kriteri karşılaması gerekir:
+Effort, **yapılan işin karmaşıklığına** göre seçilir — ama agent kendi inisiyatifiyle **yalnızca `low` veya `medium`** seçebilir (effort tavanı `medium`). `git diff --stat` + diff içeriğine bakıp `low`/`medium` arasında karar ver. `high` / `xhigh` / `max` **yalnızca kullanıcı açıkça isterse** — agent kendiliğinden yükseltmez.
 
 | Effort | Ne zaman |
 |---|---|
 | `low` (küçük diff varsayılanı) | Tek-birkaç dosyada lokal, dar kapsamlı değişiklik: typo/rename/import, sabit/string güncelleme, küçük mantık eklemesi/düzeltmesi, test/docs/config değişikliği — kritik olmayan ve yan etkisi sınırlı işler |
-| `medium` | Sıradan feature/fix: birden çok dosyaya yayılan, gerçek iş mantığı taşıyan orta ölçekli değişiklik |
-| `high` | Karmaşık mantık, geniş yüzeye yayılan değişiklik, güvenlik-kritik kod, data-mutating işlem (migration, ödeme, silme), concurrency/race riski |
-| `xhigh`/`max` | Sadece kullanıcı açıkça isterse — skill kendi inisiyatifiyle seçmez |
+| `medium` (agent tavanı) | Sıradan feature/fix: birden çok dosyaya yayılan, gerçek iş mantığı taşıyan orta ölçekli değişiklik. Karmaşık/geniş yüzeyli/güvenlik-kritik/data-mutating işlerde de agent burada kalır — daha yükseği için kullanıcı onayı gerekir |
+| `high` / `xhigh` / `max` | **Sadece kullanıcı açıkça isterse** — agent kendi inisiyatifiyle seçmez |
 
-- **Küçük/lokal diff'lerde `low`'da kal** — birkaç satır veya tek bir dar değişiklik için `medium`'a yükseltme; gereksiz yüksek effort zaman/token israfıdır.
-- Yukarı seviyeyi ancak değişiklik **gerçekten** üst kriterlerden birine giriyorsa seç (data-mutating, güvenlik, geniş yüzey, karmaşık mantık) — "ne olur ne olmaz" gerekçesiyle değil.
+- **Küçük/lokal diff'lerde `low`'da kal**, orta ölçekli işte `medium`'a çık — ama agent bu ikisini aşmaz.
+- Değişiklik karmaşık/kritik olsa bile agent tavanı `medium`'dur; `high`+ gerektiğini düşünüyorsan bunu bulgu/uyarı olarak sun, kullanıcı `high` derse o zaman yükselt.
 - Effort seçimi review'in **dürüstlüğünü** etkilemez: seçilen seviyenin verdiği TÜM bulgular yine ham haliyle sunulur.
+- **Fable oturumunda çalıştırma yolu her effort için aynıdır** (tek opus subagent inline — yukarıdaki Fable Model Barajı); kullanıcı `high`+ istese bile Workflow-backed varyant launch edilmez.
 
 ##### Çağrı
 
-`code-review` skill'ini çalıştır; effort'u yukarıdaki tabloya göre geçir (örn. `/code-review high`). Belirli bir dizine/dosyaya odaklanılması gerekiyorsa skill'e bunu belirt. Skill'in döndürdüğü bulguların hepsini ham haliyle Soru 1'e taşı.
+Effort'u yukarıdaki tabloya göre `low`/`medium` seç (Fable Model Barajı'ndaki yola göre çalıştır: fable → tek opus subagent inline, non-fable → Claude kendisi inline). Belirli bir dizine/dosyaya odaklanılması gerekiyorsa akışa bunu belirt. Döndürülen bulguların hepsini ham haliyle Soru 1'e taşı.
 
 #### 3c. Test Kontrolü
 - Değişen dosyaların test'i var mı? (`*.test.*`, `*_test.*`, `tests/`, `__tests__/`)

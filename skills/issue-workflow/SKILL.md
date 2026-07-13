@@ -175,11 +175,13 @@ Plan **tum isleri kapsamali** — B4-B7'de kararlastirilanlarin somut uygulamasi
 > ⛔ **Fable Model Baraji (MUTLAK, esnetilemez):** Ana oturum modeli Fable ise hicbir workflow
 > `agent()` cagrisi veya subagent fable ile calistirilmaz — ust sinir `opus`. Kendi yazdigin
 > script'lerde her `agent()` cagrisina acik `model` yaz. **Hazir/named workflow'lar
-> (`Workflow({name: ...})`, built-in code-review dahil) fable oturumunda dogrudan launch
-> EDILMEZ** — once script kopyasina model override yaz, `scriptPath` ile calistir; kopya
-> mumkun degilse launch etme, kullaniciya `AskUserQuestion` ile sor. Ayni baraj bu akisin
-> cagirdigi `commit` skill'inin code-review adimi icin de gecerlidir (kanitlanmis ihlal
-> maliyeti: 2026-07-10, 20 agent x fable ~ 2M token, harcama limiti asimi).
+> (`Workflow({name: ...})`) fable oturumunda dogrudan launch EDILMEZ** — once script kopyasina
+> model override yaz, `scriptPath` ile calistir; kopya mumkun degilse launch etme, kullaniciya
+> `AskUserQuestion` ile sor. **Code-review ozel kurali** (`token-efficiency` → "Code Review — Tek
+> Kural"): fable ise code-review tek `general-purpose` subagent `model: opus` ile `medium` akisini
+> inline kosar (yeni Workflow spawn etmez); fable degilse Claude kendisi inline kosar; effort
+> tavani `medium`. Ayni kural bu akisin cagirdigi `commit` skill'inin code-review adimi icin de
+> gecerlidir (kanitlanmis ihlal maliyeti: 2026-07-10, 20 agent x fable ~ 2M token, harcama limiti asimi).
 
 ```
 ExitPlanMode()
