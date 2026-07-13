@@ -158,6 +158,10 @@ Kaynaktan **anlamli, kebab-case** isim turet:
 `worktree` skill'inin `new <isim>` akisini kullan (`Skill(worktree, "new <isim>")` veya dogrudan
 `EnterWorktree({ name })`). Session cwd worktree'ye gecer; `/tmp/<isim>/` kanit klasorunun yeridir.
 
+> **`SESSION_NAME` = bu isim** (worktree/kebab-case ident, orn `fix-proj-123`). Adim 7'de eklenen
+> tum debug loglari `[SESSION_NAME]` prefix'iyle etiketlenir; Adim 8.5 bu etiketle temizlik yapar.
+> Deger context'te sabit tut — grep + temizlik icin tek anahtar.
+
 Sonra **plan moduna gir** ve tam plani yaz:
 
 ```
@@ -168,6 +172,9 @@ Plan **tum isleri kapsamali** — B4-B7'de kararlastirilanlarin somut uygulamasi
 - Yapilacak degisiklikler (hangi dosyada ne — madde madde)
 - Kapatilan acik konularin kararlari
 - Yan etki / risk ve nasil dogrulanacagi
+- **Debug loglama stratejisi**: dilin log altyapisi izin veriyorsa gelistirme sirasinda
+  `[SESSION_NAME] ...` etiketli detayli loglar eklenecegini planda belirt (Adim 7); temizlik
+  Adim 8.5'te (commit oncesi bloklayici)
 - **Paralelize edilebilir isler**: birbirinden bagimsiz is paketleri varsa `Workflow` ile paralel
   uygulanacagini planda belirt (token-efficiency kurali: her `agent()` cagrisinda acik `model`,
   fable oturumunda ust sinir `opus`; dosya cakismasi varsa `isolation: 'worktree'`)
@@ -217,6 +224,14 @@ paketleri tanimlandiysa `Workflow` ile dagit — cikti dogrulamasi sende (`workf
 fable oturumunda Adim 5'teki **Fable Model Baraji** aynen gecerli: her `agent()` acik model,
 named workflow'a dogrudan launch yok).
 
+> **Detayli `[SESSION_NAME]` loglama (dil izin veriyorsa ZORUNLU):** gelistirme sirasinda log
+> ekleyebiliyorsan (dilin/framework'un logger'i varsa) kritik akis noktalarina **`[SESSION_NAME]`
+> prefix'li** detayli loglar ekle — `SESSION_NAME` Adim 5'teki worktree ismi (orn
+> `logger.debug("[fix-proj-123] payment intent %s created for order %s", pid, oid)`). Prefix
+> sonradan bulunabilirlik icindir: test sirasinda bu loglar grep'lenip sorun hizli izole edilir,
+> Adim 8.5'te ayni etiketle temizlenir. Log altyapisi olmayan yerde (saf shell, log'suz kod)
+> zorlama — atla.
+
 Sonra cozumu **calisan uygulamada** test et ve kanitla:
 
 ```bash
@@ -250,6 +265,11 @@ Bound port'u bekle (`curl --retry` / port-check), hazir olunca testlere gec.
 
 > **Gorsel degisiklikte GORSEL KANIT ZORUNLU** — `playwright-cli` ile screenshot, mumkunse
 > before/after. Gorsel kanit olmadan gorsel cozum "kanitlanmis" sayilmaz.
+
+> **Test sirasinda loglardan sorun tespiti:** eklenen `[SESSION_NAME]` loglarini kullanarak
+> sorunu rahatca izole et — `grep "\[SESSION_NAME\]" $EVID/server.log` (VL erisimli diji
+> projesiyse `diji-logs` skill ile ayni etiketi ara). Beklenen akis loglarda gorundu mu, hata
+> hangi noktada koptu, degerler dogru mu — teshis bu loglar uzerinden yapilir.
 
 ### 7d. Arka plandaki uygulamayi DURDUR (ZORUNLU)
 Testler bitince background task'i sonlandir (`KillShell`; gerekirse `kill $(lsof -ti tcp:$PORT)`).
@@ -285,6 +305,31 @@ Sonra **sohbet kapisi**: `AskUserQuestion` (header: "Akis") — options:
 
 ---
 
+## Adim 8.5 — `[SESSION_NAME]` log temizligi (commit ONCESI, BLOKLAYICI)
+
+Commit skill calistirilmadan **once** worktree'deki tum degisiklikte `[SESSION_NAME]` gecen
+loglari tespit et:
+
+```bash
+grep -rn "\[<SESSION_NAME>\]" .   # <SESSION_NAME> = Adim 5'teki worktree ismi
+```
+
+Her bulunan log icin karar:
+- **Gereksiz gurultu / gecici debug** (akis izleme, degisken dump, "buraya geldi" tipi) → **satiri
+  komple sil**. Bunlar cozum icin degil teshis icin eklendi; kalmamali.
+- **Kalici faydali log** (prod'da da anlamli operasyonel/audit kaydi) → **kalabilir, ama
+  `[SESSION_NAME]` etiketi cikarilir** — prefix sadece bu oturumun izlenebilirligi icindi, kalici
+  logda gurultu. Mesaji temiz birak (orn `logger.info("payment intent %s created", pid)`).
+
+Sonuc: worktree'de **hicbir `[SESSION_NAME]` etiketi kalmamali** — yukaridaki `grep` **bos
+donene kadar** bu adimda kalinir. Bloklayicidir: etiket kalirsa Adim 9'a gecilmez (debug
+gurultusu / oturum-ozel prefix release'e sizmaz).
+
+> Temizlik sonrasi uygulama hala calisiyor mu diye kritik akisi bir kez daha dogrula (log satiri
+> silerken yanlislikla kod satiri bozulmadigindan emin ol).
+
+---
+
 ## Adim 9 — Commit skill
 
 `commit` skill'e delege et (teslimat: commit/push/PR; tum kontrolleri o yapar — `before-commit`
@@ -300,10 +345,11 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
 2. Kaynak toplama — TAM detay, ANA AJAN             (plane-cli / Read / markitdown / WebFetch / diji-logs)
 3. HTML B1+B2+B3 yaz + `open` (lokal browser)       → SOHBET KAPISI ("Akisa devam et" gelene kadar duzenle/sohbet)
 4. HTML B4+B5+B6+B7 — ULTRATHINK, ANA AJAN          (acik konular KAPATILIR, riskler durust) → SOHBET KAPISI
-5. Worktree ac (worktree skill) + EnterPlanMode     (tam plan; Workflow ile paralelize edilebilir) → ExitPlanMode onayi
+5. Worktree ac (worktree skill) + EnterPlanMode     (SESSION_NAME=isim; tam plan + loglama stratejisi) → ExitPlanMode onayi
 6. Plane issue ise ISLEME AL — OTOMATIK             (started + self + start_date; dolu olana dokunma; idempotent)
-7. Uygula → test ortami → unique port + arka plan → kanit ($EVID; gorselde SCREENSHOT zorunlu) → DURDUR
+7. Uygula (+[SESSION_NAME] loglar) → test ortami → unique port + arka plan → kanit (loglardan teshis; SCREENSHOT zorunlu) → DURDUR
 8. HTML B8+B9+B10+B11 ekle + `open` → SOHBET KAPISI ("Commit skill calistir" gelene kadar duzenle/sohbet)
+8.5 [SESSION_NAME] log temizligi — BLOKLAYICI       (gurultu SIL, faydali logdan etiketi cikar; grep bos donene kadar)
 9. commit skill                                      (teslimat + Plane kapama orada)
 ```
 
@@ -323,6 +369,10 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
 - **Plane isleme alma**: plan onayi SONRASI (Adim 6) — otomatik, onaysiz, idempotent; kapama
   `commit` skill'de
 - **Test ortami**: worktree'de izole, unique port, arka plan, is bitince ZORUNLU durdurma
+- **`[SESSION_NAME]` loglama**: `SESSION_NAME` = worktree ismi (Adim 5); gelistirmede `[SESSION_NAME]`
+  prefix'li detayli loglar (Adim 7, dil izin veriyorsa), testte loglardan teshis (7c), commit
+  ONCESI bloklayici temizlik (Adim 8.5) — gurultu silinir, faydali logdan etiket cikarilir; grep
+  bos donmeden Adim 9'a gecilmez
 - **Kanit izolasyonu**: her zaman `/tmp/<isim>/` — repo'ya kanit/credential sizmaz; artifact'e
   gomulen gorselde credential kontrolu
 - **Durus**: agent uzman — dogru olani sec, esteti arastir, global standarda bak, imkansizi
