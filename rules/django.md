@@ -2,6 +2,20 @@
 
 ## Template Yorumları — `{% comment %}` ZORUNLU
 
+## CSRF Token — Full Page Cache (ZORUNLU)
+Projede full page cache varsa (`cache_page` / `PageSetupLoaderMixin`) cache key'de session/user yoktur → HTML'e gömülü csrf token bayat kalır, POST **403** verir. Cookie tazedir (middleware her istekte `get_token` çağırır); bozuk olan **sadece hidden input**.
+
+**YASAK**: cache'lenen sayfada çıplak `{% csrf_token %}`.
+
+**ZORUNLU** — sıraya uy, üst madde uyuyorsa alta İNME:
+1. Form: projenin csrf-inject attribute'unu ekle (voyante: `user-utils-add-csrf-submit`). Başka hiçbir şey yazma.
+2. AJAX: projenin ajax helper'ını kullan (voyante: `dijiApp.ajax`). `X-CSRFToken` elle yazma, otomatik gider.
+3. İkisi de yoksa: cookie okuyup `X-CSRFToken` basan JS helper yaz.
+
+PWA helper'ı CSRF eklemeyebilir (token-auth varsayımı — voyante `dijiapp.utils.ajax`). Session-auth view'a POST atıyorsan header'ı elle geçmek ZORUNLU.
+
+Tek istisna: cache'lenmeyen sayfalar (panel/login-gated) — orada `{% csrf_token %}` bırak.
+
 ## F7 Çeviri Sistemi
 Projede standart django/djangojs domain'lerine ek olarak `djangof7` adında özel bir çeviri domain'i var. Bu domain F7 framework'üne özel çevirileri yönetir. `python manage.py makemessagesf7 -d djangof7 --all`
 
@@ -11,7 +25,7 @@ Projede standart django/djangojs domain'lerine ek olarak `djangof7` adında öze
 - Uygulama logoları: `assets/app/` altında
 
 ## Deploy Tetikleme
-pr merge olduğunda deploy tetiklenir ve sunucuda tüm işlemler otomatik yapılır ek işlem gerekmez
+Django projelerinde pr merge olduğunda deploy tetiklenir ve sunucuda tüm işlemler otomatik yapılır ek işlem gerekmez. (Django dışı projelere genelleme yapma — deploy tetikleyicisi repo'nun `.github/workflows/*.yml` `on:` bloğundan doğrulanır.)
 
 ## Proje Kurulumu (uv)
 ### Python 3.11 (eski projeler)
