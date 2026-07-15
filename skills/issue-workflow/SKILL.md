@@ -11,15 +11,14 @@ allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUs
 # Issue Workflow — Kaynak → HTML Analiz → Plan → Cozum → Kanit → Commit
 
 Verilen bir **kaynagi** (Plane issue, serbest metin, dokuman, gorsel, mail, log) uctan uca cozer.
-Akisin omurgasi **tek buyuyen bir lokal HTML analiz sayfasidir**: analiz gruplar halinde yazilir,
-sayfa **default browser'da `open` ile acilir** (Artifact tool ile claude.ai'ye YUKLENMEZ — yukleme
-akisi yok, dosya lokalde kalir), her grupta kullaniciyla sohbet edilir, kullanici onay verene kadar
-o adimda kalinir. Cozum izole worktree'de uygulanir, kanitlarla teyit edilir, teslimat `commit`
-skill'e devredilir.
+Akisin omurgasi **tek buyuyen bir lokal HTML analiz sayfasidir**: analiz gruplar halinde ayni
+dosyaya yazilir/guncellenir (Artifact tool KULLANILMAZ), her grupta kullaniciyla sohbet edilir,
+kullanici onay verene kadar o adimda kalinir. Cozum izole worktree'de uygulanir, kanitlarla teyit
+edilir, teslimat `commit` skill'e devredilir.
 
 > **Bu skill yalniz isleri SIRALAR — agir mantigi ayri skill'lere delege eder.**
 > Worktree → `worktree` skill. Teslimat → `commit` skill. Log → `diji-logs` skill.
-> Plane → `plane-cli` skill. Sayfa tasarimi → `artifact-design` skill. DRY.
+> Plane → `plane-cli` skill. Analiz sayfasi uretimi → `user-render` skill. DRY.
 
 ---
 
@@ -45,32 +44,21 @@ cozumu tasarla. Bu durus akisin her adiminda gecerlidir:
 
 ---
 
-## Analiz Sayfasi (HTML) Kurallari (Adim 3, 4, 8'de gecerli)
+## Analiz Sayfasi (Adim 3, 4, 8'de gecerli)
 
-Kullanici gorsel grafik/akis/karsilastirma ile cok daha hizli anlar — **sayfa gorsel-agir,
-metin kisa-net** olmalidir:
+Analiz sayfasinin **nasil** yazilacagi (dosya duzeni, iskelet, UI kit bilesenleri, icerik
+ilkeleri, arsivleme) tamamen **`user-render` skill'inde** tanimlidir — ilk sayfa yaziminda o
+skill'i yukle ve kurallarina uy. Konu slug'i = `<isim>` (Adim 5'teki kurala gore erken turetilir).
 
-- **LOKAL dosya, browser'da ac — Artifact tool KULLANILMAZ**: sayfa claude.ai'ye yuklenmez.
-  Dosya `/tmp/<isim>/analiz.html` (isim Adim 5'teki kurala gore erken turetilir), ilk yazimdan
-  sonra `open "/tmp/<isim>/analiz.html"` ile default browser'da acilir
-- **Ilk yazimdan ONCE `artifact-design` skill'ini yukle** — efor kalibrasyonu ve tasarim
-  temelleri oradan gelir (tam HTML iskeleti gerekir: `<!doctype html>` + `<head>` + `<body>`,
-  CSS inline; lokal dosyada Artifact CSP kisiti yok ama sayfa yine self-contained tutulur)
-- **TEK dosya, buyuyerek**: her grupta yeni bolumler ayni dosyaya EKLENIR (`Edit`). Grup basina
-  yeni dosya ACILMAZ. Guncelleme sonrasi tekrar `open` cagir — browser ayni dosyayi tazeler
-- **Gorsel yogun**: akis diyagramlari (inline SVG/CSS), once/sonra karsilastirmalari, durum
-  rozetleri, mimari semalar, tablolar. Uzun paragraf yerine sema + kisa madde
-- **Kanit gorselleri** (Adim 8): sayfa `$EVID` icinde oldugu icin screenshot'lar goreli yolla
-  gosterilir (`<img src="screenshot-after.png">`) — `data:` URI gomme gereksiz
-- **Bolum numaralari korunur** (B1..B11) — kullanici bolume numarayla atif yapabilir
-- Kullanici duzenleme/istek bildirdiginde: dosyayi `Edit` ile guncelle → tekrar `open` →
-  degisikligi tek cumleyle bildir
+Bu akisa ozel iki kural:
 
-**Sohbet kapisi deseni** (Adim 3, 4, 8 sonunda): sayfa acildiktan sonra `AskUserQuestion`
-ile sor (header: "Akis"):
-- options: `["Akisa devam et", "Duzenleme/istek var"]` (Adim 8'de: `["Commit skill calistir", "Duzenleme/istek var", "Iptal"]`)
-- "Duzenleme/istek var" → istegi al, artifact'i guncelle, TEKRAR sor. Kullanici devam diyene
-  kadar bu adimda kalinir — sohbete devam edilir, akis ilerletilmez.
+- **Bolum numaralari** (B1..B11) korunur — kullanici bolume numarayla atif yapabilir; her grupta
+  yeni bolumler ayni sayfaya EKLENIR
+- **Sohbet kapisi deseni** (Adim 3, 4, 8 sonunda): sayfa yazildiktan/guncellendikten sonra
+  `AskUserQuestion` ile sor (header: "Akis"):
+  - options: `["Akisa devam et", "Duzenleme/istek var"]` (Adim 8'de: `["Commit skill calistir", "Duzenleme/istek var", "Iptal"]`)
+  - "Duzenleme/istek var" → istegi al, sayfayi guncelle, TEKRAR sor. Kullanici devam diyene
+    kadar bu adimda kalinir — sohbete devam edilir, akis ilerletilmez.
 
 ---
 
@@ -115,7 +103,7 @@ Adim 3 artifact'inin hammaddesi.
 
 ## Adim 3 — Analiz Sayfasi Grup 1 (B1–B3) + sohbet kapisi
 
-`artifact-design` skill'ini yukle, sonra sayfanin ilk uc bolumunu yaz ve `open` ile browser'da ac:
+`user-render` skill'ini yukle, sonra sayfanin ilk uc bolumunu yaz (`~/.pa-render/active/<isim>/index.html`):
 
 - **B1 — Suanki Durum**: sistemin bugunku davranisi — akis semasi, ilgili modul haritasi, varsa hata/ekran gorseli
 - **B2 — Ne Isteniyor**: talep — somut, madde madde; once/sonra karsilastirma gorseli uygunsa
@@ -133,7 +121,7 @@ burada duzeltilir — sonraki adimlar bu uc bolumun uzerine kurulur.
 > gerekli gordugun kadar incele (`Grep`/`Glob`/`Read`/`Bash`). Kok nedeni belirle — semptomu degil.
 > Global standartlari ve en estetik cozum yolunu arastir (Durus bolumu). **Sub-agent kullanma.**
 
-Analiz bitince ayni HTML dosyasina dort bolum EKLE ve tekrar `open` ile ac:
+Analiz bitince ayni HTML dosyasina dort bolum EKLE (`Edit`):
 
 - **B4 — Ne Hazir / Ne Yapilacak / Nasil Yapilacak**: mevcut altyapida hazir olanlar; yapilacak
   isler; her isin nasil yapilacagi — yol haritasi semasi/asama diyagrami ile
@@ -156,7 +144,7 @@ Kaynaktan **anlamli, kebab-case** isim turet:
 - Bug → `fix-<kisa-konu>`, Feature → `feat-<kisa-konu>`
 
 `worktree` skill'inin `new <isim>` akisini kullan (`Skill(worktree, "new <isim>")` veya dogrudan
-`EnterWorktree({ name })`). Session cwd worktree'ye gecer; `/tmp/<isim>/` kanit klasorunun yeridir.
+`EnterWorktree({ name })`). Session cwd worktree'ye gecer; `~/.pa-render/active/<isim>/` kanit klasorunun yeridir.
 
 > **`SESSION_NAME` = bu isim** (worktree/kebab-case ident, orn `fix-proj-123`). Adim 7'de eklenen
 > tum debug loglari `[SESSION_NAME]` prefix'iyle etiketlenir; Adim 8.5 bu etiketle temizlik yapar.
@@ -235,7 +223,7 @@ named workflow'a dogrudan launch yok).
 Sonra cozumu **calisan uygulamada** test et ve kanitla:
 
 ```bash
-EVID=/tmp/<isim>
+EVID=~/.pa-render/active/<isim>       # sayfayla ayni klasor → goreli <img src="..."> ile gosterilir
 mkdir -p "$EVID"
 ```
 
@@ -276,20 +264,20 @@ Testler bitince background task'i sonlandir (`KillShell`; gerekirse `kill $(lsof
 Playwright session aciksa `playwright-cli close`. Hata/iptal durumunda da yapilir — orphan
 process/port birakilmaz.
 
-> Kanit dosyalari canli credential/JWT icerebilir → her zaman `/tmp` altinda, **repo disi**.
+> Kanit dosyalari canli credential/JWT icerebilir → her zaman `~/.pa-render/active/<isim>/` altinda, **repo disi**.
 > Analiz sayfasinda gosterilen gorselleri secerken de credential icermediklerini dogrula.
 
 ---
 
 ## Adim 8 — Analiz Sayfasi Grup 3 (B8–B11) + sohbet kapisi
 
-Ayni HTML dosyasina son dort bolumu EKLE ve tekrar `open` ile ac:
+Ayni HTML dosyasina son dort bolumu EKLE (`Edit`):
 
 - **B8 — Acik Konular (kapanis durumu)**: B6'daki her maddenin verilen karari + uygulanma durumu;
   is sirasinda dogan yeni acik konu varsa acikca listele
-- **B9 — Kanitlar**: `$EVID/` ciktilari — screenshot'lar goreli yolla gosterilir (sayfa ayni
-  klasorde), test/diff/API ciktilarindan karar verdirici kisimlar; her kanitin NEYI ispatladigi
-  tek cumleyle
+- **B9 — Kanitlar**: `$EVID/` ciktilari — screenshot'lar goreli yolla gosterilir
+  (`<img src="screenshot-after.png">`; kanitlar sayfayla ayni klasorde), test/diff/API
+  ciktilarindan karar verdirici kisimlar; her kanitin NEYI ispatladigi tek cumleyle
 - **B10 — Ek Kazanclar**: cozum sirasinda elde edilen yan iyilestirmeler (temizlenen kod,
   kapatilan baska bug, performans kazanci)
 - **B11 — Son Durum / Yeni Akis / Ozellik Tanitimi**: cozum sonrasi sistemin davranisi — yeni
@@ -343,23 +331,23 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
 ```
 1. CLAUDE.local.md "## Issue Workflow" oku          (proje-ozel komut/port/test/akis notu)
 2. Kaynak toplama — TAM detay, ANA AJAN             (plane-cli / Read / markitdown / WebFetch / diji-logs)
-3. HTML B1+B2+B3 yaz + `open` (lokal browser)       → SOHBET KAPISI ("Akisa devam et" gelene kadar duzenle/sohbet)
+3. HTML B1+B2+B3 yaz (user-render skill)            → SOHBET KAPISI ("Akisa devam et" gelene kadar duzenle/sohbet)
 4. HTML B4+B5+B6+B7 — ULTRATHINK, ANA AJAN          (acik konular KAPATILIR, riskler durust) → SOHBET KAPISI
 5. Worktree ac (worktree skill) + EnterPlanMode     (SESSION_NAME=isim; tam plan + loglama stratejisi) → ExitPlanMode onayi
 6. Plane issue ise ISLEME AL — OTOMATIK             (started + self + start_date; dolu olana dokunma; idempotent)
 7. Uygula (+[SESSION_NAME] loglar) → test ortami → unique port + arka plan → kanit (loglardan teshis; SCREENSHOT zorunlu) → DURDUR
-8. HTML B8+B9+B10+B11 ekle + `open` → SOHBET KAPISI ("Commit skill calistir" gelene kadar duzenle/sohbet)
+8. HTML B8+B9+B10+B11 ekle (`Edit`) → SOHBET KAPISI ("Commit skill calistir" gelene kadar duzenle/sohbet)
 8.5 [SESSION_NAME] log temizligi — BLOKLAYICI       (gurultu SIL, faydali logdan etiketi cikar; grep bos donene kadar)
 9. commit skill                                      (teslimat + Plane kapama orada)
+10. Konuyu arsivle                                   (mv ~/.pa-render/active/<isim> ~/.pa-render/archive/ — user-render kurali)
 ```
 
 ## Entegrasyon Notlari
 
 - **Delegasyon**: worktree → `worktree` skill, teslimat → `commit` skill, log → `diji-logs`
-  (kapsamli tarama `log-triage`), Plane → `plane-cli` skill, sayfa tasarimi → `artifact-design` skill
-- **Analiz sayfasi**: LOKAL HTML (`/tmp/<isim>/analiz.html`), **Artifact tool ile YUKLENMEZ** —
-  `open` ile default browser'da acilir; TEK dosya, buyuyerek; gorsel-agir, metin kisa; ilk
-  yazimdan once `artifact-design` yuklenir; kanit gorselleri goreli yolla
+  (kapsamli tarama `log-triage`), Plane → `plane-cli` skill, analiz sayfasi → `user-render` skill
+- **Analiz sayfasi**: `user-render` skill kurallariyla yazilir/guncellenir — agent yalniz dosyayi
+  yazar (sunmaz/acmaz/yonetmez); TEK dosya, buyuyerek; B numaralari korunur; is bitince arsivlenir
 - **Sohbet kapilari**: Adim 3, 4, 8 — kullanici acik onay verene kadar adimda kalinir, sayfa
   uzerinde iterasyon yapilir. Onay sorusu her zaman `AskUserQuestion` ile (`ask-first` kurali)
 - **Sub-agent siniri**: Adim 2 (kaynak) ve Adim 4 (analiz) asla sub-agent'a verilmez; `Task`
@@ -373,8 +361,8 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
   prefix'li detayli loglar (Adim 7, dil izin veriyorsa), testte loglardan teshis (7c), commit
   ONCESI bloklayici temizlik (Adim 8.5) — gurultu silinir, faydali logdan etiket cikarilir; grep
   bos donmeden Adim 9'a gecilmez
-- **Kanit izolasyonu**: her zaman `/tmp/<isim>/` — repo'ya kanit/credential sizmaz; artifact'e
-  gomulen gorselde credential kontrolu
+- **Kanit izolasyonu**: her zaman `~/.pa-render/active/<isim>/` — repo'ya kanit/credential sizmaz;
+  sayfaya gomulen gorselde credential kontrolu
 - **Durus**: agent uzman — dogru olani sec, esteti arastir, global standarda bak, imkansizi
   durust soyle, ek kazanimi raporla
 

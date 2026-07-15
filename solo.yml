@@ -1,7 +1,12 @@
 name: personal-assistant
 icon: null
 processes:
-  # Plugin repo — çalışan process yok.
+  # PA Render server — single-screen dashboard for user-render pages.
+  # Serves ~/.pa-render/active|archive/<topic>/index.html (sidebar + iframe),
+  # SSE auto-reload, archive/unarchive UI, shared UI kit at /lib (render/lib).
+  render:
+    command: bun scripts/render-server.ts
+    auto_start: false
   # Gerekirse buraya ekle, örnek:
   # test:
   #   command: bash scripts/init-check.sh
