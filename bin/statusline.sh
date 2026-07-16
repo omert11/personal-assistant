@@ -7,6 +7,16 @@ input=$(cat)
 model=$(echo "$input" | jq -r '.model.display_name // "Claude"')
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // ""')
 
+# Brand = which claude clone is running, derived from CLAUDE_CONFIG_DIR.
+# ~/.claude -> claude (default), ~/.claude-go -> go, -z -> z, -nv -> nv.
+cfg_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+cfg_base="$(basename "$cfg_dir")"
+case "$cfg_base" in
+  .claude)      brand="claude" ;;
+  .claude-*)    brand="${cfg_base#.claude-}" ;;
+  *)            brand="claude" ;;
+esac
+
 # Tilde-ify home dir
 short_cwd="${cwd/#$HOME/~}"
 
@@ -27,12 +37,60 @@ ctx_pct=$(printf "%.0f" "$ctx_pct" 2>/dev/null || echo 0)
 # Rate limit usage (Claude.ai subscription: 5-hour and 7-day windows)
 day_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty' 2>/dev/null)
 week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty' 2>/dev/null)
+day_resets_at=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty' 2>/dev/null)
+week_resets_at=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty' 2>/dev/null)
 [ -z "$day_pct" ] || [ "$day_pct" = "null" ] && day_pct=0
 [ -z "$week_pct" ] || [ "$week_pct" = "null" ] && week_pct=0
 
 # Round to int
 day_pct=$(printf "%.0f" "$day_pct" 2>/dev/null || echo 0)
 week_pct=$(printf "%.0f" "$week_pct" 2>/dev/null || echo 0)
+
+# Format a countdown "Xd Xh" / "Xh Xm" / "Xm" style string from a unix epoch reset time
+format_reset() {
+  local resets_at="$1"
+  local max_unit="$2" # "day" allows d/h/m, "hour" allows h/m only
+  if [ -z "$resets_at" ] || [ "$resets_at" = "null" ]; then
+    echo ""
+    return
+  fi
+  # Accept unix epoch or ISO 8601 (e.g. 2026-07-16T18:00:00Z)
+  if ! [[ "$resets_at" =~ ^[0-9]+$ ]]; then
+    resets_at=$(date -j -u -f "%Y-%m-%dT%H:%M:%S" "${resets_at%%[.Z+]*}" +%s 2>/dev/null)
+    if [ -z "$resets_at" ]; then
+      echo ""
+      return
+    fi
+  fi
+  local now secs
+  now=$(date +%s)
+  secs=$((resets_at - now))
+  [ "$secs" -lt 0 ] 2>/dev/null && secs=0
+
+  local days hours mins
+  days=$((secs / 86400))
+  hours=$(((secs % 86400) / 3600))
+  mins=$(((secs % 3600) / 60))
+
+  if [ "$max_unit" = "day" ] && [ "$days" -gt 0 ]; then
+    if [ "$hours" -gt 0 ]; then
+      echo "${days}g ${hours}s"
+    else
+      echo "${days}g"
+    fi
+  elif [ "$hours" -gt 0 ]; then
+    if [ "$mins" -gt 0 ]; then
+      echo "${hours}s ${mins}d"
+    else
+      echo "${hours}s"
+    fi
+  else
+    echo "${mins}d"
+  fi
+}
+
+day_reset_str=$(format_reset "$day_resets_at" "hour")
+week_reset_str=$(format_reset "$week_resets_at" "day")
 
 # ANSI colors (256-color)
 RESET="\033[0m"
@@ -107,5 +165,12 @@ if cd "$cwd" 2>/dev/null && git rev-parse --is-inside-work-tree >/dev/null 2>&1;
   fi
 fi
 
+# Build day/week segments, appending reset countdown when available
+day_seg="${DIM}Day:${RESET}${day_color}${day_pct}%${RESET}"
+[ -n "$day_reset_str" ] && day_seg="${day_seg}${DIM}(${day_reset_str})${RESET}"
+
+week_seg="${DIM}Week:${RESET}${week_color}${week_pct}%${RESET}"
+[ -n "$week_reset_str" ] && week_seg="${week_seg}${DIM}(${week_reset_str})${RESET}"
+
 # Build output
-printf "%b" "${BLUE}${short_cwd}${RESET} ${DIM}[${RESET}${CYAN}${model}${RESET}${DIM}]${RESET} ${DIM}Ctx:${RESET}${ctx_color}${ctx_pct}%${RESET} ${DIM}Usage${RESET} ${DIM}Day:${RESET}${day_color}${day_pct}%${RESET} ${DIM}Week:${RESET}${week_color}${week_pct}%${RESET}${git_part}"
+printf "%b" "${BLUE}${short_cwd}${RESET} ${DIM}[${RESET}${PURPLE}${brand}${RESET}${DIM}>${RESET}${CYAN}${model}${RESET}${DIM}]${RESET} ${DIM}Ctx:${RESET}${ctx_color}${ctx_pct}%${RESET} ${DIM}Usage${RESET} ${day_seg} ${week_seg}${git_part}"
