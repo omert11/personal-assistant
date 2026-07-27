@@ -27,6 +27,12 @@ server yonetmezsin.** Artifact tool KULLANILMAZ.
   (`<img src="screenshot-after.png">`)
 - Yeni bolumler ayni dosyaya `Edit` ile EKLENIR; konu basina yeni dosya ACILMAZ
 - Kanit dosyalari canli credential/JWT icerebilir → her zaman bu klasorde, **repo disi**
+- Klasordeki **tum ek dosyalar** kullanicinin arayuzunde sag "Dosyalar" panelinde listelenir ve tek
+  tikla acilir → dosya adi **kendini anlatmali** (`db-timeline.txt`, `ev-panel-payment.png`);
+  `paste-1785139087030-0.png` gibi anlamsiz adlarla birakma, gerekiyorsa yeniden adlandir
+- Kanit dosyalari **bicimli** gosterilir (JSON katlanabilir agac, log seviye renkleri + filtre,
+  diff +/- renklendirmesi, duz metin satir numarali) → ham veriyi HTML'e `<pre>` icine kopyalama;
+  dosyayi oldugu gibi klasore koy, sayfada yalniz **sonuca** atif yap
 
 ## Sayfa Iskeleti — UI kit ZORUNLU, inline CSS YASAK
 
