@@ -18,9 +18,9 @@ Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 - `.claude-plugin/plugin.json`, `marketplace.json` — plugin ve marketplace tanımları
 - `hooks/hooks.json` — SessionStart hook'ları (kural yükleme, init-check)
 - `rules/` — 14 kural dosyası (oturum başı `~/.claude/rules/` altına materialise edilir)
-- `skills/` — `commit`, `extension-builder`, `project-init`, `obsidian-init`, `obsidian-note`, `obsidian-audit`, `obsidian-recall`, `obsidian-search`, `obsidian-doc-source`, `crawl2md`, `worktree`, `issue-workflow`, `user-render` vb. (18 adet)
-- `agents/` — alt agent'lar (obsidian-initializer, obsidian-writer, obsidian-searcher, stack-detector, arch-mapper vb.)
-- `scripts/` — `load-rules.sh`, `init-check.sh`, `init-check.ps1`, `setup.py`, `render-server.ts` (PA Render — Bun)
+- `skills/` — `commit`, `extension-builder`, `project-init`, `obsidian-write`, `obsidian-search`, `obsidian-doc-source`, `crawl2md`, `worktree`, `issue-workflow`, `user-render` vb. (15 adet)
+- `agents/` — alt agent'lar (`web-scrape-cleaner`)
+- `scripts/` — `load-rules.sh`, `init-check.sh`, `init-check.ps1`, `userprompt-obsidian-hint.sh`, `hook-state.sh` (ortak helper), `setup.py`, `render-server.ts` (PA Render — Bun)
 - `render/lib/` — PA Render UI kit (`pa.css` design system, `pa.js` web component'leri, vendored Chart.js + preact)
 - `commands/`, `bin/` — ek genişletme noktaları
 
@@ -29,7 +29,7 @@ Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 - `plane-cli` — görev/proje yönetimi (CLI binary; CLAUDE.local.md'de Plane proje UUID, env'de `PLANE_URL`/`PLANE_API_KEY`/`PLANE_WORKSPACE_SLUG`)
 - `solo` — process yönetimi (CLI binary, HTTP control plane; bu repo'da tek process: `render` — PA Render server)
 - `bun` — PA Render server runtime (`scripts/render-server.ts`, port 4787; `~/.pa-render/` sayfalarını dashboard'da sunar)
-- `obsidian` — vault okuma/yazma CLI (proje belleği)
+- `obsidian` — vault BM25 arama CLI (**opsiyonel** tamamlayıcı; vault düz markdown, skill'ler Glob/Grep ile çalışır)
 - `ctx7` — kütüphane dokümantasyonu CLI
 - `whatsapp` — MCP server (mesajlaşma; `user-message` skill'inin gönderim entegrasyonu)
 

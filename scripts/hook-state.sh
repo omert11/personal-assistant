@@ -1,21 +1,22 @@
 #!/bin/bash
-# Ortak hook state tablosu yardimcisi — Stop hook'larinin oturum basina seyreltilmesi icin.
+# Ortak hook state tablosu yardimcisi — hook'larin oturum basina seyreltilmesi icin.
 #
 # State dosyasi: $CLAUDE_PLUGIN_DATA/hook-state.tsv (yoksa ~/.claude/plugins/data/... fallback)
 # Satir formati (TAB ayrac):
 #   session_id <TAB> session_start <TAB> last_daily_hook <TAB> last_learning_hook
 #   - session_start      : oturumun ilk goruldugu epoch (saniye); satir olusunca yazilir
-#   - last_daily_hook    : daily ozet hook'unun son calistigi epoch, 0 = hic
+#   - last_daily_hook    : KULLANILMIYOR (daily hook'lari kaldirildi). Kolon
+#                          sirasi bozulmasin diye yer tutucu olarak birakildi.
 #   - last_learning_hook : learning hatirlatma hook'unun son calistigi epoch, 0 = hic
 #
 # Kullanim (source edilir):
 #   source hook-state.sh
 #   hook_state_touch_session "$SESSION_ID"                       # satir yoksa session_start ile olustur
-#   ts=$(hook_state_get "$SESSION_ID" last_daily_hook)           # deger oku (yoksa 0)
-#   hook_state_set "$SESSION_ID" last_daily_hook "$(date +%s)"   # deger yaz
+#   ts=$(hook_state_get "$SESSION_ID" last_learning_hook)           # deger oku (yoksa 0)
+#   hook_state_set "$SESSION_ID" last_learning_hook "$(date +%s)"   # deger yaz
 #
 # Tablo saf awk ile yazilir — jq/sqlite bagimliligi yok. Eszamanli yazimda
-# kayip olabilir ama Stop hook'lari seri tetiklendigi icin pratikte sorun degil.
+# kayip olabilir ama hook'lar seri tetiklendigi icin pratikte sorun degil.
 
 # State dosyasinin tam yolunu cozer (dizin yoksa olusturur).
 _hook_state_file() {
@@ -24,8 +25,8 @@ _hook_state_file() {
   printf '%s/hook-state.tsv' "$data_dir"
 }
 
-# Atomik kilit (mkdir — flock'a gerek yok, macOS+Linux uyumlu). İki Stop hook'u
-# ayni Stop event'inde ayni TSV'ye yazdiginda lost-update'i onler. Kilit en fazla
+# Atomik kilit (mkdir — flock'a gerek yok, macOS+Linux uyumlu). Ayni event'te
+# birden fazla hook ayni TSV'ye yazdiginda lost-update'i onler. Kilit en fazla
 # ~1s beklenir; alinamazsa yine de devam edilir (best-effort, deadlock olmasin).
 _hook_state_lock() {
   local lock i
@@ -150,7 +151,7 @@ hook_state_touch_session() {
 # "Obsidian" ve "Folder" ayni satirda (aralarinda ** | gibi seyler olabilir).
 # Dokumantasyon/aciklama satirlarini (">", "init-check" iceren) eler. Deger
 # etrafindaki backtick/**/pipe/bosluk temizlenir. \K / \s GNU/Perl regex'i macOS
-# BSD grep'te calismaz — tasinabilir grep+sed. Bu mantik 4 hook'ta ortak.
+# BSD grep'te calismaz — tasinabilir grep+sed. init-check.sh ile ortak.
 hook_obsidian_folder() {
   local file="$1" line val
   [ -f "$file" ] || return 0

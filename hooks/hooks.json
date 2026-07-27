@@ -35,24 +35,6 @@
             "command": "echo 'Oturum basladi. init-check script sonucunu oku. INIT_MISSING varsa eksikleri kullaniciya bildir ve /project-init onerisi sun. INIT_MALFORMED varsa: ilgili satir CLAUDE.local.md de VAR ama degeri okunamiyor (format hatali) — kullaniciya hangi alanin formatinin bozuk oldugunu bildir, dogru formati ornekle goster (orn. Obsidian Folder icin: - **Obsidian Folder**: <isim>) ve duzeltmeyi oner. INIT_OK ise sessizce devam et.'"
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/obsidian-context.sh",
-            "statusMessage": "Obsidian MOC yukleniyor..."
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/session-obsidian-daily.sh",
-            "statusMessage": "Obsidian daily yukleniyor..."
-          }
-        ]
       }
     ],
     "UserPromptSubmit": [
@@ -61,16 +43,6 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/userprompt-obsidian-hint.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/stop-obsidian-daily.sh"
           }
         ]
       }

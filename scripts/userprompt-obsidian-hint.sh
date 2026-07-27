@@ -1,19 +1,22 @@
 #!/bin/bash
 # UserPromptSubmit hook — Obsidian Folder tanimli projede, kullanici prompt'una
 # iki davranisi additionalContext olarak enjekte eder:
-#   1. ARAMA: arastirma/inceleme gerekiyorsa once obsidian-searcher ile vault'a bak.
-#   2. KAYIT: cevabi urettikten sonra, DAR KRITERE uyan ogrenilen bilgi varsa
-#      (credential/sunucu, cozulen non-trivial bug, kalici karar) obsidian-writer'i
-#      background calistirip kaydet (Stop-block yerine — block ek tur + "error"
-#      gorunumu yaratiyordu; bu yontem ciktiyla beraber sessizce arka planda baslatir).
-#      NOT: kriter listesinin kanonik tanimi agents/obsidian-writer.md append
-#      guard'indadir — kriter degisirse HINT, guard ve docs/index.html birlikte
+#   1. ARAMA: arastirma/inceleme gerekiyorsa once obsidian-search skill'i ile
+#      vault'a bak (ana agent arar, subagent devri yok).
+#   2. KAYIT: cevabi urettikten sonra kalici bir bilgi/karar dogduysa
+#      obsidian-write skill'ini cagirip yaz (Stop-block yerine — block ek tur +
+#      "error" gorunumu yaratiyordu).
+#      NOT: kriterin kanonik tanimi rules/obsidian.md + skills/obsidian-write
+#      icindedir — kriter degisirse HINT, skill ve docs/index.html birlikte
 #      guncellenir.
 #
 # Sessiz calisir: Obsidian Folder yoksa veya CLAUDE.local.md yoksa hicbir sey
 # enjekte etmez. Trivial prompt'lari (cok kisa / selamlasma) atlar. KAYIT
 # hatirlatmasi geciktirme kuralina tabidir: ayni oturumda en fazla REMIND_INTERVAL
-# (5 dk) bir kez. Eski stop-obsidian-remind.sh'in (Stop-block) yerini alir.
+# (5 dk) bir kez.
+#
+# HINT skill'lerin akisini TEKRARLAMAZ — yalnizca "ne zaman hangi skill" der.
+# Akisin tamami skill dosyalarindadir; skill cagrilinca yuklenir.
 
 INPUT=$(cat 2>/dev/null)
 
@@ -46,7 +49,7 @@ PROMPT=$(echo "$INPUT" | jq -r '.prompt // empty' 2>/dev/null)
 #    basinda degil, is akisi icinde her ne zaman ek performans/efor gerektiren bir
 #    is dogarsa (sorun/hata cozme, arastirma/inceleme, dogrulama/teyit, log analizi,
 #    bir karar/komut/credential arama) o anda once vault'a bakilmalidir.
-HINT="Bu projenin Obsidian vault klasoru var: \`${OBSIDIAN_FOLDER}\`. KESIN KURAL: gorev basinda degil, is akisinin HERHANGI bir aninda ek performans/efor gerektiren bir is dogdugunda — bir sorun/hata cozecekken, bir sey arastiracak/inceleyecekken, bir durumu dogrulayacak/teyit edecekken, log analizi yapacakken veya bir karar/komut/credential/mimari bilgi arayacakken — ONCE \`obsidian-searcher\` agent'ini (run_in_background: true) cagirip vault'a bakmalisin. Senden onceki oturumlar ayni durumla karsilasmis ve cozumu/bulgusu not almis olabilir; vault'a bakmak sifirdan ugrasmaktan cok daha az maaliyetli ve genelde daha hizli/dogru. Arastirma yapmaktan cekinme. Arama bulgu donduruyse baglam olarak kullan; SONUC BOS GELIRSE normal akisina devam et, isi kendin yap ve sonunda bulgularini \`obsidian-writer\` ile kaydet ki sonraki oturumlar ayni deger kaybini yasamasin. Sadece selamlasma/trivial isteklerde arama yapma."
+HINT="Bu projenin Obsidian vault klasoru var: \`${OBSIDIAN_FOLDER}\`. KESIN KURAL: gorev basinda degil, is akisinin HERHANGI bir aninda ek efor gerektiren bir is dogdugunda — sorun/hata cozerken, arastirirken/incelerken, bir durumu dogrularken, log analizinde veya bir karar/komut/credential/mimari bilgi ararken — O ANDA \`obsidian-search\` skill'ini cagir. Onceki oturumlar ayni durumu yasamis ve bulgusunu yazmis olabilir; vault'a bakmak sifirdan ugrasmaktan ucuz ve genelde daha dogru. Bulgu cikarsa baglam olarak kullan; SONUC BOSSA normal akisina devam et ve is bitince \`obsidian-write\` ile yaz. Trivial/selamlasma isteklerinde arama yapma."
 
 # 2. KAYIT hatirlatmasi — geciktirme kuralina tabi (5 dk'da bir). state tablosunda
 # last_learning_hook ile takip edilir.
@@ -69,7 +72,7 @@ fi
 # NOT: HINT tek satir tutulur — jq --arg ham newline'i JSON string icinde escape
 # ETMEZ, cok satirli deger gecersiz JSON uretir. Bolumler bosluk/ayraçla birlesir.
 if [ "$ADD_SAVE" -eq 1 ]; then
-  HINT="${HINT}  ||  KAYIT (dar kriter): SADECE bu oturumda YENI ogrenilen su uc tipten biri varsa kaydet — (1) credential/sunucu/endpoint, (2) cozulen non-trivial bug + cozumu, (3) kalici mimari/teknik karar. Repo/CLAUDE.md/vault'ta zaten yazili bilgi, oturum ozeti, genel bilgi veya gecici durum KAYDEDILMEZ; supheliysen KAYDETME. Uygunsa \`obsidian-writer\` agent'ini (run_in_background: true, MODE: append, TARGET: ~/Documents/ObsidianVault/${OBSIDIAN_FOLDER}) arka planda baslat ve tek cumleyle bildir; yoksa hicbir sey yapma. BEKLETME: elinde devam eden is varsa kaydi hemen baslatma — tum isler bittiginde kaydet; isler bitmediyse kalan isleri raporlarken bekleyen kayit islemini de listele ki kullanici karar verebilsin."
+  HINT="${HINT}  ||  KAYIT: bu oturumda kalici bir BILGI (sistem/servis gercekte nasil calisiyor; credential/sunucu/endpoint dahil) veya KARAR dogduysa \`obsidian-write\` skill'ini cagir — kriter ve akis o skill'de. Supheliysen YAZMA. BEKLETME: devam eden isin varsa yazmayi hemen baslatma; tum isler bitince yaz, bitmediyse kalan isleri raporlarken bekleyen yazma islemini de listele ki kullanici karar verebilsin."
 fi
 
 jq -n --arg ctx "$HINT" '{

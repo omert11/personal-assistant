@@ -32,8 +32,8 @@ else
 
   # Obsidian Folder: once VAR MI, sonra FORMAT DOGRU MU (deger cikarilabiliyor mu).
   # Satir var ama deger bos cikiyorsa format yanlis (orn. beklenmeyen bir yazim) —
-  # bu sessiz bir tuzak: hook'lar OBSIDIAN_FOLDER bos olunca sessizce skip eder,
-  # daily/searcher/remind hic calismaz. Bunu MALFORMED olarak ayri raporla.
+  # bu sessiz bir tuzak: userprompt-obsidian-hint OBSIDIAN_FOLDER bos olunca
+  # sessizce skip eder, arama/yazma hatirlatmasi hic gelmez. MALFORMED raporla.
   if grep -q "Obsidian.*Folder" CLAUDE.local.md 2>/dev/null; then
     if command -v hook_obsidian_folder >/dev/null 2>&1; then
       _of=$(hook_obsidian_folder "CLAUDE.local.md")

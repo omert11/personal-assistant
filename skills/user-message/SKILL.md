@@ -163,36 +163,26 @@ Kullanıcı revize verdiğinde:
 
 Feedback'i yorumla, stil dosyasını **tekrar oku** (güncel kurallar dahil), mesajı yeniden üret. Adım 5'e dön — **aynı kanal dalında**: e-posta ise 5-E (HTML yeniden üret + `open` + AskUserQuestion), diğer kanallar ise 5-T (zed --wait).
 
-#### 7b. Stil dosyasına öğrenim ekle (arka plan)
+#### 7b. Stil dosyasına kuralı işle
 
-Mesajı yeniden onaya sunmadan **önce** veya **paralel olarak**, revize sebebini stil dosyasına ekle. Bu skill'in kendi öğrenimi — gelecekteki üretimlerde tekrar aynı hatayı yapmamak için.
+Revizeden çıkan dersi stil dosyasına **doğrudan kural olarak** yaz. Dosya bir kural listesidir; geçmiş kaydı, revize hikâyesi veya tarihli not içermez.
 
-Append içeriği:
+**Yöntem**:
 
-```markdown
+1. Stil dosyasını oku, dersin ait olduğu bölümü bul (alıcı tipi, acenta yazılmayacaklar, tedarikçi, kanal, insansı yazım vb.).
+2. Mevcut bir madde bu dersi kapsıyorsa **o maddeyi düzelt**. Kapsamıyorsa ilgili bölüme **yeni madde ekle**.
+3. Ders hiçbir bölüme uymuyorsa yeni bir `## N. {Başlık}` bölümü aç, sonraki bölümleri yeniden numaralandır.
+4. Edit tool ile uygula.
 
-### {YYYY-MM-DD} — {revize başlığı (kısa, kebab veya cümle)}
+**Yazım kuralları** — kural metni net, sade, kesin:
 
-**Bağlam**: {hangi kanal, hangi konu}
+- Tek cümle emir/olgu kipi: "Tedarikçiye aksiyon önerme.", "E-posta HTML üretilir."
+- Gerekçe ancak kural tek başına anlaşılmıyorsa, aynı satırda kısa ek olarak yazılır.
+- Örnek yalnızca kalıbı kelimesi kelimesine göstermek gerektiğinde: tek ❌ / tek ✅.
+- Yasak: revize hikâyesi ("kullanıcı şunu istedi"), tarih, bağlam anlatımı, önceki/sonraki karşılaştırması, aynı fikri tekrar eden ikinci cümle.
+- Mevcut bir maddeyle çelişen ders geldiğinde ikinci madde ekleme — **eski maddeyi güncelle**, kapsam ayrımı gerekiyorsa tek maddede belirt.
 
-**Önceki**:
-> {revize öncesi cümle/blok — kısa alıntı}
-
-**Revize**:
-> {revize sonrası cümle/blok}
-
-**Sebep / kural**: {kullanıcı feedback'i, çıkarılan ders}
-```
-
-**Eklenme yöntemi** — Edit tool ile `## Revize Notları (Skill Tarafından Eklenir)` başlığının altına insert:
-
-```
-Read(file_path: "/Users/omerfarukyigin/Documents/ObsidianVault/user-message-still.md")
-```
-
-`## Revize Notları (Skill Tarafından Eklenir)` başlığını ve altındaki "Kullanıcı bir mesaj revize ettiğinde..." satırını bul. O bloğun **sonuna** (mevcut son revize notunun altına veya açıklama paragrafının hemen altına) yeni `### {tarih} — {başlık}` bloğunu Edit ile ekle.
-
-> NOT: Stil dosyasının ana bölümlerini değiştirme — sadece "Revize Notları" başlığı altına ekle. Eğer revize feedback'i genel bir kural haline gelmişse (örn. "artık asla X yazma"), kullanıcıya `AskUserQuestion` ile sor: header "Kural", question "Bu kuralı stil rehberinin ana bölümüne taşıyayım mı?", options ["Evet, ana bölüme taşı", "Hayır, revize notu olarak kalsın"]. Onay gelirse ilgili ana başlığa Edit ile ekle.
+**Çakışma kontrolü**: Ders mevcut bir kuralı geçersiz kılıyorsa (istisna veya geri alma), `AskUserQuestion` ile sor — header "Kural", question "Bu ders mevcut '{kural}' kuralıyla çelişiyor. Nasıl işleyeyim?", options ["Eski kuralı güncelle", "İstisna olarak ekle", "İşleme"].
 
 ### 8. Self-check ve çıkış
 
@@ -208,6 +198,6 @@ Onaylanmış mesajı tekrar göster, kullanıcıya kanala yapıştırması için
 
 - **Stil dosyası tek doğruluk kaynağı** — bellekten kural çıkarma, her zaman Read.
 - **Onay zorunlu** — kullanıcı `Y` demeden mesaj final değil.
-- **Revize = öğrenim** — her revize stil dosyasına ders olarak işlenir.
+- **Revize = kural** — her revize stil dosyasına kural olarak işlenir: yeni madde eklenir veya mevcut madde düzeltilir.
 - **İmza ekleme** — kanal/sistem zaten ekliyor.
 - **Türkçe karakterler tam** — ASCII karşılık (s/sh, c/ch, vs.) YASAK.

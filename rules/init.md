@@ -23,12 +23,10 @@ Eğer kullanıcı bir sorun/hata/görev bildiriyorsa ve `CLAUDE.local.md`'de Pla
 
 Plane proje tanımlı DEĞİLSE bu kontrol atlanır (TaskCreate ile takip yeterli).
 
-## Obsidian Learnings Ön Arama
+## Obsidian Ön Arama
 
-Kullanıcı oturumda **ilk somut görevi** verdiğinde (sorun bildir, değişiklik iste, bug çöz, feature ekle, refactor vb.) ve `CLAUDE.local.md`'de `Obsidian Folder: <isim>` tanımlıysa, göreve başlamadan önce geçmiş Learnings notlarını ara.
+Kullanıcı oturumda **ilk somut görevi** verdiğinde (sorun bildir, değişiklik iste, bug çöz, feature ekle, refactor vb.) ve `CLAUDE.local.md`'de `Obsidian Folder` tanımlıysa, göreve başlamadan önce `obsidian-search` ile vault'a bak — daha önce yazılmış bilgi (credential, sistem davranışı, kalıcı karar) tekrar sorulmadan kullanılsın.
 
-**Nasıl**: Arama mantığını elle yürütme — `obsidian-searcher` agent'ını `run_in_background: true` ile çağır (QUERY: görevin özeti, FOLDER: obsidian folder). Agent "önce MOC → BM25 search → context → not oku" akışıyla ilgili notları bulup sentezler. Bulgu varsa bağlam olarak kullan; kullanıcıya "şu Learnings notu ilgili görünüyor" diye kısaca belirt, sonra göreve başla. (Bu hatırlatma ayrıca UserPromptSubmit hook'u ile her somut prompt'ta otomatik enjekte edilir.)
+Bulgu varsa bağlam olarak kullan ve tek cümleyle belirt. Sonuç boşsa bu da bir bilgidir — iş bitince `obsidian-write` ile yaz.
 
-**Tetiklenmediği durumlar**: Selamlaşma, kavramsal soru ("X nedir?"), dosya listeleme gibi trivial istekler — arama yapılmaz.
-
-**Amaç**: Daha önce yazılmış proje-spesifik kuralları (DB şifresi, bilinen sorun, tasarım kararı) tekrar sormadan kullanmak.
+Selamlaşma, kavramsal soru ("X nedir?"), dosya listeleme gibi trivial isteklerde arama yapılmaz.
