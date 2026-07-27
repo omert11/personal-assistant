@@ -114,6 +114,29 @@ function listTopics(scope: Scope): TopicMeta[] {
     .sort((a, b) => b.mtime - a.mtime);
 }
 
+interface FileMeta { path: string; size: number; mtime: number; }
+
+/** Every file inside a topic folder (recursive), index.html first, dotfiles skipped. */
+function listFiles(scope: Scope, name: string): FileMeta[] {
+  const dir = join(ROOT, scope, name);
+  const out: FileMeta[] = [];
+  try {
+    for (const e of readdirSync(dir, { recursive: true }) as string[]) {
+      const rel = String(e).split("\\").join("/");
+      if (rel.split("/").some((p) => p.startsWith("."))) continue;
+      try {
+        const st = statSync(join(dir, rel));
+        if (st.isFile()) out.push({ path: rel, size: st.size, mtime: st.mtimeMs / 1000 });
+      } catch {}
+    }
+  } catch {}
+  return out.sort((a, b) => {
+    if (a.path === "index.html") return -1;
+    if (b.path === "index.html") return 1;
+    return a.path.localeCompare(b.path);
+  });
+}
+
 // Signature computations walk the filesystem synchronously; with many SSE
 // clients polling every 500ms that becomes O(clients × files). Cache results
 // briefly so concurrent clients share one scan per interval.
@@ -234,6 +257,13 @@ const server = Bun.serve({
     "/": () => new Response(SHELL, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } }),
     "/favicon.ico": () => new Response(null, { status: 204 }),
     "/api/list": () => json({ active: listTopics("active"), archive: listTopics("archive") }),
+    "/api/files": (req) => {
+      const u = new URL(req.url);
+      const name = u.searchParams.get("name") || "";
+      const scope = (u.searchParams.get("scope") || "active") as Scope;
+      if (!SCOPES.includes(scope) || !safeName(name)) return json({ error: "bad request" }, 400);
+      return json({ scope, name, files: listFiles(scope, name) });
+    },
     "/api/archive": { POST: (req) => mutateTopic(req, "active", "archive") },
     "/api/unarchive": { POST: (req) => mutateTopic(req, "archive", "active") },
     "/events": (req) => {
@@ -263,6 +293,15 @@ const server = Bun.serve({
     },
     "/topic/:scope/:name": (req) =>
       Response.redirect(new URL(req.url).pathname + "/", 302),
+    // Pretty viewer for text-ish evidence files (json / log / diff / plain text).
+    // The page itself fetches the raw bytes from /topic/... and renders them.
+    "/view/:scope/:name/*": (req) => {
+      const { scope, name } = req.params as { scope: string; name: string };
+      if (!SCOPES.includes(scope as Scope) || !safeName(name)) return new Response("forbidden", { status: 403 });
+      return new Response(VIEWER, {
+        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+      });
+    },
   },
   fetch() {
     return new Response("not found", { status: 404 });
@@ -354,15 +393,6 @@ const SHELL = /* html */ `<!doctype html>
   .file.unseen .udot { opacity: 1; transform: scale(1); box-shadow: 0 0 0 3px var(--accent-soft); }
   .file.unseen .fname .txt { font-weight: 680; }
   .file .fmeta { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .file .act {
-    position: absolute; right: 8px; bottom: 7px;
-    font-size: 10px; font-weight: 600; letter-spacing: .3px;
-    color: var(--muted); background: var(--panel); border: 1px solid var(--edge);
-    border-radius: 5px; padding: 1px 7px; cursor: pointer;
-    opacity: 0; transition: opacity .15s;
-  }
-  .file:hover .act, .file:focus-within .act { opacity: 1; }
-  .file .act:hover { color: var(--accent); border-color: var(--accent); }
   .file.archived .fname .txt { color: var(--muted); }
   .empty { padding: 14px 10px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 
@@ -377,7 +407,34 @@ const SHELL = /* html */ `<!doctype html>
     color: var(--muted); padding: 4px 9px; border: 1px solid var(--edge); border-radius: 999px; }
   .topbar .badge .b { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); transition: background .3s; }
   .topbar .badge.live .b { background: var(--live); }
-  .stage { position: relative; flex: 1 1 auto; min-height: 0; background: var(--ground); }
+  .tbtn { font: inherit; font-size: 11px; font-weight: 600; color: var(--muted); background: var(--panel);
+    border: 1px solid var(--edge); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .tbtn:hover { color: var(--accent); border-color: var(--accent); }
+  .tbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .tbtn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+  .body { display: grid; grid-template-columns: 1fr 264px; flex: 1 1 auto; min-width: 0; min-height: 0; }
+  .body.solo { grid-template-columns: 1fr; }
+  .body.solo .files { display: none; }
+  .files { display: flex; flex-direction: column; min-height: 0; background: var(--panel); border-left: 1px solid var(--edge); }
+  .files .fhead { display: flex; align-items: center; gap: 6px; padding: 12px 12px 10px;
+    font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--faint);
+    border-bottom: 1px solid var(--edge); }
+  .files .fhead .count { margin-left: auto; font-size: 10px; }
+  .files .flist { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 6px; }
+  .frow { display: block; border: 1px solid transparent; border-radius: 7px; padding: 7px 8px; margin: 2px 0;
+    color: inherit; text-decoration: none; cursor: pointer; }
+  .frow:hover { background: var(--accent-soft); }
+  .frow:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .frow.active { background: var(--accent-soft); border-color: var(--accent); }
+  .frow .fn { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 550; min-width: 0; }
+  .frow .fn .txt { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .frow.active .fn .txt { color: var(--accent); }
+  .frow .ext { flex: none; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; color: var(--faint);
+    border: 1px solid var(--edge); border-radius: 4px; padding: 0 4px; }
+  .frow .fsz { display: block; margin-top: 3px; font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .stage { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; background: var(--ground); }
   iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--ground); }
   .stage.flash::after { content: ""; position: absolute; inset: 0; pointer-events: none;
     box-shadow: inset 0 0 0 2px var(--accent); opacity: 0; animation: flash .5s ease-out; }
@@ -408,10 +465,18 @@ const SHELL = /* html */ `<!doctype html>
       <span class="scopechip" id="scopechip" hidden></span>
       <span class="cur" id="cur">Konu secilmedi</span>
       <span class="badge" id="autobadge"><span class="b"></span><span id="autotext">auto-reload</span></span>
+      <button class="tbtn" id="filesbtn" type="button" aria-pressed="true" hidden>ekler</button>
+      <button class="tbtn" id="archbtn" type="button" hidden>arsivle</button>
     </div>
-    <div class="stage" id="stage">
-      <div class="placeholder" id="ph">Soldan bir konu sec.<br>Yeni konular otomatik listelenir.</div>
-      <iframe id="frame" title="analiz" style="display:none"></iframe>
+    <div class="body" id="body">
+      <div class="stage" id="stage">
+        <div class="placeholder" id="ph">Soldan bir konu sec.<br>Yeni konular otomatik listelenir.</div>
+        <iframe id="frame" title="analiz" style="display:none"></iframe>
+      </div>
+      <aside class="files" id="filesPanel">
+        <div class="fhead">Dosyalar <span class="count" id="fcount"></span></div>
+        <div class="flist" id="fileList"></div>
+      </aside>
     </div>
   </main>
 <script>
@@ -419,6 +484,10 @@ const SHELL = /* html */ `<!doctype html>
   var topicEvt = null;
   var data = { active: [], archive: [] };
   var seen = {};        // "scope/name" -> seen mtime
+  var files = [];       // files of the current topic folder
+  var filesErr = null;  // last /api/files failure, surfaced in the panel
+  var viewRel = "index.html";  // which file of the topic the stage shows
+  var showFiles = localStorage.getItem("pa.files") !== "0";
 
   function relTime(mtime) {
     var d = Date.now() / 1000 - mtime;
@@ -446,17 +515,7 @@ const SHELL = /* html */ `<!doctype html>
     var mt = document.createElement("span");
     mt.className = "fmeta";
     mt.textContent = relTime(t.mtime) + "  ·  " + kb(t.size);
-    var act = document.createElement("button");
-    act.className = "act"; act.type = "button";
-    act.textContent = scope === "active" ? "arsivle" : "geri al";
-    act.onclick = function (e) {
-      e.stopPropagation();
-      fetch(scope === "active" ? "/api/archive" : "/api/unarchive", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: t.name })
-      }).then(function () { return loadList(false); });
-    };
-    b.appendChild(nm); b.appendChild(mt); b.appendChild(act);
+    b.appendChild(nm); b.appendChild(mt);
     function go() { select(scope, t.name); }
     b.onclick = go;
     b.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
@@ -485,22 +544,142 @@ const SHELL = /* html */ `<!doctype html>
     s.classList.remove("flash"); void s.offsetWidth; s.classList.add("flash");
   }
 
-  function frameUrl(scope, name) {
-    return "/topic/" + encodeURIComponent(scope) + "/" + encodeURIComponent(name) + "/?t=" + Date.now();
+  // Rendered by the browser itself; everything else goes through the /view/ pretty viewer.
+  var RAW_EXT = { html: 1, htm: 1, png: 1, jpg: 1, jpeg: 1, gif: 1, webp: 1, svg: 1, pdf: 1, mp4: 1, webm: 1, mov: 1 };
+
+  function fileUrl(scope, name, rel) {
+    var parts = String(rel || "index.html").split("/").map(encodeURIComponent).join("/");
+    // hasOwnProperty: a file named "x.constructor" must not hit Object.prototype
+    var ext = extOf(rel || "index.html").toLowerCase();
+    var base = Object.prototype.hasOwnProperty.call(RAW_EXT, ext) ? "/topic/" : "/view/";
+    return base + encodeURIComponent(scope) + "/" + encodeURIComponent(name) + "/" + parts;
+  }
+  function frameUrl(scope, name, rel) {
+    return fileUrl(scope, name, rel) + "?t=" + Date.now();
   }
 
   function reloadFrame() {
     if (!current) return;
-    document.getElementById("frame").src = frameUrl(current.scope, current.name);
+    document.getElementById("frame").src = frameUrl(current.scope, current.name, viewRel);
     var m = metaOf(current.scope, current.name);
     if (m) seen[key(current.scope, current.name)] = m.mtime;
     flash();
   }
 
+  /* ---- topic files (right panel) ---- */
+
+  function mk(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+
+  function extOf(path) {
+    var base = path.split("/").pop() || "";
+    var i = base.lastIndexOf(".");
+    return i > 0 ? base.slice(i + 1) : "";
+  }
+
+  function openFile(rel) {
+    if (!current) return;
+    viewRel = rel;
+    document.getElementById("ph").style.display = "none";
+    var frame = document.getElementById("frame");
+    frame.style.display = "block";
+    frame.src = frameUrl(current.scope, current.name, rel);
+    renderFiles();
+  }
+
+  function renderFiles() {
+    var list = document.getElementById("fileList");
+    list.innerHTML = "";
+    document.getElementById("fcount").textContent = files.length || "";
+    if (!current) { list.innerHTML = '<div class="empty">Konu secilmedi.</div>'; renderTopbar(); return; }
+    if (filesErr) { list.appendChild(mk("div", "empty", "Dosya listesi alinamadi: " + filesErr)); renderTopbar(); return; }
+    if (!files.length) { list.innerHTML = '<div class="empty">Klasorde dosya yok.</div>'; renderTopbar(); return; }
+    files.forEach(function (f) {
+      var a = document.createElement("a");
+      a.className = "frow" + (f.path === viewRel ? " active" : "");
+      a.href = fileUrl(current.scope, current.name, f.path);
+      var fn = document.createElement("span");
+      fn.className = "fn mono";
+      var txt = document.createElement("span"); txt.className = "txt"; txt.textContent = f.path;
+      txt.title = f.path;
+      fn.appendChild(txt);
+      var ex = extOf(f.path);
+      if (ex) { var e = document.createElement("span"); e.className = "ext"; e.textContent = ex; fn.appendChild(e); }
+      var sz = document.createElement("span");
+      sz.className = "fsz";
+      sz.textContent = relTime(f.mtime) + "  ·  " + kb(f.size);
+      a.appendChild(fn); a.appendChild(sz);
+      // plain click stays in the stage; ctrl/cmd/middle click keeps native new-tab
+      a.onclick = function (e) {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault(); openFile(f.path);
+      };
+      list.appendChild(a);
+    });
+    renderTopbar();
+  }
+
+  function loadFiles() {
+    if (!current) { files = []; filesErr = null; renderFiles(); return Promise.resolve(); }
+    var c = current;
+    return fetch("/api/files?scope=" + encodeURIComponent(c.scope) + "&name=" + encodeURIComponent(c.name))
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        if (!current || current.scope !== c.scope || current.name !== c.name) return;
+        files = d.files || [];
+        filesErr = null;
+        // viewed file may have been deleted/renamed meanwhile
+        var still = files.some(function (f) { return f.path === viewRel; });
+        if (!still) viewRel = "index.html";
+        renderFiles();
+      })
+      .catch(function (e) {
+        if (!current || current.scope !== c.scope || current.name !== c.name) return;
+        files = [];
+        filesErr = e.message || String(e);
+        renderFiles();   // keeps the topbar buttons in sync even when the list fails
+      });
+  }
+
+  function renderTopbar() {
+    var ab = document.getElementById("archbtn"), fb = document.getElementById("filesbtn");
+    ab.hidden = fb.hidden = !current;
+    if (!current) return;
+    ab.textContent = current.scope === "active" ? "arsivle" : "geri al";
+    fb.textContent = "ekler (" + files.length + ")";
+  }
+
+  function applyFilesPanel() {
+    document.getElementById("body").classList.toggle("solo", !showFiles);
+    document.getElementById("filesbtn").setAttribute("aria-pressed", showFiles ? "true" : "false");
+  }
+
+  document.getElementById("filesbtn").onclick = function () {
+    showFiles = !showFiles;
+    localStorage.setItem("pa.files", showFiles ? "1" : "0");
+    applyFilesPanel();
+  };
+
+  document.getElementById("archbtn").onclick = function () {
+    if (!current) return;
+    var name = current.name;
+    fetch(current.scope === "active" ? "/api/archive" : "/api/unarchive", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name })
+    }).then(function () { return loadList(false); });
+  };
+
   function watchTopic(scope, name) {
     if (topicEvt) { topicEvt.close(); topicEvt = null; }
     topicEvt = new EventSource("/events?scope=" + encodeURIComponent(scope) + "&topic=" + encodeURIComponent(name));
-    topicEvt.addEventListener("change", function () { loadList(false).then(reloadFrame); });
+    topicEvt.addEventListener("change", function () { loadList(false).then(loadFiles).then(reloadFrame); });
     var badge = document.getElementById("autobadge");
     topicEvt.onopen = function () { badge.classList.add("live"); document.getElementById("autotext").textContent = "auto-reload acik"; };
     topicEvt.onerror = function () { badge.classList.remove("live"); document.getElementById("autotext").textContent = "auto-reload kesildi"; };
@@ -508,12 +687,13 @@ const SHELL = /* html */ `<!doctype html>
 
   function select(scope, name) {
     current = { scope: scope, name: name };
+    viewRel = "index.html";
     var m = metaOf(scope, name);
     if (m) seen[key(scope, name)] = m.mtime;
     document.getElementById("ph").style.display = "none";
     var frame = document.getElementById("frame");
     frame.style.display = "block";
-    frame.src = frameUrl(scope, name);
+    frame.src = frameUrl(scope, name, viewRel);
     document.getElementById("cur").textContent = name;
     var chip = document.getElementById("scopechip");
     chip.hidden = false;
@@ -521,6 +701,10 @@ const SHELL = /* html */ `<!doctype html>
     chip.className = "scopechip" + (scope === "archive" ? " archive" : "");
     if (scope === "archive") document.getElementById("archGroup").open = true;
     renderLists();
+    // paint the panel/topbar for the new topic right away; the fetch fills it in
+    files = []; filesErr = null;
+    renderFiles();
+    loadFiles();
     watchTopic(scope, name);
     history.replaceState(null, "", "/?topic=" + encodeURIComponent(name) + "&scope=" + scope);
   }
@@ -534,6 +718,10 @@ const SHELL = /* html */ `<!doctype html>
           var other = current.scope === "active" ? "archive" : "active";
           if (metaOf(other, current.name)) { select(other, current.name); return; }
           current = null;
+          viewRel = "index.html";
+          files = [];
+          filesErr = null;
+          renderFiles();
           document.getElementById("frame").style.display = "none";
           document.getElementById("ph").style.display = "flex";
           document.getElementById("cur").textContent = "Konu secilmedi";
@@ -560,7 +748,303 @@ const SHELL = /* html */ `<!doctype html>
     evt.addEventListener("change", function () { loadList(false); });
   }
 
+  applyFilesPanel();
+  renderFiles();
   loadList(true).then(watchDir);
+</script>
+</body>
+</html>`;
+
+/* ---------- evidence viewer (json / log / diff / plain text) ---------- */
+// String.raw so regexes below keep their backslashes; no backticks / ${ } inside.
+
+const VIEWER = String.raw`<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PA Render — dosya</title>
+<style>
+  :root {
+    --ground: #f7f8fa; --panel: #ffffff; --edge: #e7e9ef; --ink: #1a1d26;
+    --muted: #6c7180; --faint: #9aa0b0; --accent: #3f6fd8; --accent-soft: rgba(63,111,216,0.10);
+    --err: #c8372d; --warn: #a76a17; --ok: #2f7d54; --str: #2f7d54; --num: #a2601a;
+    --add-bg: rgba(47,125,84,0.13); --del-bg: rgba(200,55,45,0.11);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #101219; --panel: #171a22; --edge: #262a35; --ink: #e6e8ee;
+      --muted: #8b90a0; --faint: #5c6170; --accent: #5b8def; --accent-soft: rgba(91,141,239,0.14);
+      --err: #f0736a; --warn: #e0a852; --ok: #4fc08d; --str: #7fd4a6; --num: #e0b070;
+      --add-bg: rgba(79,192,141,0.14); --del-bg: rgba(240,115,106,0.13);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; flex-direction: column; background: var(--ground); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+
+  .bar { flex: none; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 6px 12px;
+    background: var(--panel); border-bottom: 1px solid var(--edge); flex-wrap: wrap; }
+  .bar .fname { font-weight: 650; font-size: 12.5px; }
+  .chip { font-size: 9.5px; letter-spacing: .6px; text-transform: uppercase; font-weight: 700; color: var(--muted);
+    border: 1px solid var(--edge); border-radius: 999px; padding: 2px 8px; }
+  .lchip { font: inherit; font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .4px;
+    color: var(--faint); background: transparent; border: 1px solid var(--edge); border-radius: 5px;
+    padding: 2px 7px; cursor: pointer; margin-right: 4px; }
+  .lchip.on { color: var(--ink); border-color: var(--accent); background: var(--accent-soft); }
+  input.filter { font: inherit; font-size: 12px; width: 190px; color: var(--ink); background: var(--ground);
+    border: 1px solid var(--edge); border-radius: 6px; padding: 4px 9px; }
+  input.filter:focus { outline: none; border-color: var(--accent); }
+  .stat { margin-left: auto; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .btn { font: inherit; font-size: 11px; font-weight: 600; color: var(--muted); background: var(--panel);
+    border: 1px solid var(--edge); border-radius: 6px; padding: 4px 10px; cursor: pointer; text-decoration: none; }
+  .btn:hover { color: var(--accent); border-color: var(--accent); }
+  .btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+  .doc { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 8px 0 28px; }
+  .code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.55; }
+  .row { display: grid; grid-template-columns: 56px 1fr; }
+  .row.hide { display: none; }
+  .row .n { text-align: right; padding-right: 12px; color: var(--faint); user-select: none;
+    font-variant-numeric: tabular-nums; }
+  .row .c { white-space: pre; padding-right: 18px; }
+  .code.wrap .row .c { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .row:hover { background: var(--accent-soft); }
+
+  .row.add .c { background: var(--add-bg); }
+  .row.del .c { background: var(--del-bg); }
+  .row.hunk .c { color: var(--accent); font-weight: 600; }
+  .row.meta .c { color: var(--muted); }
+  .row.lv-err .c { color: var(--err); }
+  .row.lv-err .n { box-shadow: inset -2px 0 0 var(--err); }
+  .row.lv-warn .c { color: var(--warn); }
+  .row.lv-warn .n { box-shadow: inset -2px 0 0 var(--warn); }
+  .row.lv-info .c { color: var(--ink); }
+  .row.lv-dbg .c { color: var(--muted); }
+
+  .jt { padding: 10px 16px; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.65; }
+  .jt details > summary { list-style: none; cursor: pointer; }
+  .jt details > summary::-webkit-details-marker { display: none; }
+  .jt summary:hover { background: var(--accent-soft); border-radius: 4px; }
+  .jt .cv { display: inline-block; width: 12px; color: var(--faint); transition: transform .12s; }
+  .jt details[open] > summary .cv { transform: rotate(90deg); }
+  .jt .jch { padding-left: 16px; border-left: 1px solid var(--edge); margin-left: 5px; }
+  .jt .jrow { padding-left: 12px; }
+  .jt .jkey { color: var(--accent); }
+  .jt .jp { color: var(--faint); margin-right: 6px; }
+  .jt .jbr { color: var(--muted); }
+  .jt details[open] > summary .jbr { opacity: .35; }
+  .jt .jcnt { color: var(--faint); font-size: 11px; margin-left: 8px; }
+  .jt .jstr { color: var(--str); }
+  .jt .jnum { color: var(--num); }
+  .jt .jbool { color: var(--accent); }
+  .jt .jnull { color: var(--faint); }
+
+  .note { margin: 14px 16px; padding: 9px 12px; border: 1px solid var(--edge); border-radius: 8px;
+    color: var(--muted); font-size: 12px; background: var(--panel); }
+  .note.err { color: var(--err); border-color: var(--err); }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span class="fname mono" id="fname"></span>
+    <span class="chip" id="modechip"></span>
+    <span id="lvchips" hidden></span>
+    <input class="filter" id="filter" type="search" placeholder="satir filtresi" hidden>
+    <span class="stat" id="stat"></span>
+    <button class="btn" id="wrapbtn" type="button" aria-pressed="false">wrap</button>
+    <button class="btn" id="copybtn" type="button">kopyala</button>
+    <a class="btn" id="rawlink" target="_blank" rel="noopener">ham</a>
+  </div>
+  <div class="doc" id="doc"></div>
+<script>
+  var seg = location.pathname.split("/").filter(Boolean);      // ["view", scope, name, ...rel]
+  var rel = seg.slice(3).map(decodeURIComponent).join("/");
+  var rawUrl = "/topic/" + seg.slice(1).join("/");
+  var raw = "", bytes = 0, mode = "text", parsed = null, jsonErr = null;
+  var rows = [];
+  var MAXL = 20000;          // rendered line cap
+  var MAXB = 4000000;        // characters kept in memory; bigger dumps are cut before parsing
+  var cutBytes = false;
+  var wrap = localStorage.getItem("pa.wrap") === "1";
+  var levels = { err: true, warn: true, info: true, dbg: true, other: true };
+  var LVLABEL = { err: "error", warn: "warn", info: "info", dbg: "debug", other: "diger" };
+
+  function el(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+  function kb(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB"; }
+
+  function levelOf(s) {
+    if (/\b(FATAL|CRITICAL|ERROR|ERR|EXCEPTION|Traceback)\b/.test(s)) return "err";
+    if (/\b(WARN|WARNING)\b/i.test(s)) return "warn";
+    if (/\b(INFO|NOTICE)\b/.test(s)) return "info";
+    if (/\b(DEBUG|TRACE)\b/.test(s)) return "dbg";
+    return "other";
+  }
+
+  function detect() {
+    var ext = (rel.indexOf(".") >= 0 ? rel.split(".").pop() : "").toLowerCase();
+    if (ext === "json") {
+      try { parsed = JSON.parse(raw); mode = "json"; return; }
+      catch (e) { jsonErr = e.message; }
+    }
+    if (ext === "diff" || ext === "patch" || /^diff --git /m.test(raw) || /^--- .*\n\+\+\+ /m.test(raw)) { mode = "diff"; return; }
+    if (ext === "log") { mode = "log"; return; }
+    var head = raw.split("\n", 200), hit = 0;
+    for (var i = 0; i < head.length; i++) if (levelOf(head[i]) !== "other") hit++;
+    mode = (hit >= 5 && hit / head.length > 0.3) ? "log" : "text";
+  }
+
+  function buildLines(doc) {
+    var code = el("div", "code" + (wrap ? " wrap" : ""));
+    code.id = "code";
+    var lines = raw.split("\n");
+    var cut = false;
+    if (lines.length > MAXL) { lines = lines.slice(0, MAXL); cut = true; }
+    if (lines.length && lines[lines.length - 1] === "") lines.pop();
+    rows = [];
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < lines.length; i++) {
+      var t = lines[i], cls = "row", lv = null;
+      if (mode === "diff") {
+        if (/^(diff --git|index |--- |\+\+\+ |new file|deleted file|similarity |rename |Binary files)/.test(t)) cls += " meta";
+        else if (t.charAt(0) === "@") cls += " hunk";
+        else if (t.charAt(0) === "+") cls += " add";
+        else if (t.charAt(0) === "-") cls += " del";
+      } else if (mode === "log") {
+        lv = levelOf(t);
+        cls += " lv-" + lv;
+      }
+      var r = el("div", cls);
+      r.appendChild(el("span", "n", String(i + 1)));
+      r.appendChild(el("span", "c", t === "" ? " " : t));
+      frag.appendChild(r);
+      rows.push({ el: r, text: t.toLowerCase(), lv: lv });
+    }
+    code.appendChild(frag);
+    doc.appendChild(code);
+    if (cut) doc.appendChild(el("div", "note", "Dosya " + MAXL + " satirda kesildi — tamami icin 'ham' baglantisini ac."));
+  }
+
+  function jsonNode(k, v, depth) {
+    var kind = v === null ? "null" : Array.isArray(v) ? "array" : typeof v;
+    if (kind === "object" || kind === "array") {
+      var keys = kind === "array" ? v.map(function (_, i) { return i; }) : Object.keys(v);
+      var d = el("details");
+      if (depth < 2) d.open = true;
+      var s = el("summary");
+      s.appendChild(el("span", "cv", "›"));
+      if (k !== null) { s.appendChild(el("span", "jkey", k)); s.appendChild(el("span", "jp", ":")); }
+      s.appendChild(el("span", "jbr", kind === "array" ? "[ … ]" : "{ … }"));
+      s.appendChild(el("span", "jcnt", keys.length + (kind === "array" ? " oge" : " anahtar")));
+      d.appendChild(s);
+      var ch = el("div", "jch");
+      keys.forEach(function (key) { ch.appendChild(jsonNode(String(key), v[key], depth + 1)); });
+      d.appendChild(ch);
+      return d;
+    }
+    var row = el("div", "jrow");
+    if (k !== null) { row.appendChild(el("span", "jkey", k)); row.appendChild(el("span", "jp", ":")); }
+    var cls = kind === "string" ? "jstr" : kind === "number" ? "jnum" : kind === "boolean" ? "jbool" : "jnull";
+    row.appendChild(el("span", cls, kind === "string" ? '"' + v + '"' : String(v)));
+    return row;
+  }
+
+  function applyFilter() {
+    var q = (document.getElementById("filter").value || "").toLowerCase();
+    var shown = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var ok = (!q || r.text.indexOf(q) !== -1) && (mode !== "log" || levels[r.lv]);
+      r.el.classList.toggle("hide", !ok);
+      if (ok) shown++;
+    }
+    var head = (shown !== rows.length) ? shown + " / " + rows.length : String(rows.length);
+    document.getElementById("stat").textContent = head + " satir · " + kb(bytes);
+  }
+
+  function buildLevelChips() {
+    var box = document.getElementById("lvchips");
+    box.innerHTML = "";
+    box.hidden = mode !== "log";
+    if (mode !== "log") return;
+    Object.keys(LVLABEL).forEach(function (lv) {
+      var n = rows.filter(function (r) { return r.lv === lv; }).length;
+      if (!n) return;
+      var b = el("button", "lchip" + (levels[lv] ? " on" : ""), LVLABEL[lv] + " " + n);
+      b.type = "button";
+      b.onclick = function () {
+        levels[lv] = !levels[lv];
+        b.classList.toggle("on", levels[lv]);
+        applyFilter();
+      };
+      box.appendChild(b);
+    });
+  }
+
+  function paint() {
+    var doc = document.getElementById("doc");
+    doc.innerHTML = "";
+    document.getElementById("fname").textContent = rel;
+    document.getElementById("modechip").textContent = mode === "text" ? "metin" : mode;
+    var filter = document.getElementById("filter");
+    var wrapbtn = document.getElementById("wrapbtn");
+    if (mode === "json") {
+      filter.hidden = true; wrapbtn.hidden = true;
+      document.getElementById("lvchips").hidden = true;
+      var tree = el("div", "jt");
+      tree.appendChild(jsonNode(null, parsed, 0));
+      doc.appendChild(tree);
+      var count = Array.isArray(parsed) ? parsed.length + " oge" : (parsed && typeof parsed === "object" ? Object.keys(parsed).length + " anahtar" : "deger");
+      document.getElementById("stat").textContent = count + " · " + kb(bytes);
+      return;
+    }
+    filter.hidden = false; wrapbtn.hidden = false;
+    if (cutBytes) doc.appendChild(el("div", "note", "Dosya cok buyuk — ilk " + Math.round(MAXB / 1000000) + " MB gosteriliyor, tamami icin 'ham' baglantisini ac."));
+    if (jsonErr) doc.appendChild(el("div", "note err", "Gecersiz JSON — duz metin olarak gosteriliyor: " + jsonErr));
+    buildLines(doc);
+    buildLevelChips();
+    applyFilter();
+  }
+
+  document.getElementById("rawlink").href = rawUrl;
+  document.getElementById("wrapbtn").setAttribute("aria-pressed", wrap ? "true" : "false");
+  document.getElementById("wrapbtn").onclick = function () {
+    wrap = !wrap;
+    localStorage.setItem("pa.wrap", wrap ? "1" : "0");
+    this.setAttribute("aria-pressed", wrap ? "true" : "false");
+    var c = document.getElementById("code");
+    if (c) c.classList.toggle("wrap", wrap);
+  };
+  document.getElementById("copybtn").onclick = function () {
+    var btn = this;
+    navigator.clipboard.writeText(raw).then(function () {
+      btn.textContent = "kopyalandi";
+      setTimeout(function () { btn.textContent = "kopyala"; }, 1200);
+    }).catch(function () { btn.textContent = "kopyalanamadi"; });
+  };
+  document.getElementById("filter").oninput = applyFilter;
+
+  fetch(rawUrl, { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+    .then(function (text) {
+      bytes = new Blob([text]).size;
+      if (text.length > MAXB) { text = text.slice(0, MAXB); cutBytes = true; }
+      raw = text;
+      detect();
+      paint();
+    })
+    .catch(function (e) {
+      document.getElementById("doc").appendChild(el("div", "note err", "Dosya okunamadi: " + e.message));
+    });
 </script>
 </body>
 </html>`;
