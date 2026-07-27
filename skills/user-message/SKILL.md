@@ -23,7 +23,7 @@ Müşteri/acenta tarafına mesaj üretir. Stil rehberi `~/Documents/ObsidianVaul
 Read(file_path: "/Users/omerfarukyigin/Documents/ObsidianVault/user-message-still.md")
 ```
 
-Dosya yoksa: "Stil rehberi bulunamadı: `~/Documents/ObsidianVault/user-message-still.md`. Önce dosyayı oluştur veya `/personal-assistant:extension-builder` ile skill'i yeniden kur." de ve çık.
+Dosya yoksa: "Stil rehberi bulunamadı: `~/Documents/ObsidianVault/user-message-still.md`." de ve dur.
 
 ### 2. Kanalı belirle
 
@@ -51,42 +51,12 @@ Dosya yoksa: "Stil rehberi bulunamadı: `~/Documents/ObsidianVault/user-message-
 
 ### 4. Mesajı üret
 
-Stil rehberindeki kurallara birebir uyarak mesajı yaz. Üretmeden önce mental self-check:
-
-- Teknik terim sızdı mı? (field, endpoint, currency, JSON, API, framework adı)
-- Versiyon/deploy detayı var mı?
-- İç sistem linki var mı?
-- Türkçe karakterler tam mı?
-- Kanal uzunluğuna uyuyor mu? (SMS 160, push başlık+1 satır)
-- Selamlama/kapanış kanal kuralına uygun mu?
-- İmza eklendi mi? (eklenmemeli)
-- 1 paragraf veya max 3 bullet mı?
-- (E-posta/HTML) Inline CSS mi kullanıldı, `<style>` bloğuna güvenilmedi mi?
-- (E-posta/HTML) `<meta charset="utf-8">` var mı, tablo `border-collapse` ile temiz render oluyor mu?
-
+Stil rehberindeki kurallara birebir uyarak mesajı yaz.
 E-posta seçildiyse mesajın başına `Konu: <kısa öz>` satırı ekle (HTML çıktısında `<title>` + üst başlık olarak kullanılır).
 
 ### 5. Onaya sun — kanala göre dallan
 
 **Kanal "E-posta" ise → Adım 5-E (zengin HTML + open).** Diğer tüm kanallar → **Adım 5-T (düz metin + zed --wait).**
-
-#### Yabancı Dil Kuralı (ZORUNLU)
-
-Mesaj **Türkçe dışında bir dilde** üretildiyse (İngilizce tedarikçi maili vb.), onay önizlemesi **iki dilli** sunulur:
-
-```
-<orijinal yabancı dilde mesaj>
-
----
-
-(Türkçe)
-<mesajın Türkçe çevirisi>
-```
-
-- Türkçe bölüm **yalnızca önizleme içindir, gönderilmez** — önizlemede bunu açıkça belirt ("Türkçe çeviri — sadece önizleme, gönderilmeyecek").
-- 5-T (zed) dalında: düz metin dosyasında orijinal + `---` ayraç + `(Türkçe)` başlıklı çeviri.
-- 5-E (HTML) dalında: orijinal HTML gövdesinin altına `<hr>` + gri arka planlı çeviri bölümü (`<div style="background:#f4f4f4; padding:12px; border-radius:6px">` içinde `(Türkçe çeviri — sadece önizleme, gönderilmeyecek)` etiketi + çeviri).
-- Onay sonrası kullanıcıya verilen nihai metin/HTML **sadece orijinal dili** içerir — çeviri bloğu çıkarılır.
 
 #### 5-T. Düz metin onayı (SMS, WhatsApp, Push, Panel, Destek talebi)
 
@@ -111,9 +81,7 @@ cat "$f"
 Mesajı **HTML** olarak üret — düz metin değil. Amaç: vurgulu tablolar, **kalın**, listeler gibi zengin metin öğelerinin e-posta gövdesine olduğu gibi yapıştırılabilmesi. `pandoc` gibi dış bağımlılık **kullanma** — HTML'i doğrudan yaz.
 
 HTML kuralları:
-
 - Inline CSS kullan (mail istemcileri `<style>` bloğunu sıklıkla atar). Stiller `style="..."` olarak elementlere gömülür.
-- `<table>` için `border-collapse:collapse`, hücrelere `border:1px solid #ddd; padding:8px`. Başlık satırı `<th style="background:#f4f4f4; text-align:left">`.
 - Vurgu: `<strong>`, önemli uyarı için renkli kutu (`<div style="background:#fff8e1; border-left:4px solid #f0ad4e; padding:10px">`).
 - Türkçe karakterler için `<meta charset="utf-8">` zorunlu.
 - İmza ekleme (kanal/sistem ekliyor). Konu satırı `<title>` ve gövde başında `<p><strong>Konu:</strong> ...</p>` olarak yer alır.
