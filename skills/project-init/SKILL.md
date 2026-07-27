@@ -209,28 +209,20 @@ Vault root: `~/Documents/ObsidianVault` (default).
 
 **Evet, oluştur:**
 ```bash
-VAULT="$HOME/Documents/ObsidianVault"
-FOLDER="$VAULT/$PROJECT_NAME"
-mkdir -p "$FOLDER"
-# Opsiyonel: ilk not
-touch "$FOLDER/index.md"
+mkdir -p "$HOME/Documents/ObsidianVault/$PROJECT_NAME"
 ```
+
+Klasör **boş bırakılır** — `index.md`/MOC yazılmaz, alt klasör açılmaz. Modül klasörleri (`<proje>/<modül>/`) ilk bilgi yazılırken `obsidian-write` tarafından oluşturulur; yapı içeriğe göre şekillenir, önden kurulmaz.
+
 `CLAUDE.local.md`'ye `Obsidian Folder: <PROJECT_NAME>` yaz.
 
 **Mevcut klasörü seç:**
 ```bash
 ls -1 "$HOME/Documents/ObsidianVault"
 ```
-Listele, `AskUserQuestion` ile seçtir. Seçileni `Obsidian Folder:` olarak yaz.
+Listele, `AskUserQuestion` ile seçtir. Seçileni `Obsidian Folder:` olarak yaz. Mevcut klasördeki dosyalara dokunma.
 
-**Sonrasında:**
-
-- **Yeni klasör oluşturulduysa** → Obsidian klasörü boş, doğrudan `obsidian-init` skill'ini / `obsidian-initializer` agent'ını **otomatik çağır** (sormadan). Rapor sonunda yazılan dosyaları göster.
-- **Mevcut klasör seçildiyse** → İçinde dosyalar olabilir, `AskUserQuestion` ile sor:
-  - header: "Obsidian"
-  - question: "Mevcut klasöre proje belleği (MOC + wikilinks) eklensin mi? (Çakışan dosyalar atlanır)"
-  - options: ["Evet, obsidian-init çalıştır", "Hayır, dokunma"]
-  - Evet seçilirse agent'ı çağır.
+**Sonrasında:** Bilgi yazımı `obsidian-write`, arama `obsidian-search` ile ilerler.
 
 ### 7. Mevcut Proje Modu
 

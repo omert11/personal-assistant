@@ -3,17 +3,30 @@ name: obsidian-doc-source
 description: Dış kaynağı (URL/library/PDF/repo) global Obsidian docs/ altına sectioned dokümante eder.
 when_to_use: Trigger — "bu kaynağı dokümante et", "obsidian docs'a ekle", "API'yi dokümante et", "kütüphaneyi kaydet", "/obsidian-doc-source <kaynak>". WebFetch/ctx7/markitdown/gh kullanır; çıktı `~/Documents/ObsidianVault/docs/<source>/` (proje bağımsız).
 argument-hint: <url-veya-library-veya-dosya>
-allowed-tools: Task, Skill, Read, Write, Edit, Bash, Glob, Grep, WebFetch
+allowed-tools: Skill, Read, Write, Edit, Bash, Glob, Grep, WebFetch, AskUserQuestion
 ---
 
 # Obsidian Doc Source
 
 Dış kaynağı profesyonel sectioned API reference olarak **global docs klasörüne** (`~/Documents/ObsidianVault/docs/<source>/`) dokümante eder. Proje folder'ı altında DEĞİL — tüm projeler aynı docs pool'unu paylaşır.
 
+## Yazma Modeli — Ana Agent Yazar, Delege YOK
+
+Dosyaları **ana agent kendisi yazar** (`Write`/`Edit` ile). Bu skill hiçbir subagent'a devretmez.
+
+**Sebep**: dokümanı okuyan agent ile yazan agent aynı olmalı. Devirde içerik prompt'a serialize edilir, teknik detay (parametre tipi, default değer, error code, kod bloğu) yolda kayar; devralan agent kaynağı görmediği için kaybı fark edemez. Ana agent kaynağı ham haliyle context'inde tutar, doğrudan dosyaya yazar — kayıp yok.
+
+**Yazım disiplini (ZORUNLU)**:
+- **Kaynağın teknik yapısını aktar** — endpoint, parametre, tip, default, dönüş, hata kodu, limit değeri, kod örneği. Ne varsa o.
+- **Yorum yapma** — "bu API oldukça esnek", "dikkat edilmesi gereken nokta", "pratikte genelde" gibi cümleler yazma. Kaynakta yoksa satır yok.
+- **Uzatma** — açıklamayı yeniden ifade etme, aynı bilgiyi iki bölümde tekrarlama, dolgu paragraf yazma yasak.
+- **Uydurma yasak** — kaynakta olmayan endpoint/parametre/örnek yazma. Bölüm kaynakta yoksa o dosya hiç oluşturulmaz.
+- Tablo tabloya, kod bloğu kod bloğuna çevrilir. Prose'a düzleştirme.
+
 ## Önkoşul
 
 - Vault kök: `~/Documents/ObsidianVault/` mevcut
-- Global docs klasörü writer agent tarafından `mkdir -p` ile oluşturulur
+- Global docs klasörü `mkdir -p` ile oluşturulur
 
 ## Akış
 
@@ -33,6 +46,8 @@ Dış kaynağı profesyonel sectioned API reference olarak **global docs klasör
 | `.md` local | Markdown | `Read` |
 
 Belirsizse `AskUserQuestion` (header: "Tip", options: listeden).
+
+> `/crawl2md` bir **fetch aracıdır** (ham markdown üretir), yazma devri değil. Çıktısını ana agent okur.
 
 #### Web URL: Fetch Stratejisi
 
@@ -61,7 +76,7 @@ Kaynak adı kuralları:
 
 Target path: `~/Documents/ObsidianVault/docs/<source-name>/`
 
-**Çakışma kontrolü (skill'de, writer'a gitmeden önce):**
+**Çakışma kontrolü:**
 
 ```bash
 ls ~/Documents/ObsidianVault/docs/<source-name> 2>/dev/null
@@ -71,17 +86,15 @@ Varsa `AskUserQuestion`:
 - header: "Çakışma"
 - question: "`docs/<source-name>/` zaten var (son güncelleme: `<fetched_at>`). Ne yapayım?"
 - options:
-  - "Üstüne yaz" — eski dosyalar silinir, yeniden yazılır
+  - "Üstüne yaz" — `rm -rf ~/Documents/ObsidianVault/docs/<source-name>` sonra yeniden yazılır (yol tam yazılır; değişken/placeholder ile `rm -rf` çalıştırma)
   - "Yeni sürüm" — `docs/<source-name>-v<N+1>/` olarak yaz (N eski sürüm sayısı)
   - "İptal" — skill çık
 
 Eski `fetched_at` bilgisini `docs/<source-name>/index.md` frontmatter'ından oku (varsa).
 
-### 4) Kaynağın Tamamını Oku, Düzenle, Formatla
+### 4) Kaynağın Tamamını Oku
 
-**Zorunlu:** Kaynağın tamamını işle — kısmi özet yasak. Her sayfa/dosya Read ile gezilir, içerik birleştirilir, sonra profesyonel API reference formatına yeniden düzenlenir.
-
-#### 4a) Tüm İçeriği Oku
+**Zorunlu:** Kaynağın tamamını işle — kısmi özet yasak. Her sayfa/dosya Read ile gezilir.
 
 - **Web (WebFetch)**: Sayfa sonundaki "next page" / pagination link'lerini takip et. Tek WebFetch yetmiyorsa follow-up çağrıları yap
 - **crawl2md çıktısı**: `Glob <OUT_DIR>/**/*.md` ile tüm dosyaları bul, hepsini Read et (paralel batch — tek mesajda çoklu Read tool call)
@@ -89,86 +102,143 @@ Eski `fetched_at` bilgisini `docs/<source-name>/index.md` frontmatter'ından oku
 - **Context7 (`ctx7` CLI)**: `npx ctx7@latest library <name> "<query>"` ile ID al, sonra `npx ctx7@latest docs <libraryId> "<query>"` çağrısını en az 3 farklı query ile yap (overview, API reference, examples) ki tüm doc coverage gelsin
 - **Local file**: markitdown'un tam çıktısını Read et, parçalama
 
-#### 4b) İçeriği Düzenle (Clean Pass)
-
-Ham içerik üzerinde:
-- Navigation/footer/cookie banner kalıntılarını sil (crawl2md zaten temizledi ama double-check)
-- Tekrarlanan başlıkları birleştir
-- Kod bloklarının dil etiketini kontrol et (```python, ```bash, ```json vb.)
-- Kırık tablo markdown'larını düzelt
-- Placeholder linkleri (`[click here]()`) kaldır
-
-#### 4c) Sectioned Formata Yeniden Yapılandır
-
-Düzenlenmiş içeriği profesyonel API reference şablonuna göre bölümle. Kaynakta bulunmayan bölümü atla — **uydurma yasak**.
-
-| Section | İçerik formatı |
-|---|---|
-| overview | 2-3 paragraf açıklama, kullanım alanları, key features bullet list |
-| auth | Authentication tipi, flow adımları, örnek header/token |
-| endpoints | Her endpoint için: method + path + açıklama + params tablosu + response example |
-| examples | Min 3 farklı senaryo, çalışır kod blokları (curl + en az 1 dil) |
-| reference | Tüm parametreler: isim, tip, default, açıklama — markdown table |
-| errors | HTTP status + error code + anlamı + çözüm — markdown table |
-| rate_limits | Limit değerleri, window, header isimleri, aşım davranışı |
-| sdk | Resmi SDK listesi: dil + paket adı + repo link |
-| changelog | Son 3-5 sürüm notu, breaking changes vurgulu |
-
-Her section markdown olarak **tam formatla**: başlıklar (`##`, `###`), tablolar, kod blokları, bullet list hiyerarşisi. Writer agent ham prose kabul eder ama **düzgün formatlı markdown beklenir** — agent kendisi format düzeltmez.
-
 #### Bounded Extraction
 
 - Crawl2md >50 markdown dosyası üretirse: `AskUserQuestion` (header: "Kapsam", options: ["İlk 50 dosya (depth azalt)", "Sadece index/toc sayfaları", "Custom glob", "Tamamı — büyük olabilir"])
-- Toplam section payload >500KB olmasın — aşarsa kullanıcıya rapor, section içeriğini kırp (endpoints tablosunu kısaltma yerine reference'a taşı vb.)
 - Kaynak çok büyükse (>200 sayfa): `AskUserQuestion` ile split öner — birden fazla source olarak kaydet (`stripe-api-core`, `stripe-api-webhooks`, vb.)
+- Context bütçesi zorlanıyorsa **bölüm bölüm yaz**: bir bölümün kaynağını oku → o `{section}.md`'yi hemen `Write` et → sıradakine geç. Hepsini bellekte biriktirip sona bırakma.
 
-### 5) Writer'a Teslim
+### 5) Bölümleme
 
-`Task` tool ile `obsidian-writer` (MODE: doc-source):
+Okunan içeriği aşağıdaki bölümlere ayır. **Kaynakta karşılığı olmayan bölümü atla** — o dosya oluşturulmaz, sub-MOC'ta listelenmez.
 
+| Section | Dosya | İçerik formatı |
+|---|---|---|
+| overview | `overview.md` | Ne olduğu + kullanım alanı + key features. Kaynaktaki tanım, 2-3 paragrafı geçme |
+| auth | `auth.md` | Auth tipi, flow adımları, örnek header/token |
+| endpoints | `endpoints.md` | Her endpoint: method + path + açıklama + params tablosu + response example |
+| examples | `examples.md` | Kaynaktaki çalışır kod blokları (curl + en az 1 dil) |
+| reference | `reference.md` | Tüm parametreler: isim, tip, default, açıklama — markdown table |
+| errors | `errors.md` | HTTP status + error code + anlamı + çözüm — markdown table |
+| rate_limits | `rate_limits.md` | Limit değerleri, window, header isimleri, aşım davranışı |
+| sdk | `sdk.md` | Resmi SDK listesi: dil + paket adı + repo link |
+| changelog | `changelog.md` | Son 3-5 sürüm notu, breaking changes vurgulu |
+
+Temizlik: nav/footer/cookie banner kalıntısı sil, tekrarlanan başlıkları birleştir, kod bloğu dil etiketini düzelt (```python, ```bash, ```json), kırık tabloyu onar, placeholder link (`[click here]()`) kaldır.
+
+Section başlık mapping: `overview` → `Overview`, `auth` → `Authentication`, `endpoints` → `Endpoints`, `examples` → `Examples`, `reference` → `Reference`, `errors` → `Errors`, `rate_limits` → `Rate Limits`, `sdk` → `SDK / Clients`, `changelog` → `Changelog`.
+
+### 6) Dosyaları Yaz
+
+Sıra:
+
+1. **Çakışma kararını uygula** — "Üstüne yaz" seçildiyse hedefi tam yolla sil: `rm -rf ~/Documents/ObsidianVault/docs/<source-name>`
+2. `mkdir -p <TARGET>`
+3. Dolu her bölüm için `<TARGET>/<section>.md` — **Write çağrılarını tek mesajda batch'le**
+4. `<TARGET>/index.md` (sub-MOC) — sadece dolu bölümlerin wikilink'i
+5. Global docs MOC (`~/Documents/ObsidianVault/docs/index.md`) — yoksa oluştur, varsa "Kaynaklar" bölümüne duplicate kontrolüyle `[[<source-name>/index|<source-name>]]` ekle
+
+#### `<TARGET>/<section>.md`
+
+```markdown
+---
+aliases:
+  - {SOURCE_NAME} {section}
+tags:
+  - docs
+  - {SOURCE_TYPE}
+  - {section}
+source_url: {SOURCE_URL}
+fetched_at: {FETCHED_AT}
+---
+
+# {Section Başlığı}
+
+{bölüm içeriği — kaynağın teknik yapısı, yorumsuz}
+
+## İlgili
+
+- [[index|{SOURCE_NAME}]]
+- [[../index|Global Docs MOC]]
 ```
-Task(
-  description: "Docs kaynağı yaz",
-  subagent_type: "obsidian-writer",
-  prompt: "MODE: doc-source
-TARGET: ~/Documents/ObsidianVault/docs/<source-name>
-SOURCE_NAME: <source-name>
-SOURCE_URL: <orijinal-kaynak>
-SOURCE_TYPE: web|library|github|file
-FETCHED_AT: <YYYY-MM-DD>
-WRITE_MODE: overwrite|new_version   # çakışma kararından (yoksa 'create')
 
-provenance: |
-  ## Kaynak ve Edinim
-  - **Birincil kaynak**: <kaynak + edinim yöntemi: Context7 library ID + sorgu sayısı / Stoplight-OpenAPI export / mail eki + dönüştürme yöntemi / WebFetch / crawl2md>
-  - **İlgili referans**: <Plane issue (PROJ-N) / mail konu-ID + varsa orijinal dosya yolu (örn. ~/Downloads/<dosya>.eml)>
-  - **Credential'lar**: [[<credential-learnings-notu>]]   # varsa
-  - **Doğrulama**: <✅/❌ + tarih + kısa sonuç (örn. "CreateTokenV2 ✅ 2026-06-11, token alındı")>
+#### `<TARGET>/index.md` (sub-MOC)
 
-overview: |
-  ...
-endpoints: |
-  ...
-examples: |
-  ..."
-)
+`## Kaynak ve Edinim` bölümü **zorunlu**: frontmatter'daki `source_url`/`fetched_at` tek başına yeterli değil, provenance görünür olmalı.
+
+```markdown
+---
+aliases:
+  - {SOURCE_NAME}
+tags:
+  - docs
+  - {SOURCE_TYPE}
+source_url: {SOURCE_URL}
+fetched_at: {FETCHED_AT}
+---
+
+# {SOURCE_NAME}
+
+Kaynak: `{SOURCE_URL}`
+Çekildi: {FETCHED_AT}
+Tip: {SOURCE_TYPE}
+
+## Kaynak ve Edinim
+
+- **Birincil kaynak**: {kaynak + edinim yöntemi: Context7 library ID + sorgu sayısı / OpenAPI export / mail eki + dönüştürme / WebFetch / crawl2md}
+- **İlgili referans**: {Plane issue (PROJ-N) / mail konu-ID + varsa orijinal dosya yolu}
+- **Credential'lar**: [[<credential-learnings-notu>]]
+- **Doğrulama**: {✅/❌ + tarih + kısa sonuç, örn. "CreateTokenV2 ✅ 2026-06-11, token alındı"}
+
+Karşılığı olmayan maddeyi yazma — satırı çıkar.
+
+## Bölümler
+
+- [[overview]] — Overview
+- [[endpoints]] — Endpoints
+- ...
+
+## İlgili
+
+- [[../index|Global Docs MOC]]
 ```
 
-- **provenance (ZORUNLU)**: Writer bu bölümü index.md'ye "## Kaynak ve Edinim" olarak yazar. Frontmatter `source_url`/`fetched_at` tek başına yeterli DEĞİLDİR — görünür provenance bölümü şarttır (bkz. rules/obsidian.md "Doc-Source Provenance").
-- **TARGET**: Global docs, proje folder'ı DEĞİL. Format: `~/Documents/ObsidianVault/docs/<source-name>/` (veya `-v2` vs. new_version seçildiyse)
-- **WRITE_MODE**: `overwrite` → eski dosyalar silinir. `new_version` → ayrı klasör. `create` → hiç yok, yeni kurulum
-- Writer global docs MOC'unu (`~/Documents/ObsidianVault/docs/index.md`) **tek sahip** olarak günceller. Skill dokunmaz.
+#### Global Docs MOC (`~/Documents/ObsidianVault/docs/index.md`)
 
-### 6) Geçici Dizin Temizliği
+Yoksa oluştur:
+
+```markdown
+---
+aliases:
+  - Global Docs
+  - Docs MOC
+tags:
+  - docs
+  - moc
+---
+
+# Global Docs
+
+Tüm projeler arası paylaşılan kaynak dokümantasyonu. Her source `<source-name>/index.md` alt-MOC'una link'lenir.
+
+## Kaynaklar
+
+- [[stripe-api/index|stripe-api]]
+- [[google-maps-places/index|google-maps-places]]
+```
+
+Varsa "Kaynaklar" bölümüne `Edit` ile ekle — aynı wikilink zaten varsa dokunma.
+
+### 7) Geçici Dizin Temizliği
 
 Crawl2md kullanıldıysa:
 ```bash
 rm -rf "$OUT_DIR"
 ```
 
-### 7) Rapor
+### 8) Rapor
 
-Writer'ın dönüş listesini kullanıcıya ilet.
+Yazılan dosyaların path listesini ver. Atlanan bölüm varsa **hangisi ve neden** (kaynakta yok) tek satırda belirt.
 
 ## Argüman Örnekleri
 
@@ -188,12 +258,13 @@ Writer'ın dönüş listesini kullanıcıya ilet.
 | markitdown kurulu değil | `uv tool install 'markitdown[all]'` öner ve iptal |
 | gh unauthenticated | `gh auth login` öner ve iptal |
 | crawl2md fail | Geçici dizini sil, hatayı kullanıcıya rapor |
-| Obsidian Folder tanımsız | `/obsidian-init` öner ve iptal |
+| Vault kök yok | `~/Documents/ObsidianVault/` bulunamadı — kullanıcıya bildir, iptal |
 
 ## Kurallar
 
+- **Yazma devri yok** — dosyaları ana agent yazar, subagent'a devretme (bkz. Yazma Modeli)
 - **Schema uydurma** — kaynakta olmayan endpoint/parametre yazma
 - **Library için Context7 zorunlu** — kendi belleğinden React/Next.js yazma
-- **Frontmatter** `source_url` + `fetched_at` writer tarafından eklenir
+- **Yorum/dolgu yasak** — kaynağın teknik yapısı aktarılır, değerlendirme eklenmez
 - **UTF-8 + Türkçe karakter** (kod blokları ve API isimleri İngilizce)
 - **Commit etme** — skill sadece vault'a yazar, git'e dokunmaz

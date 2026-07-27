@@ -124,7 +124,8 @@ Her dosyayı oku, değişen kodla alakalı kuralları bul. Sabit liste tutma —
 - `.po` dosyası → `django.md` (F7 çeviri)
 - Shell/CI script → `cli-tools.md`, `soloterm.md`
 - Frontend test → `browser-testing.md`
-- Obsidian/vault dosyaları → `obsidian.md`, `learnings.md`
+- Obsidian skill/kural/hook değişikliği → `obsidian.md`
+- Yeni `rules/` dosyası veya kural değişikliği → `learnings.md`
 - Yapılandırma (CLAUDE.md/local) → `init.md`
 - Workflow/agent değişiklikleri → `workflow.md`
 - Sunucu/production credential → `production.md`, `b2c-booking-log.md`
@@ -144,12 +145,11 @@ Açık issue'ları listele (proje UUID ile), yapılan değişikliklerle uyuşan 
 Her iki durumda da issue oluşturma/güncelleme **"Plane Alan Doldurma Kuralları"** bölümüne göre alanları (self assignee, tarihler, label) set eder.
 
 #### 3f. Obsidian Kayıt İhtiyacı
-`CLAUDE.local.md`'de `Obsidian Folder` varsa bu commit'te kaydedilmesi kayda değer bir şey var mı tespit et (dar kriter — kanonik tanım: `agents/obsidian-writer.md` append guard):
-- Yeni credential/sunucu/endpoint bilgisi
-- Çözülen non-trivial bug + çözümü
-- Kalıcı mimari/teknik karar
+Bu commit'te vault'a yazılacak kalıcı bir bilgi/karar var mı tespit et (kanonik tanım: `rules/obsidian.md` + `obsidian-write` skill):
+- **Bilgi** — sistem/araç/servis gerçekte nasıl çalışıyor; credential/sunucu/endpoint dahil
+- **Karar** — ne yapılacağına dair verilmiş kalıcı hüküm
 
-Repo/CLAUDE.md/vault'ta zaten yazılı bilgi veya genel oturum özeti kayda değer sayılmaz; şüphedeysen önerme.
+Bug'ın kendisi değil, nihai öğretisi sayılır. Repo/CLAUDE.md/vault'ta zaten yazılı bilgi, oturum özeti veya geçici durum kayda değer sayılmaz; şüphedeysen önerme.
 
 Varsa bulgu olarak işaretle. Yoksa sessiz geç.
 
@@ -205,9 +205,9 @@ Faz 1'de yer kalmayan veya koşullu sorular:
 
 **S5 — Obsidian** (3f bulgusu varsa)
 - header: "Obsidian"
-- question: "Bu commit'te kayda değer bilgi var. Obsidian klasörüne not ekleyeyim mi?"
-- options: ["Evet, obsidian-writer ile ekle", "Hayır, geç"]
-- Evet seçilirse commit sonrası `Task` ile `obsidian-writer MODE: append` çağır.
+- question: "Bu commit'te kayda değer bilgi var. Obsidian vault'a yazayım mı?"
+- options: ["Evet, obsidian-write ile yaz", "Hayır, geç"]
+- Evet seçilirse commit sonrası `obsidian-write` skill'ini çağır (ana agent yazar, subagent devri yok).
 
 **S6 — Worktree** (worktree'deyse)
 - header: "Worktree"

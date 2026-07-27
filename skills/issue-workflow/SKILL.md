@@ -38,9 +38,9 @@ cozumu tasarla. Bu durus akisin her adiminda gecerlidir:
 > **Kaynak analizi (Adim 2) ve durum/yol-haritasi analizi (Adim 4) ASLA sub-agent'a yaptirilmaz.**
 > Bulgular ve analiz bu isin kritik cekirdegidir; sub-agent izole context'te calisir ve ana
 > baglamdan kopar — yanlis/eksik analiz uretir. Bu iki adimi **her zaman ana ajan kendi
-> context'inde, `effort: max` ile** yapar. (Istisna: `obsidian-searcher` *on aramasi* — analiz
-> yapmaz, gecmis notu context'e GETIRIR; ve `diji-logs`/`worktree`/`commit`/`plane-cli` gibi
-> **skill delegasyonlari** — bunlar sub-agent degil, ayri skill cagrilaridir.)
+> context'inde, `effort: max` ile** yapar. (Istisna: `obsidian-search`/`diji-logs`/`worktree`/
+> `commit`/`plane-cli` gibi **skill delegasyonlari** — bunlar sub-agent degil, ayri skill
+> cagrilaridir; ana agent'in kendi context'inde calisirlar.)
 
 ---
 
@@ -93,8 +93,8 @@ atlama, ozetle gecme. **Sub-agent'a verilmez.**
 | **Dokuman** (PDF/Word/HTML/dosya) | `markitdown <dosya> > /tmp/src.md` ile markdown'a cevir, sonra oku. URL ise `WebFetch` |
 | **Log / hata ciktisi** | VictoriaLogs erisimi olan diji projesiyse `diji-logs` skill'e delege (LogsQL arama); kapsamli tarama icin `log-triage`; degilse Grep ile log dosyalarini tara |
 
-> Obsidian vault tanimliysa `obsidian-searcher` agent'ini `run_in_background: true` ile cagir
-> (QUERY: sorunun ozeti) — onceki oturum bu sorunu cozmus olabilir.
+> Obsidian vault tanimliysa `obsidian-search` skill'i ile vault'a bak (ana agent arar) —
+> onceki oturum bu sorunu cozmus ve bulgusunu yazmis olabilir.
 
 Cikti: anahtar veriler (ref, hata kodu, kullanici, tarih, modul/dosya/endpoint) context'te hazir —
 Adim 3 artifact'inin hammaddesi.
@@ -351,7 +351,8 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
 - **Sohbet kapilari**: Adim 3, 4, 8 — kullanici acik onay verene kadar adimda kalinir, sayfa
   uzerinde iterasyon yapilir. Onay sorusu her zaman `AskUserQuestion` ile (`ask-first` kurali)
 - **Sub-agent siniri**: Adim 2 (kaynak) ve Adim 4 (analiz) asla sub-agent'a verilmez; `Task`
-  yalniz `obsidian-searcher` on aramasi ve Adim 7 kanit uretiminde kullanilabilir
+  yalniz Adim 7 kanit uretiminde kullanilabilir. Obsidian arama/yazma da sub-agent'a
+  verilmez — `obsidian-search`/`obsidian-write` ana agent context'inde calisir
 - **Plan onayi**: tek onay noktasi `ExitPlanMode` (Adim 5); acik konular ondan ONCE (Adim 4,
   B6) kapatilmis olur — plan modunda yeni tartisma acilmaz
 - **Plane isleme alma**: plan onayi SONRASI (Adim 6) — otomatik, onaysiz, idempotent; kapama

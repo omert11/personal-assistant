@@ -561,26 +561,26 @@ def section_obsidian_vault():
 
 
 def section_obsidian_cli():
-    """Verify Obsidian's official CLI is enabled.
+    """Check Obsidian's official CLI — OPTIONAL.
 
-    Replaces the legacy mcp-obsidian (REST API) integration. The CLI ships
-    with the Obsidian app — user must toggle it on once via Settings.
+    The vault is plain markdown on disk; obsidian-search/write skills work with
+    Glob/Grep/Read regardless. The CLI only adds BM25 search as a complement and
+    requires the app to be running, so a missing CLI is informational, not a
+    warning.
     """
-    section("Obsidian CLI")
+    section("Obsidian CLI (opsiyonel)")
+    hint = (
+        "  Aktif etmek icin: Obsidian -> Settings -> General -> Advanced\n"
+        "  -> Command line interface (toggle on)"
+    )
     if not have("obsidian"):
-        warn(
-            "obsidian CLI yok. Aktif et:\n"
-            "  Obsidian -> Settings -> General -> Advanced -> Command line interface (toggle on)"
-        )
+        skip(f"obsidian CLI yok — vault Glob/Grep ile calisir, gerekmez.\n{hint}")
         return
     r = run("obsidian --help 2>&1")
     if "Command line interface is not enabled" in (r.stdout or ""):
-        warn(
-            "obsidian binary var ama disabled.\n"
-            "  Obsidian -> Settings -> General -> Advanced -> Command line interface'i aç"
-        )
+        skip(f"obsidian binary var ama kapali — zorunlu degil.\n{hint}")
         return
-    ok("obsidian CLI hazır")
+    ok("obsidian CLI hazır (BM25 arama tamamlayıcısı)")
 
 
 def section_local_mcps():

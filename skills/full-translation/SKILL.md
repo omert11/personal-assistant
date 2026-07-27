@@ -264,4 +264,4 @@ po-cli --json update <po> -t <json>              # apply
 - `commit` skill — Adım 7 teslimat
 - `~/.claude/rules/django.md` — F7 çeviri sistemi, makemessagesf7, elastic reindex
 - `~/.claude/rules/python.md` — venv/uv kuralları
-- Obsidian: `voyante-web/Learnings/full-translation-workflow.md` + `po-cli-bulk-translation-pitfalls.md` (tuzaklar)
+- Obsidian: çeviri/i18n tuzakları için `obsidian-search` ile vault'a bak (`i18n`, `po-cli`, `çeviri` terimleri)

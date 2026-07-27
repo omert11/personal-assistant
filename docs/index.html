@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 14 kural, 8 hook, 18 skill, 8 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 14 kural, 5 hook, 15 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -194,10 +194,10 @@
       <a class="btn btn-ghost" href="#ozet">Sunuma Başla <i data-lucide="arrow-down"></i></a>
     </div>
     <div class="hero-stats">
-      <div class="stat"><div class="num">13</div><div class="lbl">Kural</div></div>
-      <div class="stat"><div class="num">8</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">17</div><div class="lbl">Skill</div></div>
-      <div class="stat"><div class="num">8</div><div class="lbl">Agent</div></div>
+      <div class="stat"><div class="num">14</div><div class="lbl">Kural</div></div>
+      <div class="stat"><div class="num">5</div><div class="lbl">Hook</div></div>
+      <div class="stat"><div class="num">15</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">1</div><div class="lbl">Agent</div></div>
     </div>
   </div>
 </header>
@@ -213,19 +213,16 @@
     <div class="features">
       <div class="card"><div class="icon"><i data-lucide="brain"></i></div><div class="body">
         <h3>Obsidian Proje Belleği</h3>
-        <p>Her proje için vault'ta MOC + <code>[[wikilink]]</code> bilgi grafiği. 8 agent ve 5 skill besler — <code>obsidian-init</code> kurar, <code>obsidian-searcher</code> sorgu bazlı bulur ve sentezler, <code>obsidian-writer</code> 4 modda yazar. Öğrenilen bilgi tekrar sorulmadan geri çağrılır.</p></div></div>
+        <p>Klasör hiyerarşisinde saf gerçek: genel alan klasörleri (<code>flight/</code>, <code>payment/</code>, <code>django/</code>) tüm projeleri besler, proje klasörleri yalnız kendine özgü bilgiyi tutar. <code>obsidian-write</code> yazar, <code>obsidian-search</code> bulur. Kronoloji ve proje yapısı tutulmaz — dosya <b>şu anki gerçeği</b> taşır.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="shield-check"></i></div><div class="body">
         <h3>Commit Kalite Kapısı</h3>
         <p><code>commit</code> skill, kod değişen her teslimatta <code>/code-review</code>'u <strong>zorunlu</strong> çalıştırır — "hızlıca commit" dense bile. Dürüst review, hiçbir bulgu gizlenemez; soruları biriktirip tek onayla teslim eder. Plane issue oluşturup/kapatırken <strong>self atama, başlangıç/bitiş tarihi ve hata/geliştirme label'ını</strong> otomatik doldurur.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="scroll-text"></i></div><div class="body">
         <h3>Oturum Başı Kural Disiplini</h3>
-        <p>SessionStart'ta 13 global kural materialise edilir. Claude her oturumda tutarlı kurallarla çalışır: <code>uv</code> zorunlu, <code>AskUserQuestion</code> zorunlu, subagent'lar background, commit skill zorunlu.</p></div></div>
+        <p>SessionStart'ta 14 global kural materialise edilir. Claude her oturumda tutarlı kurallarla çalışır: <code>uv</code> zorunlu, <code>AskUserQuestion</code> zorunlu, vault erişimi ana agent'ta, commit skill zorunlu.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="wrench"></i></div><div class="body">
         <h3>Extension Builder</h3>
         <p>Claude Code'un 8 genişletme tipini (skill/plugin/agent/hook/MCP/output-style/channel/marketplace) resmi dökümanı <code>WebFetch</code> ile <em>canlı</em> çekerek üretir — schema uydurmaz.</p></div></div>
-      <div class="card"><div class="icon"><i data-lucide="refresh-cw"></i></div><div class="body">
-        <h3>Daily Continuity</h3>
-        <p>SessionStart'ta bugün+dün daily özeti yüklenir, Stop'ta oturum özeti tek satır eklenir (oturumda 1 kez). Dünden devam eden işler her yeni oturumda hatırlanır.</p></div></div>
     </div>
   </div>
 </section>
@@ -294,17 +291,17 @@ python manage.py runserver</code></pre></div>
     <!-- obsidian -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="network"></i></div><div><div class="etitle">obsidian</div><div class="emeta">Bellek Kullanımı</div></div></div>
       <div class="ebody">
-        <p><strong>Proje-spesifik kalıcı bilgi resmi Obsidian CLI (<code>obsidian</code> komutu) ile okunur/yazılır.</strong></p>
-        <p>Vault <code>~/Documents/ObsidianVault/&lt;isim&gt;/</code> altında MOC + wikilink yapısındadır. Klasör konvansiyonu: <code>index.md</code> (MOC), <code>Stack/Architecture/Recent-Activity/README-Summary</code> (init çıktıları), <code>Learnings/</code> (kalıcı bilgiler), <code>Journal/</code> (oturum özetleri). CLI komutları Obsidian app açıkken çalışır; kapalıysa fallback — okuma <code>Read</code>/<code>Glob</code>/<code>Grep</code> ile direkt filesystem'den, yazma için önce <code>open -a Obsidian</code>.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Karar</div><p>Obsidian → proje-spesifik kalıcı bilgi · <code>~/.claude/memory/</code> → kullanıcı profili · <code>~/.claude/rules/</code> → tüm projeler.</p></div>
+        <p><strong>Vault, hızlı ve kesin bilgi erişim kaynağıdır</strong> — not defteri veya geçmiş kaydı değil.</p>
+        <p>Yalnız iki tip yazılır: <b>bilgi</b> (sistem/servis gerçekte nasıl çalışıyor, credential dahil) ve <b>karar</b>. Bug'ın kendisi değil nihai öğretisi. Yapı klasör hiyerarşisidir (<code>&lt;alan&gt;/</code> genel + <code>&lt;proje&gt;/&lt;modül&gt;/</code>), max 3 seviye; <code>index.md</code>/MOC kullanılmaz — klasör zaten haritadır (tek istisna <code>docs/</code>: dış kaynak dokümantasyonunun bölüm listesi). Erişim <code>Glob</code>/<code>Grep</code>/<code>Read</code> ile doğrudan filesystem'den; Obsidian CLI opsiyonel BM25 tamamlayıcısıdır.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Karar</div><p>Obsidian → teknik gerçek (proje veya alan geneli) · <code>~/.claude/memory/</code> → kullanıcı profili · <code>~/.claude/rules/</code> → tüm projeler. <b>Subagent yok</b>: arama/yazma ana agent context'inde.</p></div>
       </div>
     </div>
 
     <!-- init -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="clipboard-check"></i></div><div><div class="etitle">init</div><div class="emeta">Oturum Başı Kontrol</div></div></div>
       <div class="ebody">
-        <p><strong>Her konuşmanın ilk mesajında proje yapılandırması (CLAUDE.md/local + Solo/Obsidian ID'leri) denetlenir; Plane proje tanımlıysa sorun bildirilince ilgili issue kontrol edilir ve geçmiş Learnings ön-aranır.</strong></p>
-        <p>5 madde kontrol edilir; eksikse "⚠️ Eksik Yapılandırma: <code>/project-init</code>" notu eklenir. Kullanıcı somut görev verince ve Obsidian Folder tanımlıysa, göreve başlamadan önce <code>obsidian-searcher</code> background çağrılarak geçmiş bilgi aranır (selamlaşma/kavramsal soruda tetiklenmez).</p>
+        <p><strong>Her konuşmanın ilk mesajında proje yapılandırması (CLAUDE.md/local + Solo/Obsidian ID'leri) denetlenir; Plane proje tanımlıysa sorun bildirilince ilgili issue kontrol edilir ve vault ön-aranır.</strong></p>
+        <p>5 madde kontrol edilir; eksikse "⚠️ Eksik Yapılandırma: <code>/project-init</code>" notu eklenir. Kullanıcı somut görev verince ve Obsidian Folder tanımlıysa, göreve başlamadan önce <code>obsidian-search</code> ile geçmiş bilgi aranır — ana agent arar, subagent devri yok (selamlaşma/kavramsal soruda tetiklenmez).</p>
       </div>
     </div>
 
@@ -377,7 +374,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
 <section id="hooks">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="zap"></i> Hooks · 8 hook, 3 event</div>
+      <div class="kicker"><i data-lucide="zap"></i> Hooks · 5 hook, 2 event</div>
       <h2>Oturum yaşam döngüsü otomasyonu</h2>
       <p>SessionStart (6) · UserPromptSubmit (1) · Stop (1). Hepsi shell, bağımlılık minimal. Her hook ne yapıyor, nasıl çalışıyor ve ne kazandırıyor.</p>
     </div>
@@ -400,39 +397,12 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       </div>
     </div>
 
-    <!-- obsidian-context -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="folder-tree"></i></div><div><div class="etitle">obsidian-context.sh</div><div class="emeta">SessionStart</div></div></div>
-      <div class="ebody">
-        <p><strong>Projenin Obsidian bellek klasöründeki <code>index.md</code> MOC'unun frontmatter'ını ve başlıklarını oturum başında context'e dump eder.</strong></p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>hook_obsidian_folder</code> ile klasör çıkarılır. <code>&lt;vault&gt;/&lt;folder&gt;/index.md</code> varsa <code>awk</code> ile frontmatter bloğu + <code>grep</code> ile tüm h1/h2/h3 başlıklar basılır, "detay için Read" notu eklenir.</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Claude oturuma proje belleğinin haritasıyla başlar; tüm vault'u okumadan doğru <code>[[wikilink]]</code>'i açabilir.</p></div>
-      </div>
-    </div>
-
-    <!-- session-obsidian-daily -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="calendar-days"></i></div><div><div class="etitle">session-obsidian-daily.sh</div><div class="emeta">SessionStart</div></div></div>
-      <div class="ebody">
-        <p><strong>Bugünün ve dünün global daily note'larından kısa özet basar; oturumun gerçek başlangıç zamanını state tablosuna damgalar.</strong></p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>session_id</code> ile <code>session_start</code> damgalanır (Obsidian kapalı olsa bile — Stop hook'ların 5dk-yaş kontrolü buna bakar). IPC 2s timeout ile sarılır. <code>daily:read</code> kasıtlı çağrılmaz (boş dosya yaratıyordu) — dosya filesystem'den <code>Daily/</code>, <code>Daily Notes/</code>, root sırasıyla okunur, <code>head -100</code>.</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Oturumlar arası süreklilik — kullanıcı kaldığı yerden devam eder; <code>session_start</code> damgası Stop hook'ların doğru çalışması için kritiktir.</p></div>
-      </div>
-    </div>
-
     <!-- userprompt-obsidian-hint -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-square-text"></i></div><div><div class="etitle">userprompt-obsidian-hint.sh</div><div class="emeta">UserPromptSubmit</div></div></div>
       <div class="ebody">
-        <p><strong>Her non-trivial prompt'a iki davranış enjekte eder: (1) ARAMA — KESIN KURAL: iş akışının herhangi bir anında ek efor gerektiren bir iş doğduğunda (sorun çözme, araştırma, doğrulama, log analizi, karar/komut/credential arama) önce <code>obsidian-searcher</code> ile vault'a bak; sonuç boşsa kendin yap ve bulguyu sonradan kaydet; (2) KAYIT — dar kriter: sadece bu oturumda YENİ öğrenilen credential/sunucu, çözülen non-trivial bug veya kalıcı mimari karar background kaydedilir; zaten yazılı bilgi, oturum özeti ve genel bilgi kaydedilmez, şüphede kaydetme; devam eden iş varsa kayıt tüm işler bitene kadar bekletilir ve kalan-iş raporuna dahil edilir.</strong></p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Klasör çıkarılır, prompt &lt;15 char ise skip. ARAMA her prompt'ta. KAYIT geciktirmeli: <code>last_learning_hook</code>'tan 5 dk geçmişse eklenir. HINT tek satır (jq <code>--arg</code> çok satırı escape etmez), <code>hookSpecificOutput.additionalContext</code> ile basılır. Eski <code>stop-obsidian-remind.sh</code>'in (block + "error" görünümü) yerini alır.</p></div>
+        <p><strong>Her non-trivial prompt'a iki davranış enjekte eder.</strong> <b>ARAMA</b> — iş akışının herhangi bir anında ek efor gerektiren bir iş doğduğunda (sorun çözme, araştırma, doğrulama, log analizi, credential arama) o anda <code>obsidian-search</code> çağrılır; sonuç boşsa iş kendin yapılır, bulgu sonradan yazılır. <b>KAYIT</b> — kalıcı bilgi/karar doğduysa <code>obsidian-write</code> çağrılır; devam eden iş varsa yazma bitene kadar bekletilir ve kalan-iş raporuna dahil edilir. Kriterler ve akış skill dosyalarındadır; hook yalnız <em>ne zaman hangi skill</em> der.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Klasör çıkarılır, prompt &lt;15 char ise skip. ARAMA her prompt'ta. KAYIT geciktirmeli: <code>last_learning_hook</code>'tan 5 dk geçmişse eklenir. HINT tek satır (jq <code>--arg</code> çok satırı escape etmez), <code>hookSpecificOutput.additionalContext</code> ile basılır. HINT skill akışını <b>tekrarlamaz</b> — yalnız "ne zaman hangi skill" der, akış skill çağrılınca yüklenir.</p></div>
         <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Sıfırdan uğraşmadan önce geçmiş bilgi hatırlanır; kayda değer yeni bilgi rahatsız etmeden çıktıyla beraber kalıcılaşır — hem hatırlama hem öğrenme prompt akışına gömülür.</p></div>
-      </div>
-    </div>
-
-    <!-- stop-obsidian-daily -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="pencil-line"></i></div><div><div class="etitle">stop-obsidian-daily.sh</div><div class="emeta">Stop</div></div></div>
-      <div class="ebody">
-        <p><strong>Oturum sonunda kayda değer aktivite varsa daily note'a proje-linkli tek satır özet append'ler.</strong> Sessiz çalışır, oturumda yalnızca 1 kez yazar.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Seyreltme: <code>last_daily_hook</code> doluysa atla. Oturum 5 dk'dan genç ise (<code>session_start</code>) atla. Son mesaj &lt;200 char ise skip. Özet önceliği: <code>customTitle</code> (/rename) → <code>aiTitle</code> → ilk 280 char. Satır: <code>- HH:MM [[folder/index|folder]]: özet — [transcript](file://...)</code>.</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Her anlamlı oturum, aranabilir ve transcript-linkli günlük kaydı bırakır; kısa/boş oturumlar gürültü yapmaz.</p></div>
       </div>
     </div>
 
@@ -440,7 +410,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="database"></i></div><div><div class="etitle">hook-state.sh</div><div class="emeta">Altyapı · shared</div></div></div>
       <div class="ebody">
         <p><strong>Hook'ların oturum başına seyreltilmesi için TSV tabanlı state tablosu yönetir; tüm hook'ların paylaştığı <code>hook_obsidian_folder</code> çıkarım fonksiyonunu sağlar.</strong> (Hook değil, diğer scriptlerin source ettiği kütüphane.)</p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>State: <code>session_id ⇥ session_start ⇥ last_daily_hook ⇥ last_learning_hook</code>. Saf <code>awk</code> (jq/sqlite yok), <code>mkdir</code> tabanlı atomik kilit lost-update'i önler, 7 günden eski satırlar budanır. <code>hook_obsidian_folder</code> bitişik/düz/tablo formatını destekler, placeholder/quote satırlarını eler.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>State: <code>session_id ⇥ session_start ⇥ (kullanılmayan) ⇥ last_learning_hook</code> — 3. kolon daily hook'ları kaldırılınca boşaldı, kolon sırası bozulmasın diye yer tutucu duruyor. Saf <code>awk</code> (jq/sqlite yok), <code>mkdir</code> tabanlı atomik kilit lost-update'i önler, 7 günden eski satırlar budanır. <code>hook_obsidian_folder</code> bitişik/düz/tablo formatını destekler, placeholder/quote satırlarını eler.</p></div>
         <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Tüm hook'lar tek kaynaktan (DRY) çalışır; harici bağımlılık olmadan macOS+Linux'ta güvenilir, kilitli, kendini temizleyen state mekanizması.</p></div>
       </div>
     </div>
@@ -452,7 +422,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 18 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 15 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
       <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır — ağır iş agent'lara delege edilir.</p>
     </div>
@@ -483,56 +453,27 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
         <p><strong>Bir projeyi Claude Code ekosistemine entegre eder</strong> — CLAUDE.md/local, solo.yml, .gitignore eksiklerini tespit edip tamamlar, Plane (opsiyonel)/Solo/Obsidian entegrasyonlarını kurar.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"projeyi kur", "init", "setup", "CLAUDE.md oluştur". <code>init.md</code> oturum başı eksik tespit edince otomatik önerir.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Durum tespiti → manifest'ten stack çıkarımı → eksik listesi → toplu soru bloğu → stack'e uygun dosya üretimi → entegrasyon (plane project create, Solo, Obsidian klasör).</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Obsidian klasörü yeni oluşunca <code>obsidian-init</code> otomatik tetiklenir; mevcut seçilince önce sorar. Override etmez, sadece eksik doldurur. Stack belirsizse durur ve sorar.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Obsidian klasörü <b>boş oluşturulur</b> — <code>index.md</code> veya alt klasör yazılmaz; yapı ilk bilgi yazılırken <code>obsidian-write</code> tarafından içeriğe göre şekillenir. Mevcut klasör seçilince dosyalara dokunulmaz. Override etmez, sadece eksik doldurur. Stack belirsizse durur ve sorar.</p></div>
       </div>
     </div>
 
-    <!-- obsidian-init -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="brain-circuit"></i></div><div><div class="etitle">obsidian-init</div></div></div>
+    <!-- obsidian-write -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-edit"></i></div><div><div class="etitle">obsidian-write</div></div></div>
       <div class="ebody">
-        <p><strong>Projeyi analiz edip vault'ta MOC + wikilink ilişkisel proje belleği oluşturur.</strong> Kendisi analiz yapmaz — <code>obsidian-initializer</code> orchestrator'ını çağırıp 5 alt agent'ı koordine ettirir.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"obsidian belleği oluştur", "obsidian init", <code>/obsidian-init</code> (<code>--force</code> ile yeniden üretir).</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Obsidian Folder kontrol → mevcut <code>index.md</code> varsa <code>--force</code> iste → <code>Task</code> ile orchestrator → yazılan dosyaları göster.</p></div>
-      </div>
-    </div>
-
-    <!-- obsidian-note -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-pen"></i></div><div><div class="etitle">obsidian-note</div></div></div>
-      <div class="ebody">
-        <p><strong>Tek seferlik bir bilgiyi (API key, sunucu, karar, komut, pattern) proje klasörüne kaydeder.</strong> <code>obsidian-writer MODE: append</code> çağırır — mevcut not varsa günceller, yoksa yeni Learnings notu.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"bunu obsidian'a not al", "obsidian'a ekle", "bunu kaydet", <code>/obsidian-note</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Folder + index kontrol → CLI durumu → içerik topla → <b>kategori tahmin et</b> (api-key/server/decision/bug/command/pattern) → <code>Task</code> writer append → frontmatter özetiyle raporla.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Frontmatter'a <code>category/confidence/source/last_verified</code> + MOC'a wikilink. CLI kapalıyken fonksiyon kaybı yok (Grep fallback).</p></div>
-      </div>
-    </div>
-
-    <!-- obsidian-audit -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="stethoscope"></i></div><div><div class="etitle">obsidian-audit</div></div></div>
-      <div class="ebody">
-        <p><strong>Vault sağlık denetimi</strong> — kırık wikilink, orphan, deadend notlar, eskimiş Learnings ve düşük güvenli bilgileri tespit edip raporlar.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"vault audit", "kırık linkleri bul", "obsidian denetle", <code>/obsidian-audit [folder]</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>CLI kontrol → hedef klasör → paralel <code>unresolved</code>/<code>orphans</code>/<code>deadends</code> → <b>last_verified audit</b> (30 gün+ stale) → confidence audit → markdown rapor + aksiyon önerisi.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Sadece yapıyı değil <strong>bilgi tazeliğini</strong> de denetler — 6 aylık API key'in hala geçerli olup olmadığını sordurur.</p></div>
-      </div>
-    </div>
-
-    <!-- obsidian-recall -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="dice-5"></i></div><div><div class="etitle">obsidian-recall</div></div></div>
-      <div class="ebody">
-        <p><strong>Learnings notlarından birini rastgele veya kategori-filtreli okur ve özetler</strong> (spaced repetition — eski bilgileri tekrar gündeme getirir).</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"rastgele not", "eski öğrenilenler", "geçmişten bir bilgi", <code>/obsidian-recall [tag]</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>CLI + folder → filtre varsa <code>obsidian tag</code> yoksa <code>random:read</code> → notu yapılandırılmış özetle (konu/kategori/last_verified/güven/özet) → aksiyon öner.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><code>obsidian-search</code>'ten farkı: <strong>rastgele</strong> (search hedefli). <code>/loop 4h /obsidian-recall</code> ile otomatikleştirilebilir — sabah ritüeli, key rotasyon kontrolü.</p></div>
+        <p><strong>Kalıcı bilgi/kararı vault'a yazar</strong> — konumlandırma (genel alan mı proje mi), saf gerçek formatı ve arama yüzeyi kuralları burada. <b>Ana agent yazar</b>, subagent devri yok: devirde teknik kesinlik (parametre adı, limit değeri, hata metni) prompt serileştirmesinde kaybolur.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"obsidian'a yaz", "bunu kaydet", "vault'a ekle", <code>/obsidian-write</code>. <code>commit</code> skill S5 ve UserPromptSubmit kayıt hint'i de buraya yönlendirir.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> 11 adımlı self-check</div><p>Noktaları ayrıştır (kaç bilgi/karar var, kalıcı mı) → her nokta için ayrı döngü: genel mi proje mi → kategori/yol → <b>saf öğreti cümlesi</b> → zaman-bağlı ifade temizliği → <b>vault'ta var mı (istisnasız bak)</b> → varsa düzelt, yeterliyse yazma → bulunamadıysa arama stratejisini kullanıcıya bildir → tekrarı ortaklaştır → <b>6 ay sonra hangi terimle ararım</b> → dosya hâlâ saf mı.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Bug yazılmaz, nihai öğretiye dönüştürülür</strong>: "hash açığı vardı, kapatıldı" değil → "ödeme <code>HashParamsVal</code> ile doğrulanmalı". Kanıt (ticket/PNR/commit), hikâye ve kronoloji yazılmaz; dosya <b>şu anki gerçeği</b> taşır. Frontmatter yalnız <code>tags</code>+<code>aliases</code> (arama yüzeyi) — <code>date</code>/<code>confidence</code>/<code>source</code> bayatladığı için yazılmaz. Credential tam yazılır (vault lokal dosya sistemi).</p></div>
       </div>
     </div>
 
     <!-- obsidian-search -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="search"></i></div><div><div class="etitle">obsidian-search</div></div></div>
       <div class="ebody">
-        <p><strong>Vault'ta sorgu bazlı hedefli arama</strong> — aranan konuyu bulur, notları okur, sentezlenmiş cevap + wikilink kaynak listesi döner. Asıl işi <code>obsidian-searcher</code> agent'ına delege eder.</p>
+        <p><strong>Vault'ta sorgu bazlı hedefli arama</strong> — aranan konuyu bulur, dosyaları okur, sentezlenmiş cevap + wikilink kaynak listesi döner. <b>Ana agent arar</b>, subagent devri yok: devralan taraf bulguyu özetler ve teknik kesinlik serileştirmede kaybolur.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"obsidian'da ara", "X hakkında ne not almışım", "Y sorununu nasıl çözmüştük", <code>/obsidian-search [sorgu]</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Sorgu al → Folder'ı path filtresi için çıkar → CLI durumu → <code>obsidian-searcher</code> <b>background</b> çağır (QUERY/FOLDER/VAULT/CLI_ACTIVE) → sentez + kaynakları sun → güncelleme istenirse writer'a delege.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Agent <strong>salt-okur</strong>; yazma gerekince writer'a delege. Workflow kuralı gereği searcher her zaman background.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Sorguyu terimlere ayır (<b>TR + EN çifti</b> — tek dilde arama eksik döner) → <code>Glob</code> ile yol tahmini → <code>Grep</code> ile içerik (<code>docs/</code> hariç) → aday dosyaların başlıklarını oku → en alakalı 1-3 dosyayı tam oku → sentez + kaynaklar. BM25 (<code>obsidian search</code>) tamamlayıcı: tek terim + <code>path=</code> şart.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Salt-okur</strong>; yazma gerekince <code>obsidian-write</code>'a geçilir. <code>docs/</code> (300+ dosya) genel aramadan hariç tutulur, ayrıca aranır. Genel alan (<code>flight/</code>, <code>django/</code>) ile proje klasörü <b>birbirini tamamlar</b> — ikisine de bakılır. <strong>Sıfır sonuç bir bilgidir</strong>: "arama başarısız" değil, "bu konu henüz yazılmamış" — raporlanır, iş bitince yazılır.</p></div>
       </div>
     </div>
 
@@ -541,8 +482,8 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       <div class="ebody">
         <p><strong>Dış kaynağı (URL/kütüphane/PDF/repo) global docs klasörüne sectioned API reference olarak dokümante eder.</strong> Proje folder'ı altında DEĞİL — tüm projeler aynı docs havuzunu paylaşır.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"bu kaynağı dokümante et", "API'yi dokümante et", "kütüphaneyi kaydet", <code>/obsidian-doc-source &lt;kaynak&gt;</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Router ile tip tespit (GitHub→<code>gh</code>, web→WebFetch/crawl2md, library→<code>ctx7</code>, dosya→<code>markitdown</code>) → çakışma kontrol → <b>kaynağın tamamını oku</b> → temizle → bölümlere ayır (overview/auth/endpoints/...) → <code>writer MODE: doc-source</code>.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Çıktı <strong>proje-bağımsız global havuz</strong> — bir kez dokümante edilen Stripe API tüm projelerden erişilir. Library için Context7 zorunlu (bellekten yazmak yasak). Bounded extraction (&gt;50 dosya/&gt;500KB için sorar). <strong>Provenance zorunlu</strong>: writer çağrısına <code>provenance</code> bloğu geçilir, index.md'ye görünür "Kaynak ve Edinim" bölümü (kaynak + yöntem, ticket/mail referansı, credential wikilink, ✅/❌ doğrulama durumu) yazılır.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Router ile tip tespit (GitHub→<code>gh</code>, web→WebFetch/crawl2md, library→<code>ctx7</code>, dosya→<code>markitdown</code>) → çakışma kontrol → <b>kaynağın tamamını oku</b> → temizle → bölümlere ayır (overview/auth/endpoints/...) → <b>ana agent dosyaları kendisi yazar</b> (subagent devri yok).</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Çıktı <strong>proje-bağımsız global havuz</strong> — bir kez dokümante edilen Stripe API tüm projelerden erişilir. Library için Context7 zorunlu (bellekten yazmak yasak). Bounded extraction (&gt;50 dosya/&gt;500KB için sorar). <strong>Yazma devri yok</strong>: kaynağı okuyan agent dosyaları kendisi yazar — devirde içerik prompt'a serialize edilip teknik detay (parametre tipi, default, error code) kaybolur. Yorum/dolgu yasak, kaynağın teknik yapısı aktarılır. <strong>Provenance zorunlu</strong>: index.md'ye görünür "Kaynak ve Edinim" bölümü (kaynak + yöntem, ticket/mail referansı, credential wikilink, ✅/❌ doğrulama durumu) yazılır.</p></div>
       </div>
     </div>
 
@@ -660,73 +601,9 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
 <section id="agents">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="bot"></i> Agents · 8 adet</div>
+      <div class="kicker"><i data-lucide="bot"></i> Agents · 1 adet</div>
       <h2>İzole context'te çalışan uzman alt-agent'lar</h2>
       <p>Mimari: skill'ler ince tetikleyici, ağır iş agent'lara delege. Obsidian ekosistemi merkezde.</p>
-    </div>
-
-    <!-- obsidian-writer -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-edit"></i></div><div><div class="etitle">obsidian-writer</div><div class="emeta">4 mod · merkezi yazma noktası · model: sonnet</div></div></div>
-      <div class="ebody">
-        <p><strong>Vault'a MOC + wikilink yapısıyla not yazan merkezi agent.</strong> Tüm Obsidian yazma işlemlerinin tek noktasıdır; frontmatter, ilişkisel wikilink ve dedup kurallarını her modda korur. Tools: Read/Write/Edit/Bash/Glob/Grep.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="layers-3"></i> 4 Mod</div><ul>
-          <li><strong>init</strong> — orchestrator'dan; 4 alt agent çıktısından <code>index.md</code> MOC + Stack/Architecture/Recent-Activity/README-Summary üretir.</li>
-          <li><strong>append</strong> — Stop hook/ad-hoc; hook kaynaklı otomatik kayıtlara kayda değerlik guard'ı uygular (dar kritere girmeyen veya vault'ta zaten olan içerik yazılmadan SKIPPED/DUPLICATE döner; açık kullanıcı isteği ve skill onayı guard'ı atlar — kriterlerin kanonik kaynağı bu agent'tır), sonra içeriği konulara ayrıştırır (bağımsız konular → ayrı notlar, ilişkili konular → tek notta tutup etiketle/cross-link), kalıcı bilgi → <code>Learnings/{topic}.md</code>, zamanlı → <code>Journal/{date}.md</code>; MOC'a wikilink + last_verified.</li>
-          <li><strong>doc-source</strong> — dış kaynağı global <code>docs/&lt;source&gt;/</code> altına multi-file API reference; global docs MOC'unun tek sahibi.</li>
-          <li><strong>update</strong> — mevcut dosyada hedefli düzenleme (madde işaretle, section güncelle); "override etme"nin kasıtlı istisnası, vault-içi + .md güvenlik sınırı, en-az-değişiklik ilkesi.</li>
-        </ul></div>
-      </div>
-    </div>
-
-    <!-- obsidian-initializer -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="workflow"></i></div><div><div class="etitle">obsidian-initializer</div><div class="emeta">orchestrator · model: sonnet</div></div></div>
-      <div class="ebody">
-        <p><strong>Projeyi tarayıp vault'ta MOC + wikilink proje belleği oluşturan orchestrator.</strong> Kendisi içerik üretmez — 5 alt agent'ı koordine eder. Tools: Task/Read/Glob/Grep/Bash.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Hedef klasör hazırla → 4 alt agent'ı (<code>stack-detector</code>, <code>arch-mapper</code>, <code>readme-extractor</code>, <code>recent-activity</code>) <b>tek mesajda paralel</b> <code>Task</code> ile çağır → raporları <code>writer MODE: init</code>'e ver → sonuç raporu.</p></div>
-      </div>
-    </div>
-
-    <!-- obsidian-searcher -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="scan-search"></i></div><div><div class="etitle">obsidian-searcher</div><div class="emeta">salt-okur arama · model: haiku</div></div></div>
-      <div class="ebody">
-        <p><strong>Vault'ta sorgu bazlı arama yapan salt-okur agent.</strong> Aranan konuyu bulur, notları okur, sentezler, wikilink kaynaklarıyla bağlar. Hiçbir şey yazmaz. Tools: Bash/Read/Grep/Glob.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="route"></i> MOC → search → context → sentez</div><ul>
-          <li><strong>0. CLI ön-kontrol</strong> — kapalıysa filesystem fallback.</li>
-          <li><strong>1. Önce MOC</strong> — <code>index.md</code>'de eşleşen wikilink varsa notu direkt oku.</li>
-          <li><strong>2. BM25 search</strong> — tek/az terim (çok kelime AND'lenip boş döner), TR↔EN sinonim, path filtresi.</li>
-          <li><strong>3. Context</strong> — <code>search:context</code> ile eşleşen satır + çevresi.</li>
-          <li><strong>4. Oku + sentezle</strong> — 1-3 notu tam oku, backlinks keşfet, birleştir.</li>
-        </ul></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Çıktı</div><p>Sentezlenmiş paragraf (kod yolu/sayı/prosedür) + <code>### Kaynaklar</code> wikilink listesi. Her iddia bir wikilink'e dayanmalı (uydurma yok); bulunamazsa dürüstçe söyler.</p></div>
-      </div>
-    </div>
-
-    <!-- stack-detector -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="layers"></i></div><div><div class="etitle">stack-detector</div><div class="emeta">model: haiku</div></div></div>
-      <div class="ebody">
-        <p><strong>Tech stack tespiti</strong> (dil, framework, paket yöneticisi, major bağımlılıklar). Manifest dosyalarını okur, framework'ü işaret dosyalarından çıkarır, paket yöneticisini lock file'dan bulur. Belirsizse "Tespit edilemedi" — varsayım yapmaz. Tools: Read/Glob/Grep/Bash. <span class="emeta">obsidian-initializer çağırır.</span></p>
-      </div>
-    </div>
-
-    <!-- arch-mapper -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="map"></i></div><div><div class="etitle">arch-mapper</div><div class="emeta">model: haiku</div></div></div>
-      <div class="ebody">
-        <p><strong>Mimari haritalama</strong> (top-level dizinler, backend/frontend/admin ayrımı, katmanlar). Klasörleri rolüne göre sınıflar, Django app'lerini/monorepo paketlerini listeler, dosya sayılarıyla yapı çıkarır. <code>node_modules</code>/<code>.venv</code>/<code>dist</code> atlanır. Tools: Read/Glob/Grep/Bash. <span class="emeta">obsidian-initializer çağırır.</span></p>
-      </div>
-    </div>
-
-    <!-- readme-extractor -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-text"></i></div><div><div class="etitle">readme-extractor</div><div class="emeta">model: haiku</div></div></div>
-      <div class="ebody">
-        <p><strong>README özeti</strong> — proje amacı, setup adımları, ana özellikler ve komutlar. README yoksa boş rapor. README'de olmayan bilgi eklenmez (varsayım yok). Tools: Read/Glob. <span class="emeta">obsidian-initializer çağırır.</span></p>
-      </div>
-    </div>
-
-    <!-- recent-activity -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="activity"></i></div><div><div class="etitle">recent-activity</div><div class="emeta">model: haiku</div></div></div>
-      <div class="ebody">
-        <p><strong>Son 30 commit analizi</strong> — hot area'lar, en çok değişen dosyalar, aktif contributor'lar. <code>git log -30</code> ile dosya/klasör/contributor frekansı sayılır. Git repo değilse veya az commit varsa uyarlanır. Tools: Bash/Read. <span class="emeta">obsidian-initializer çağırır.</span></p>
-      </div>
     </div>
 
     <!-- web-scrape-cleaner -->
@@ -761,11 +638,11 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     </div>
 
     <!-- obsidian -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="network"></i></div><div><div class="etitle">Obsidian</div><div class="emeta">vault + CLI · proje belleği</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="network"></i></div><div><div class="etitle">Obsidian</div><div class="emeta">vault · bilgi tabanı</div></div></div>
       <div class="ebody">
-        <p><strong>Nedir:</strong> Markdown tabanlı, yerel bir bilgi tabanı uygulaması; notları <code>[[wikilink]]</code> ile birbirine bağlayıp graf oluşturur. Resmi CLI (<code>obsidian</code> komutu) ile programatik okuma/yazma/arama sağlar.</p>
-        <p><strong>Ne işe yarar:</strong> Proje-spesifik kalıcı bilgiyi (mimari karar, bilinen bug, credential, çalışan komut) kaybetmeden saklar ve BM25 ile aranabilir kılar.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><strong>Plugin'in kalbi.</strong> 5 skill (init/note/search/recall/audit) ve 3 agent (writer/initializer/searcher) doğrudan Obsidian üzerine kurulu; 4 hook (context/daily/userprompt-hint/stop-daily) vault ile konuşur. Vault <code>~/Documents/ObsidianVault/&lt;proje&gt;/</code> altında MOC + wikilink yapısındadır. CLI kapalıyken filesystem fallback'e (Read/Grep) düşer.</p></div>
+        <p><strong>Nedir:</strong> Markdown tabanlı yerel bilgi tabanı; dosyalar <code>[[wikilink]]</code> ile birbirine bağlanır. Vault düz dosya sistemidir — uygulama açık olmadan da okunur/yazılır. Resmi CLI (<code>obsidian</code> komutu) BM25 arama ekler, zorunlu değildir.</p>
+        <p><strong>Ne işe yarar:</strong> Kalıcı teknik gerçeği (sistem davranışı, kalıcı karar, credential) oturumlar arası taşır. Genel alan klasörleri tüm projeleri besler; proje klasörü yalnız kendine özgü olanı tutar.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><strong>Plugin'in kalbi.</strong> 3 skill (<code>obsidian-search</code>/<code>obsidian-write</code>/<code>obsidian-doc-source</code>) doğrudan Obsidian üzerine kurulu — hepsi <b>ana agent context'inde</b> çalışır, subagent yoktur. <code>userprompt-obsidian-hint.sh</code> her non-trivial prompt'ta arama+yazma davranışını hatırlatır. Vault <code>~/Documents/ObsidianVault/</code> altında klasör hiyerarşisidir (genel alan + proje); MOC/index.md kullanılmaz. Erişim <code>Glob</code>/<code>Grep</code>/<code>Read</code> ile, Obsidian CLI opsiyonel.</p></div>
       </div>
     </div>
 
