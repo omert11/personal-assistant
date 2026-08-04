@@ -1,11 +1,11 @@
 ---
 name: issue-workflow
-description: Issue/ticket/doc/gorsel kaynagini interaktif HTML analiz akisiyla analiz eder, cozer, kanitlar.
-when_to_use: Trigger — "su ticket'i coz", "issue-workflow ile bak", "bu hatayi worktree'de coz", "ticket analiz et ve duzelt", "su dokumandaki sorunu hallet", "/issue-workflow <ref|metin>". Bir issue/ticket/dokuman/gorsel/mesaj kaynagi verilip uctan uca (kaynak → HTML analiz → plan → cozum → kanit → commit) cozulmesi istendiginde. Tek seferlik kucuk duzeltmeler icin gerekmez; kok-neden analizi + izolasyon + kanit gerektiren islerde.
+description: Issue/ticket/doc/gorsel kaynagini HTML analiz akisiyla cozer, kanitlar.
+when_to_use: Trigger — "su ticket'i coz", "issue-workflow ile bak", "bu hatayi worktree'de coz", "ticket analiz et ve duzelt", "su dokumandaki sorunu hallet", "yonetici modunda", "fazlandirarak yap", "/issue-workflow <ref|metin>". Bir issue/ticket/dokuman/gorsel/mesaj kaynagi verilip uctan uca (kaynak → HTML analiz → plan → cozum → kanit → commit) cozulmesi istendiginde. Orta olcekte yonetici modu (subagent'lar yazar, ana agent dogrular), cok fazli buyuk islerde faz modu devreye girer. Tek seferlik kucuk duzeltmeler icin gerekmez.
 argument-hint: <ticket-ref | serbest-metin | dosya-yolu>
 disable-model-invocation: false
 effort: max
-allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, WebFetch, Workflow, EnterWorktree, ExitWorktree, EnterPlanMode, ExitPlanMode, Skill
+allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, Agent, SendMessage, TaskList, TaskGet, TaskStop, WebFetch, Workflow, EnterWorktree, ExitWorktree, EnterPlanMode, ExitPlanMode, Skill
 ---
 
 # Issue Workflow — Kaynak → HTML Analiz → Plan → Cozum → Kanit → Commit
@@ -137,7 +137,48 @@ Sonra **sohbet kapisi** — kullanici "Akisa devam et" diyene kadar bu adimda ka
 
 ---
 
+## Adim 4.5 — Uygulama modu kapisi (tek akis / yonetici / faz)
+
+B4 yol haritasi elde; is **tek elden mi yurutulecek, delege mi edilecek** burada karara baglanir.
+
+**Kullanici acikca soylediyse mod dogrudan acilir** (soru sorulmaz):
+- "yonetici modunda", "sen yonet subagent'lar yapsin", "dagit ve dogrula" → **Yonetici modu**
+- "fazlandirarak yap", "faz faz ilerle", "is paketlerine bol", "paralel agent'larla yurut" → **Faz modu**
+
+**Aksi halde `AskUserQuestion`** (header: "Mod") — agent asagidaki sinyallerden **en az ikisini**
+goruyorsa sorar; hicbiri yoksa sormadan tek akisla devam eder:
+
+- B4'te birbirinden **bagimsiz 2+ is paketi** var (ayrik dosya kumeleri)
+- **Sirali baglilik**: bir isin ciktisi digerinin girdisi
+- Is tek oturumda tek elden bitmeyecek buyuklukte (genis refactor, coklu modul, migration + UI + API)
+- Delege edilmezse kapsamin bir kismi kacinilmaz sekilde ertelenecek
+
+Secenekler `["Yonetici modu", "Faz modu", "Tek akis"]` — hangisinin **onerilen** oldugu asagidaki
+esige gore secilir ve label'a `(Recommended)` eklenir; aciklamada paket/faz sayisi ve gerekce
+tek cumleyle yazilir:
+
+| Durum | Onerilen mod | Ne degisir |
+|---|---|---|
+| Tek is paketi, kucuk kapsam | **Tek akis** (varsayilan) | Hicbir sey — Adim 5 ve 7 aynen |
+| 2-4 ayrik paket, sirali baglilik yok, tek oturumda biter | **Yonetici modu** | Adim 7 yerine **7Y** ([references/yonetici-modu.md](references/yonetici-modu.md)) |
+| 5+ paket veya sirali fazlar, izolasyon/merge gerekiyor | **Faz modu** | Adim 5 yerine **5F**, Adim 7 yerine **7F** ([references/faz-modu.md](references/faz-modu.md)) |
+
+- **Yonetici modu** → ana agent kod yazmaz: tek worktree'de ayrik dosya kumelerini subagent'lara
+  yaptirir, **kendisi dogrular ve kanitlari kendisi uretir**. Adim 5 (worktree + plan) degismez
+- **Faz modu** → sef/yonetici/dogrulayici katmanli otonom orkestrasyon; entegrasyon dali + WP
+  worktree'leri + merge turlari
+- Iki modda da diger adimlar (1-4, 6, 8, 8.5, 9, 10) **degismez**
+
+> Delegasyon **yalniz uygulamayi** dagitir. Adim 2 (kaynak) ve Adim 4 (analiz) sub-agent yasagi
+> her modda aynen gecerlidir — o iki adim her zaman ana ajanda kalir.
+
+---
+
 ## Adim 5 — Worktree ac + Plan modu
+
+> **Faz modunda:** bu adim yerine `references/faz-modu.md` Bolum 2 (**Adim 5F**) kosar —
+> entegrasyon worktree'si + faz/WP tablosu + durum dosyalari. Asagidaki plan modu, `SESSION_NAME`
+> ve Fable Model Baraji kurallari orada da aynen gecerlidir.
 
 Kaynaktan **anlamli, kebab-case** isim turet:
 - Plane issue → `fix-<issue-ident>` (orn `fix-proj-123`)
@@ -206,6 +247,17 @@ Sirayla (`--json` ile):
 ---
 
 ## Adim 7 — Uygula + Test + Kanit
+
+> **Yonetici modunda:** bu adim yerine `references/yonetici-modu.md` Bolum 3 (**Adim 7Y**) kosar —
+> ana agent kod yazmaz, isi ayrik dosya kumelerine bolup subagent'lara (`Agent`, `model: opus`)
+> yaptirir, her raporu **kendi kosturarak** dogrular; asagidaki test ortami + unique port + kanit
+> uretimi + durdurma adimlarini (7a-7d) **ana agent** yapar.
+>
+> **Faz modunda:** bu adim yerine `references/faz-modu.md` Bolum 3 (**Adim 7F**) kosar — sef faz
+> acar, yonetici agent'lar WP'leri kendi worktree'lerinde bitirir, bagimsiz dogrulayicilar PASS/FAIL
+> verir, sef merge eder ve sormadan sonraki faza gecer. Asagidaki `[SESSION_NAME]` loglama, izole
+> test ortami, unique port + arka plan, kanit uretimi ve **process durdurma** kurallari her WP
+> yoneticisi icin aynen gecerlidir (brief'e yazilir); kanitlar `$EVID/wp-<kod>/` altina duser.
 
 Plani uygula (`coding` kurallari: hata wrap, TODO yorumlari, workaround yok). Planda paralel is
 paketleri tanimlandiysa `Workflow` ile dagit — cikti dogrulamasi sende (`workflow` kurali;
@@ -333,9 +385,13 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
 2. Kaynak toplama — TAM detay, ANA AJAN             (plane-cli / Read / markitdown / WebFetch / diji-logs)
 3. HTML B1+B2+B3 yaz (user-render skill)            → SOHBET KAPISI ("Akisa devam et" gelene kadar duzenle/sohbet)
 4. HTML B4+B5+B6+B7 — ULTRATHINK, ANA AJAN          (acik konular KAPATILIR, riskler durust) → SOHBET KAPISI
+4.5 Uygulama modu kapisi                            (tek akis / yonetici modu / faz modu — kullanici soylerse dogrudan, yoksa 2+ sinyalde sor)
 5. Worktree ac (worktree skill) + EnterPlanMode     (SESSION_NAME=isim; tam plan + loglama stratejisi) → ExitPlanMode onayi
+   [faz modu] 5F: entegrasyon worktree + faz/WP tablosu + durum dosyalari (faz-durumu/kararlar/borc)
 6. Plane issue ise ISLEME AL — OTOMATIK             (started + self + start_date; dolu olana dokunma; idempotent)
 7. Uygula (+[SESSION_NAME] loglar) → test ortami → unique port + arka plan → kanit (loglardan teshis; SCREENSHOT zorunlu) → DURDUR
+   [yonetici modu] 7Y: ayrik dosya kumeleri → subagent'lar (opus) yazar → ANA AGENT dogrular + kanit uretir
+   [faz modu] 7F: brief → yonetici agent'lar (opus) → bagimsiz dogrulayici (PASS/FAIL) → merge → faz-kapanis dogrulamasi → sonraki faz (sormadan)
 8. HTML B8+B9+B10+B11 ekle (`Edit`) → SOHBET KAPISI ("Commit skill calistir" gelene kadar duzenle/sohbet)
 8.5 [SESSION_NAME] log temizligi — BLOKLAYICI       (gurultu SIL, faydali logdan etiketi cikar; grep bos donene kadar)
 9. commit skill                                      (teslimat + Plane kapama orada)
@@ -353,6 +409,17 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
 - **Sub-agent siniri**: Adim 2 (kaynak) ve Adim 4 (analiz) asla sub-agent'a verilmez; `Task`
   yalniz Adim 7 kanit uretiminde kullanilabilir. Obsidian arama/yazma da sub-agent'a
   verilmez — `obsidian-search`/`obsidian-write` ana agent context'inde calisir
+- **Yonetici modu** (Adim 4.5, [references/yonetici-modu.md](references/yonetici-modu.md)): orta
+  olcekli is (2-4 ayrik paket, tek oturum). Ana agent **kod yazmaz** — tek worktree'de dosya
+  kumelerini subagent'lara yaptirir, her raporu kendi kosturarak dogrular, uygulamayi ayaga
+  kaldirip **kanitlari kendisi uretir**. Ortusen dosyada paralel degil sirali; tur 2'de hala
+  olmuyorsa devralir; mimari ihlalde durur ve sorar
+- **Faz modu** (Adim 4.5 ile acilir, [references/faz-modu.md](references/faz-modu.md)): cok fazli
+  isi otonom yurutur — sef (ana oturum) faz acar/kapar ve merge eder, yonetici agent'lar kendi
+  worktree'lerinde WP'leri bitirir, **bagimsiz dogrulayici** agent'lar kanitla PASS/FAIL verir.
+  Yazan her el `opus`, salt-okunur `sonnet`, `haiku` yok. Kullaniciya yalniz sert duraklarda
+  gidilir (canliya alma, ayni WP'de 2 tur FAIL, mimari ihlal); faz gecisi sorulmaz. Sub-agent
+  yasagi (Adim 2/4) faz modunda da gecerli — dagitilan yalniz uygulamadir
 - **Plan onayi**: tek onay noktasi `ExitPlanMode` (Adim 5); acik konular ondan ONCE (Adim 4,
   B6) kapatilmis olur — plan modunda yeni tartisma acilmaz
 - **Plane isleme alma**: plan onayi SONRASI (Adim 6) — otomatik, onaysiz, idempotent; kapama
