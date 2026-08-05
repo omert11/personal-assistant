@@ -194,8 +194,8 @@
       <a class="btn btn-ghost" href="#ozet">Sunuma Başla <i data-lucide="arrow-down"></i></a>
     </div>
     <div class="hero-stats">
-      <div class="stat"><div class="num">14</div><div class="lbl">Kural</div></div>
-      <div class="stat"><div class="num">5</div><div class="lbl">Hook</div></div>
+      <div class="stat"><div class="num">15</div><div class="lbl">Kural</div></div>
+      <div class="stat"><div class="num">7</div><div class="lbl">Hook</div></div>
       <div class="stat"><div class="num">15</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">1</div><div class="lbl">Agent</div></div>
     </div>
@@ -219,7 +219,7 @@
         <p><code>commit</code> skill, kod değişen her teslimatta <code>/code-review</code>'u <strong>zorunlu</strong> çalıştırır — "hızlıca commit" dense bile. Dürüst review, hiçbir bulgu gizlenemez; soruları biriktirip tek onayla teslim eder. Plane issue oluşturup/kapatırken <strong>self atama, başlangıç/bitiş tarihi ve hata/geliştirme label'ını</strong> otomatik doldurur.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="scroll-text"></i></div><div class="body">
         <h3>Oturum Başı Kural Disiplini</h3>
-        <p>SessionStart'ta 14 global kural materialise edilir. Claude her oturumda tutarlı kurallarla çalışır: <code>uv</code> zorunlu, <code>AskUserQuestion</code> zorunlu, vault erişimi ana agent'ta, commit skill zorunlu.</p></div></div>
+        <p>SessionStart'ta 15 global kural materialise edilir. Claude her oturumda tutarlı kurallarla çalışır: <code>uv</code> zorunlu, <code>AskUserQuestion</code> zorunlu, vault erişimi ana agent'ta, commit skill zorunlu.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="wrench"></i></div><div class="body">
         <h3>Extension Builder</h3>
         <p>Claude Code'un 8 genişletme tipini (skill/plugin/agent/hook/MCP/output-style/channel/marketplace) resmi dökümanı <code>WebFetch</code> ile <em>canlı</em> çekerek üretir — schema uydurmaz.</p></div></div>
@@ -231,7 +231,7 @@
 <section id="rules">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="gavel"></i> Rules · 14 global kural</div>
+      <div class="kicker"><i data-lucide="gavel"></i> Rules · 15 global kural</div>
       <h2>Her oturumda yüklenen davranış disiplini</h2>
       <p><code>load-rules.sh</code> hook'u bu kuralları <code>~/.claude/rules/</code> altına materialise eder. Her biri Claude'un nasıl davranacağını belirler.</p>
     </div>
@@ -367,6 +367,14 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       </div>
     </div>
 
+    <!-- heavy-build -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="cpu"></i></div><div><div class="etitle">heavy-build</div><div class="emeta">Derleme Sırası</div></div></div>
+      <div class="ebody">
+        <p><strong>Ağır derlemeler proje ve dil fark etmeksizin tek global kilitte sıraya girer</strong> — paralel oturumlarda CPU/bellek sıkışması biter.</p>
+        <p><code>heavy &lt;komut&gt;</code> <code>/usr/bin/lockf</code> ile <code>~/.cache/heavy-build.lock</code>'u alır; doluysa kilidi tutan komut+pid ekrana yazılıp sırada beklenir (tavan <code>HEAVY_TIMEOUT</code>, varsayılan 1200 s; aşılırsa komut çalıştırılmaz, rc=75). Uzun ömürlü dev sunucuları (<code>cargo tauri dev</code>, <code>air</code>, <code>runserver</code>) kilide girmez — <code>heavy --low</code> ile <code>taskpolicy -b</code> arka plan QoS'una alınır, aksi hâlde kilidi saatlerce tutup guard'ın kendisi tıkanma sebebi olurdu. Uygulama iki katmanda: <code>heavy-guard.sh</code> PreToolUse hook'u (otomatik) ve <code>solo.yml</code> komutları (elle). PATH shim bilinçli kurulmadı — <code>cargo tree</code>/<code>go env</code> gibi anlık komutları da yakalayıp kırılganlık üretiyor.</p>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -374,9 +382,9 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
 <section id="hooks">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="zap"></i> Hooks · 5 hook, 2 event</div>
+      <div class="kicker"><i data-lucide="zap"></i> Hooks · 7 hook, 3 event</div>
       <h2>Oturum yaşam döngüsü otomasyonu</h2>
-      <p>SessionStart (6) · UserPromptSubmit (1) · Stop (1). Hepsi shell, bağımlılık minimal. Her hook ne yapıyor, nasıl çalışıyor ve ne kazandırıyor.</p>
+      <p>SessionStart (5) · PreToolUse (1) · UserPromptSubmit (1). Hepsi shell, bağımlılık minimal. Her hook ne yapıyor, nasıl çalışıyor ve ne kazandırıyor.</p>
     </div>
 
     <!-- load-rules -->
@@ -403,6 +411,24 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
         <p><strong>Her non-trivial prompt'a iki davranış enjekte eder.</strong> <b>ARAMA</b> — iş akışının herhangi bir anında ek efor gerektiren bir iş doğduğunda (sorun çözme, araştırma, doğrulama, log analizi, credential arama) o anda <code>obsidian-search</code> çağrılır; sonuç boşsa iş kendin yapılır, bulgu sonradan yazılır. <b>KAYIT</b> — kalıcı bilgi/karar doğduysa <code>obsidian-write</code> çağrılır; devam eden iş varsa yazma bitene kadar bekletilir ve kalan-iş raporuna dahil edilir. Kriterler ve akış skill dosyalarındadır; hook yalnız <em>ne zaman hangi skill</em> der.</p>
         <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Klasör çıkarılır, prompt &lt;15 char ise skip. ARAMA her prompt'ta. KAYIT geciktirmeli: <code>last_learning_hook</code>'tan 5 dk geçmişse eklenir. HINT tek satır (jq <code>--arg</code> çok satırı escape etmez), <code>hookSpecificOutput.additionalContext</code> ile basılır. HINT skill akışını <b>tekrarlamaz</b> — yalnız "ne zaman hangi skill" der, akış skill çağrılınca yüklenir.</p></div>
         <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Sıfırdan uğraşmadan önce geçmiş bilgi hatırlanır; kayda değer yeni bilgi rahatsız etmeden çıktıyla beraber kalıcılaşır — hem hatırlama hem öğrenme prompt akışına gömülür.</p></div>
+      </div>
+    </div>
+
+    <!-- heavy-guard -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="cpu"></i></div><div><div class="etitle">heavy-guard.sh</div><div class="emeta">PreToolUse · Bash</div></div></div>
+      <div class="ebody">
+        <p><strong>Ağır derlemeleri makine genelinde tek sıraya sokar:</strong> Bash komutu ağır bir derlemeyse <code>heavy bash -c '&lt;komut&gt;'</code> olarak yeniden yazılır ve arka plana alınır; uzun ömürlü dev sunucuları <code>heavy --low</code> ile kilitsiz, arka plan QoS'unda koşar. Paralel oturumlarda cargo + go aynı anda derlenip makineyi boğmaz.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>stdin'deki PreToolUse payload'ı <code>jq</code> ile okunur, komut iki ERE ile sınıflanır: <code>DEV_RE</code> (dev sunucusu) önce, sonra <code>HEAVY_RE</code> (whitelist — <code>cargo tree</code>, <code>go env</code>, <code>cargo fmt</code> gibi anlık komutlar kasten dışarıda). Eşleşirse <code>hookSpecificOutput.updatedInput</code> ile <code>tool_input</code> korunarak <code>command</code> değiştirilir; ağır sınıfta ayrıca <code>run_in_background: true</code> zorlanır — kilit beklemesi Bash tool'un 10 dk tavanını aşabilir. Orijinal komut <code>jq @sh</code> ile tırnaklanır, bileşik komutlar (<code>&amp;&amp;</code>, tırnak içeren) bozulmaz. Zaten <code>heavy</code>/<code>lockf</code>/<code>taskpolicy</code> içeren komut es geçilir. Desenler <code>~/.config/heavy/patterns.sh</code> ile ezilebilir; eşleşme yoksa çıktı üretilmez (exit 0, passthrough).</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Guard manuel disipline bağlı değil: hangi projede, hangi oturumda olursa olsun ağır derleme otomatik sıraya girer, dev sunucuları bloklanmaz.</p></div>
+      </div>
+    </div>
+
+    <!-- install-heavy -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="link"></i></div><div><div class="etitle">install-heavy.sh</div><div class="emeta">SessionStart</div></div></div>
+      <div class="ebody">
+        <p><strong><code>~/.local/bin/heavy</code> symlink'ini plugin'in <code>scripts/heavy.sh</code>'ine bağlar</strong> — böylece kilit sarmalayıcısı terminalden ve <code>solo.yml</code> komutlarından da çağrılabilir.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Kaynağa <code>chmod +x</code>, hedef dizin <code>mkdir -p</code>. Yalnız kendi symlink'ini yönetir: hedefte gerçek bir dosya varsa dokunmaz, symlink yanlış yeri gösteriyorsa düzeltir. SessionStart stdout'u context'e düştüğü için tamamen sessiz.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Plugin güncellemesi sarmalayıcıyı da günceller; kullanıcı ayrı kurulum yapmaz.</p></div>
       </div>
     </div>
 
