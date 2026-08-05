@@ -11,6 +11,38 @@
 # the same slots instead of fighting for cores.
 set -uo pipefail
 
+# Machine-local defaults (a 16 GB laptop may want a single slot where the shipped
+# default is 2). Only these knobs are read from the file; HEAVY_CONFIG itself is
+# not, since it already picked the file.
+CONFIG_VARS='HEAVY_SLOTS HEAVY_TIMEOUT HEAVY_STATE_DIR'
+CONFIG="${HEAVY_CONFIG:-$HOME/.config/heavy/config.sh}"
+if [ -f "$CONFIG" ]; then
+  # Read in a subshell: a config that aborts (unset var under set -u, a stray
+  # `exit`) must not take heavy down with it. The guard rewrites every build into
+  # a backgrounded `heavy bash -c ...`, so dying here would turn a typo in the
+  # config into a silent no-op that still reports success.
+  cfg_values=$(
+    set +u
+    for v in $CONFIG_VARS; do unset "$v"; done  # only file-set values come back
+    # shellcheck disable=SC1090
+    . "$CONFIG" >/dev/null 2>&1 || exit 1
+    for v in $CONFIG_VARS; do
+      eval "val=\${$v:-}"
+      [ -n "$val" ] && printf '%s=%s\n' "$v" "$val"
+    done
+    exit 0
+  ) || [ "${1:-}" = "__exec" ] ||  # the inner re-entry would repeat the warning
+    printf '[heavy] %s okunamadi, varsayilanlar kullaniliyor\n' "$CONFIG" >&2
+  # An env var on the call always wins; the file only fills in what is unset.
+  while IFS='=' read -r key val; do
+    [ -n "$key" ] || continue
+    eval "cur=\${$key:-}"
+    [ -n "$cur" ] || eval "$key=\$val"
+  done <<EOF
+$cfg_values
+EOF
+fi
+
 STATE_DIR="${HEAVY_STATE_DIR:-$HOME/.cache}"
 LOCK_FILE="$STATE_DIR/heavy-build.lock"
 HOLDER_FILE="$STATE_DIR/heavy-build.current"
@@ -43,6 +75,7 @@ ortam:
   HEAVY_SLOTS       ayni anda kosacak agir derleme sayisi (varsayilan 2)
   HEAVY_TIMEOUT     bekleme tavani, saniye (varsayilan 1200)
   HEAVY_STATE_DIR   kilit + holder dosyalarinin dizini (varsayilan ~/.cache)
+  HEAVY_CONFIG      makine-lokal ayar dosyasi (varsayilan ~/.config/heavy/config.sh)
 EOF
 }
 

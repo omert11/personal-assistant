@@ -18,6 +18,12 @@ HEAVY_SLOTS=1 heavy cargo test # bu koşu için tek slota düş
 - Slot havuzu: `~/.cache/heavy-build.lock.<n>`, `/usr/bin/lockf` ile (`flock` macOS'ta yok).
   `lockf` tek dosya kilitler, bu yüzden N slot = N kilit dosyası, round-robin denenir.
 - Slot sayısı `HEAVY_SLOTS` (varsayılan 2). Tek sıra istenirse `HEAVY_SLOTS=1`.
+- Makine-lokal ayar: `~/.config/heavy/config.sh` (`HEAVY_CONFIG` ile değiştirilir). Yalnız
+  `HEAVY_SLOTS` / `HEAVY_TIMEOUT` / `HEAVY_STATE_DIR` okunur; plugin güncellemesi dosyayı ezmez,
+  her çağrı için geçerlidir (Claude hook, solo, terminal, launchd). **Komut satırındaki env her
+  zaman üstün gelir** — dosya yalnız boş bırakılanı doldurur. Dosya alt kabukta okunur: bozuk bir
+  config (tanımsız değişken, `exit`) uyarı verip varsayılana düşer, derlemeyi sessizce atlamaz.
+  Bu makinede dosya `HEAVY_SLOTS=1` — 16 GB'da iki paralel Rust derlemesi swap'e giriyor.
 - Tutan süreç `~/.cache/heavy-build.current.<n>` dosyasına yazılır — bekleyen neyi beklediğini görür.
 - Bekleme tavanı `HEAVY_TIMEOUT` (varsayılan 1200 s). Tavan aşılırsa komut **çalıştırılmaz**,
   çıkış kodu 75 olur — takılan bir derleme herkesi süresiz bloklamasın.
