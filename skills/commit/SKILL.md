@@ -55,16 +55,22 @@ git diff
 - Sadece **non-kod dosyaları** (`.md`, `.json`, `.yml`, `.txt`, asset'ler) değişmişse atlanabilir.
 - Skip sadece kullanıcı **açıkça** "code-review atla" / "skip code-review" / "code-review çalıştırma" derse mümkün — bu durumda bulgu olarak "kullanıcı explicit skip istedi" diye işaretle.
 
-Review **built-in `/code-review` skill'i** ile çalıştırılır — akış **oturum modeline göre** belirlenir (aşağıdaki baraj). Effort seçimi aşağıda "Effort Seçimi". Skill'in tüm akışını ve verdiği bulguları olduğu gibi al; effort tavanını aşan kendi Workflow/subagent kurma.
+##### Nasıl Çalıştırılır — TEK YOL (MUTLAK)
 
-##### ⛔ Fable Model Barajı (MUTLAK — token-efficiency kuralı, esnetilemez)
+Agent `/code-review` skill'ini doğrudan çağıramaz. Review **ayrı bir Claude oturumuna Bash ile devredilir**:
 
-Code-review'un **Workflow-backed** varyantı (`high`/`ultra` → `Workflow({name: "code-review"})`) **hiçbir zaman doğrudan launch EDİLMEZ** — hazır script `agent()` çağrılarında model taşımaz, tüm agent'lar fable'ı devralır (kanıtlanmış maliyet: 2026-07-10, 20 agent × fable ≈ 2M token, harcama limiti aşımı). Bunun yerine tek kural:
+```bash
+cd <target_path> && claude --model opus -p '/code-review medium'
+```
 
-- **Ana oturum modeli Fable ise** → code-review **tek `general-purpose` subagent** ile `model: opus` verilerek çalıştırılır; subagent `code-review` `medium` akışını (8 finder angle + dedup, verify yok) **kendi context'inde inline** koşar, bulguları JSON döndürür. Yeni Workflow spawn etmez. Ana thread çıktıyı doğrular.
-- **Fable DEĞİLSE** → code-review'u **Claude kendisi inline** çalıştırır (subagent yok), `medium` akışını bu context'te koşar.
+- `<target_path>` = **çalışma klasörü** — repo kökü, worktree'de çalışılıyorsa worktree kökü. `cd` **zorunlu**: child oturum diff'ini kendi cwd'sinde hesaplar; path'i yalnız prompt'a yazmak worktree'de yanlış repo'yu review ettirir.
+- Bash çağrısı **arka planda** koşar (`run_in_background: true`), `timeout: 600000` verilir — sonuç bildirimi gelince çıktı okunur, asılı kalırsa timeout'la yakalanır.
+- **Recursion guard**: prompt'u `/code-review` ile başlayan bir oturumdaysan bu delegasyonu yapma — zaten review oturumusun, skill'i doğrudan koş.
+- Effort **her zaman `medium`** — agent yükseltmez, düşürmez. `high` / `xhigh` / `max` yalnızca kullanıcı açıkça isterse (o zaman komuttaki `medium` yerine yazılır).
+- Code-review için **subagent spawn etme**, `Workflow({name: "code-review"})` **launch etme** — tek yol yukarıdaki komut.
+- Komut çıktısındaki bulgular **ham hâliyle** alınır (aşağıdaki "Dürüst Review"). Komut hata verirse veya boş dönerse **sessizce geçme** — kullanıcıya raporla.
 
-Bu baraj "review zorunlu" kuralını gevşetmez: review yine yapılır, yalnızca fable devri ve kontrolsüz agent fan-out engellenir. Detay: `token-efficiency` kuralı → "Code Review — Tek Kural".
+Detay: `token-efficiency` kuralı → "Code Review — Tek Kural".
 
 ##### Dürüst Review — KESKİN KURAL
 
@@ -72,8 +78,7 @@ Bu baraj "review zorunlu" kuralını gevşetmez: review yine yapılır, yalnızc
 
 **Yasaklar:**
 - Bulguları "küçük", "önemsiz", "stil meselesi" diye **filtrelemek yasak** — tüm bulgular Soru 1'e ham haliyle dahil edilir.
-- Review effort'unu **işten bağımsız seçmek yasak** — effort değişikliğin karmaşıklığına göre kalibre edilir (aşağıdaki "Effort Seçimi"). Gereksiz yüksek effort de, kolaya kaçan düşük effort de hatadır.
-- Review'i **hızlandırmak için kısa kesmek yasak** — diff büyükse skill'in tam çalışmasını bekle, "muhtemelen sorun yok" diye atlama.
+- Review'i **hızlandırmak için kısa kesmek yasak** — diff büyükse komutun bitmesini bekle, "muhtemelen sorun yok" diye atlama.
 - Bulguyu **kullanıcıya sunmadan elemek yasak** — false positive olduğunu düşünsen bile bulguyu listele, kullanıcı karar versin.
 - Bulguları **özetlerken yumuşatmak yasak** — "minor issue" yerine review'in dediği şiddet seviyesini aynen aktar.
 - "Zaten test geçiyor" / "küçük değişiklik" / "trivial" gibi gerekçelerle review **atlanamaz**.
@@ -82,27 +87,20 @@ Bu baraj "review zorunlu" kuralını gevşetmez: review yine yapılır, yalnızc
 **Pozitif gereklilikler:**
 - Review çıktısındaki **her bulgu** Soru 1'in `question` metnine **şiddet + dosya:satır + kısa açıklama** ile dahil edilir.
 - Bulgu sayısı >5 ise hepsini listele, "ilk 5 + ..." şeklinde özetleme.
-- Review crash / timeout olursa **sessizce geçme** — kullanıcıya raporla, tekrar dene veya açıkça skip onayı al.
-- Review'in `high` effort'la verdiği "uncertain" bulgular bile listelenir — kullanıcı false positive olduğuna karar verebilir, sen değil.
-
-##### Effort Seçimi — Karmaşıklığa Göre Kalibre Et
-
-Effort, **yapılan işin karmaşıklığına** göre seçilir — ama agent kendi inisiyatifiyle **yalnızca `low` veya `medium`** seçebilir (effort tavanı `medium`). `git diff --stat` + diff içeriğine bakıp `low`/`medium` arasında karar ver. `high` / `xhigh` / `max` **yalnızca kullanıcı açıkça isterse** — agent kendiliğinden yükseltmez.
-
-| Effort | Ne zaman |
-|---|---|
-| `low` (küçük diff varsayılanı) | Tek-birkaç dosyada lokal, dar kapsamlı değişiklik: typo/rename/import, sabit/string güncelleme, küçük mantık eklemesi/düzeltmesi, test/docs/config değişikliği — kritik olmayan ve yan etkisi sınırlı işler |
-| `medium` (agent tavanı) | Sıradan feature/fix: birden çok dosyaya yayılan, gerçek iş mantığı taşıyan orta ölçekli değişiklik. Karmaşık/geniş yüzeyli/güvenlik-kritik/data-mutating işlerde de agent burada kalır — daha yükseği için kullanıcı onayı gerekir |
-| `high` / `xhigh` / `max` | **Sadece kullanıcı açıkça isterse** — agent kendi inisiyatifiyle seçmez |
-
-- **Küçük/lokal diff'lerde `low`'da kal**, orta ölçekli işte `medium`'a çık — ama agent bu ikisini aşmaz.
-- Değişiklik karmaşık/kritik olsa bile agent tavanı `medium`'dur; `high`+ gerektiğini düşünüyorsan bunu bulgu/uyarı olarak sun, kullanıcı `high` derse o zaman yükselt.
-- Effort seçimi review'in **dürüstlüğünü** etkilemez: seçilen seviyenin verdiği TÜM bulgular yine ham haliyle sunulur.
-- **Fable oturumunda çalıştırma yolu her effort için aynıdır** (tek opus subagent inline — yukarıdaki Fable Model Barajı); kullanıcı `high`+ istese bile Workflow-backed varyant launch edilmez.
+- Komut crash / timeout olursa **sessizce geçme** — kullanıcıya raporla, tekrar dene veya açıkça skip onayı al.
+- Review'in "uncertain" dediği bulgular bile listelenir — kullanıcı false positive olduğuna karar verebilir, sen değil.
 
 ##### Çağrı
 
-Effort'u yukarıdaki tabloya göre `low`/`medium` seç (Fable Model Barajı'ndaki yola göre çalıştır: fable → tek opus subagent inline, non-fable → Claude kendisi inline). Belirli bir dizine/dosyaya odaklanılması gerekiyorsa akışa bunu belirt. Döndürülen bulguların hepsini ham haliyle Soru 1'e taşı.
+```
+Bash(
+  command: "cd /path/to/repo-or-worktree && claude --model opus -p '/code-review medium'",
+  run_in_background: true,
+  timeout: 600000
+)
+```
+
+Sonuç bildirimi gelince çıktıyı oku, bulguların hepsini ham haliyle Soru 1'e taşı. Review koşarken bekleme — 3c/3d/3e adımlarını bu sırada yürüt, Soru 1'i kurmadan önce review çıktısını topla.
 
 #### 3c. Test Kontrolü
 - Değişen dosyaların test'i var mı? (`*.test.*`, `*_test.*`, `tests/`, `__tests__/`)

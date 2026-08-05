@@ -214,10 +214,10 @@ Plan **tum isleri kapsamali** — B4-B7'de kararlastirilanlarin somut uygulamasi
 > (`Workflow({name: ...})`) fable oturumunda dogrudan launch EDILMEZ** — once script kopyasina
 > model override yaz, `scriptPath` ile calistir; kopya mumkun degilse launch etme, kullaniciya
 > `AskUserQuestion` ile sor. **Code-review ozel kurali** (`token-efficiency` → "Code Review — Tek
-> Kural"): fable ise code-review tek `general-purpose` subagent `model: opus` ile `medium` akisini
-> inline kosar (yeni Workflow spawn etmez); fable degilse Claude kendisi inline kosar; effort
-> tavani `medium`. Ayni kural bu akisin cagirdigi `commit` skill'inin code-review adimi icin de
-> gecerlidir (kanitlanmis ihlal maliyeti: 2026-07-10, 20 agent x fable ~ 2M token, harcama limiti asimi).
+> Kural"): code-review skill'i dogrudan cagrilmaz, subagent/Workflow ile de kosturulmaz — tek yol
+> arka planda `Bash cd <calisma-klasoru> && claude --model opus -p '/code-review medium'`
+> (`timeout: 600000`; `/code-review` ile baslayan oturumda tekrar delege edilmez). Ayni kural bu akisin
+> cagirdigi `commit` skill'inin code-review adimi icin de gecerlidir.
 
 ```
 ExitPlanMode()
