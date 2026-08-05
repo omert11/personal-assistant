@@ -1,52 +1,69 @@
 #!/usr/bin/env bash
-# heavy — run one expensive build at a time, machine-wide.
+# heavy — cap how many expensive builds run at once, machine-wide.
 #
-#   heavy <cmd...>         take the global build lock, wait in line if busy
-#   heavy --low <cmd...>   background QoS, no lock (long-lived dev servers)
-#   heavy --status         who holds the lock right now
+#   heavy <cmd...>         take a build slot, wait in line if all are busy
+#   heavy --low <cmd...>   background QoS, no slot (long-lived dev servers)
+#   heavy --status         which slots are busy and with what
 #
-# macOS ships no flock(1); /usr/bin/lockf is the system equivalent.
-# The lock is a single file shared by every language and project, so a Rust
-# build and a Go build queue behind each other instead of fighting for cores.
+# macOS ships no flock(1); /usr/bin/lockf is the system equivalent. lockf holds
+# one file, so N concurrent slots are N lock files tried round-robin. Slots are
+# shared by every language and project: a Rust build and a Go build compete for
+# the same slots instead of fighting for cores.
 set -uo pipefail
 
 STATE_DIR="${HEAVY_STATE_DIR:-$HOME/.cache}"
 LOCK_FILE="$STATE_DIR/heavy-build.lock"
 HOLDER_FILE="$STATE_DIR/heavy-build.current"
 WAIT_TIMEOUT="${HEAVY_TIMEOUT:-1200}"
+SLOTS="${HEAVY_SLOTS:-2}"
+# A non-numeric or sub-1 slot count would leave the round-robin loop with
+# nothing to try, so the command would never run.
+case "$SLOTS" in
+  ''|*[!0-9]*) SLOTS=1 ;;
+  *) [ "$SLOTS" -lt 1 ] && SLOTS=1 ;;
+esac
+POLL_INTERVAL=2
+
+# lockf exits 75 (EX_TEMPFAIL) when it cannot take the lock. A wrapped command
+# may legitimately exit 75 too, so __exec remaps that to 175 and the caller maps
+# it back — otherwise a command exiting 75 would look like a busy slot and be
+# retried, running it twice.
+RC_LOCK_BUSY=75
+RC_CMD_75=175
 
 mkdir -p "$STATE_DIR"
 
 usage() {
   cat >&2 <<'EOF'
 kullanim:
-  heavy <komut...>        global derleme kilidini al, doluysa sirada bekle
-  heavy --low <komut...>  kilide girmeden arka plan QoS'unda calistir
-  heavy --status          kilidi kim tutuyor
+  heavy <komut...>        bos bir derleme slotu al, hepsi doluysa sirada bekle
+  heavy --low <komut...>  slot almadan arka plan QoS'unda calistir
+  heavy --status          slotlar dolu mu, hangi komutla
 ortam:
+  HEAVY_SLOTS       ayni anda kosacak agir derleme sayisi (varsayilan 2)
   HEAVY_TIMEOUT     bekleme tavani, saniye (varsayilan 1200)
   HEAVY_STATE_DIR   kilit + holder dosyalarinin dizini (varsayilan ~/.cache)
 EOF
 }
 
-# Non-blocking probe. Only used for the "who is ahead of me" message, so a
-# race here costs nothing.
-lock_is_free() {
-  lockf -kst 0 "$LOCK_FILE" true 2>/dev/null
+slot_is_free() {
+  lockf -kst 0 "$LOCK_FILE.$1" true 2>/dev/null
 }
 
 holder_line() {
-  sed -n 's/^cmd=//p' "$HOLDER_FILE" 2>/dev/null | head -1
+  sed -n 's/^cmd=//p' "$HOLDER_FILE.$1" 2>/dev/null | head -1
 }
 
 case "${1:-}" in
   --status)
-    if lock_is_free; then
-      echo "heavy: kilit bos"
-    else
-      echo "heavy: kilit dolu"
-      [ -f "$HOLDER_FILE" ] && cat "$HOLDER_FILE"
-    fi
+    for i in $(seq 1 "$SLOTS"); do
+      if slot_is_free "$i"; then
+        printf 'slot %s/%s: bos\n' "$i" "$SLOTS"
+      else
+        printf 'slot %s/%s: dolu\n' "$i" "$SLOTS"
+        [ -f "$HOLDER_FILE.$i" ] && sed 's/^/  /' "$HOLDER_FILE.$i"
+      fi
+    done
     exit 0
     ;;
   --low)
@@ -58,13 +75,17 @@ case "${1:-}" in
     exec "$@"
     ;;
   __exec)
-    # Internal: runs with the lock already held by the parent lockf.
+    # Internal: runs with the slot's lock already held by the parent lockf.
+    shift
+    slot="$1"
     shift
     printf 'pid=%s\nstarted=%s\ncwd=%s\ncmd=%s\n' \
-      "$$" "$(date '+%Y-%m-%d %H:%M:%S')" "$PWD" "$*" > "$HOLDER_FILE"
-    trap 'rm -f "$HOLDER_FILE"' EXIT
+      "$$" "$(date '+%Y-%m-%d %H:%M:%S')" "$PWD" "$*" > "$HOLDER_FILE.$slot"
+    trap 'rm -f "$HOLDER_FILE.$slot"' EXIT
     "$@"
-    exit $?
+    rc=$?
+    [ $rc -eq $RC_LOCK_BUSY ] && rc=$RC_CMD_75
+    exit $rc
     ;;
   -h|--help|"")
     usage
@@ -77,18 +98,33 @@ if ! command -v lockf >/dev/null 2>&1; then
   exec "$@"
 fi
 
-if ! lock_is_free; then
-  printf '[heavy] baska bir agir derleme calisiyor: %s\n' "$(holder_line || true)" >&2
-  printf '[heavy] sirada bekleniyor (tavan %ss)...\n' "$WAIT_TIMEOUT" >&2
-fi
+announced=0
+SECONDS=0
 
-lockf -kst "$WAIT_TIMEOUT" "$LOCK_FILE" "$0" __exec "$@"
-rc=$?
+while :; do
+  for i in $(seq 1 "$SLOTS"); do
+    lockf -kst 0 "$LOCK_FILE.$i" "$0" __exec "$i" "$@"
+    rc=$?
+    case $rc in
+      $RC_LOCK_BUSY) ;;              # slot busy, try the next one
+      $RC_CMD_75) exit 75 ;;         # the command itself exited 75
+      *) exit $rc ;;
+    esac
+  done
 
-# lockf exits 75 (EX_TEMPFAIL) when the timeout expires without the lock.
-if [ $rc -eq 75 ]; then
-  printf '[heavy] kilit %ss icinde alinamadi, komut CALISTIRILMADI: %s\n' \
-    "$WAIT_TIMEOUT" "$(holder_line || true)" >&2
-fi
+  if [ "$announced" -eq 0 ]; then
+    printf '[heavy] %s slotun hepsi dolu:\n' "$SLOTS" >&2
+    for i in $(seq 1 "$SLOTS"); do
+      printf '[heavy]   slot %s: %s\n' "$i" "$(holder_line "$i")" >&2
+    done
+    printf '[heavy] sirada bekleniyor (tavan %ss)...\n' "$WAIT_TIMEOUT" >&2
+    announced=1
+  fi
 
-exit $rc
+  if [ "$SECONDS" -ge "$WAIT_TIMEOUT" ]; then
+    printf '[heavy] %ss icinde slot acilmadi, komut CALISTIRILMADI\n' "$WAIT_TIMEOUT" >&2
+    exit 75
+  fi
+
+  sleep "$POLL_INTERVAL"
+done
