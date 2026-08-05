@@ -36,9 +36,13 @@ kontrol noktasi, isi tek elden yurutmekten hem hizli hem daha derli topludur.
    git/review calistirmaz — hepsi ana agentta, **faz sonunda tek seferde**.
 2. **Tek worktree.** Ek worktree, ek branch, merge turu yok.
 3. **Faz = sirali bagimlilik siniri.** Faz icindeki gorevler birbirinden bagimsiz ve **dosya-ayrik**tir.
-4. **Her faz bir workflow.** Faz icindeki gorevler o script'in `agent()` cagrilaridir.
-5. **Faz sonunda dogrulama + checkpoint commit + push.** Yarim faz bir sonrakine tasinmaz.
+4. **Fazlama workflow'un ICINDE yapilir.** Sirali fazlar ayri ayri workflow'lara bolunmez —
+   tek script `phase()` + ardisik `parallel()` bloklariyla bir kac fazi pes pese kosturur.
+   **Paralel workflow YOK** (bkz. Bolum 4).
+5. **Bir workflow = bir dogrulama birimi.** Dogrulama + checkpoint commit workflow **bitiminde**
+   yapilir, her faz sonunda degil — ara duraklar isi yavaslatir.
 6. **Duzeltme ucuz tarafta yapilir**: kucuk bulgu ana agentta, buyuk bulgu seti fix workflow'da.
+7. **Ana agent is bitene kadar durmaz** — turu ara raporla kapatmaz (Bolum 11).
 
 ---
 
@@ -47,9 +51,14 @@ kontrol noktasi, isi tek elden yurutmekten hem hizli hem daha derli topludur.
 ```
 [Ana agent] plandaki fazlari sirala (Adim 5'te belirlendi)
    |
-   +-> Faz N (ve ayrik ise N+1) icin workflow script yaz -> Workflow baslat
+   +-> fazlari DOGRULAMA BIRIMLERINE grupla (2-4 faz = 1 workflow, Bolum 4)
    |
-   +-> bitis bildirimi -> ciktilari DOGRULA (dosyalar gercekten degisti mi)
+   +-> birimin script'ini yaz: phase('Faz A') parallel[...] -> phase('Faz B') parallel[...]
+   |   -> Workflow baslat (TEK workflow; paralel workflow yok)
+   |
+   +-> bitis bildirimi geldi -> ARA RAPOR YAZMA, hemen dogrulamaya gec
+   |
+   +-> ciktilari DOGRULA (git diff: dosyalar gercekten degisti mi)
    |
    +-> build + test + lint  (heavy kurali: agir derleme `heavy` + arka plan)
    |
@@ -60,7 +69,7 @@ kontrol noktasi, isi tek elden yurutmekten hem hizli hem daha derli topludur.
    |
    +-> checkpoint commit + push  (Bolum 8)
    |
-   +-> sonraki faz
+   +-> sonraki dogrulama birimi — AYNI TURDA baslat (Bolum 11)
    |
    +-> tum fazlar bitti -> kanit toplama (Adim 7a-7d, ana agent) -> Adim 8
 ```
@@ -69,11 +78,12 @@ kontrol noktasi, isi tek elden yurutmekten hem hizli hem daha derli topludur.
 
 | Katman | Nerede | Ne zaman |
 |---|---|---|
-| **Oturum ici canli** | `TaskCreate`/`TaskUpdate` — her faz bir gorev | Faz basi `in_progress`, commit sonrasi `completed` |
-| **Ekranda gorunur** | `~/.pa-render/active/<isim>/faz-durumu.html` (PA Render **ek dosya**) | Faz basi + faz sonu (asagi) |
-| **Kalici kayit** | Checkpoint commit + push (`wip(<faz>): …`) | Faz yesile donunce |
+| **Oturum ici canli** | `TaskCreate`/`TaskUpdate` — her dogrulama birimi bir gorev | Workflow basi `in_progress`, commit sonrasi `completed` |
+| **Ekranda gorunur** | `~/.pa-render/active/<isim>/faz-durumu.html` (PA Render **ek dosya**) | Workflow basi + dogrulama + commit (asagi) |
+| **Kalici kayit** | Checkpoint commit + push (`wip(<birim>): …`) | Birim yesile donunce |
 
-Faz ici ilerleme ayrica `/workflows` agacinda canli gorunur; workflow bitince bildirim gelir.
+Faz faz ilerleme ayrica `/workflows` agacinda canli gorunur (`phase()` gruplari) — ana agent
+buraya bakmak icin durmaz, workflow bitis bildirimini bekler.
 
 #### `faz-durumu.html` — PA Render ek dosyasi
 
@@ -121,10 +131,12 @@ Iskelet (`user-render` kit'i; `<style>` yazma):
 Durum degerleri: `bekliyor` (muted) · `kosuyor` (info) · `dogrulaniyor` (warn) · `duzeltme` (warn) ·
 `tamam` (ok) · `bloke` (err).
 
-**Guncelleme anlari** (her biri tek `Edit`):
-1. Faz workflow'u baslarken → `kosuyor`
+**Guncelleme anlari** (her biri tek `Edit`; birimdeki tum fazlar tek satirda degil, faz basina satir):
+1. Birimin workflow'u baslarken → birimdeki fazlar `kosuyor`
 2. Workflow bitip dogrulama baslarken → `dogrulaniyor`; review bulgusu cikarsa `duzeltme` + bulgu ozeti
 3. Checkpoint commit sonrasi → `tamam` + commit SHA'si
+
+Arka planda is beklerken bu dosyayi guncellemek "bosta durmama" isinin parcasidir (Bolum 11).
 
 Oturum olurse yeni oturum bu dosyadan + `git log`'dan devam eder — plan analiz sayfasinda,
 nerede kalindigi burada.
@@ -132,57 +144,90 @@ nerede kalindigi burada.
 ### Ornek sıralama
 
 ```
-Faz A: G1, G2, G3     Faz B: G4, G5     Faz C: G6, G7, G8     Faz D: G9, G10
+Faz A: G1, G2, G3   Faz B: G4, G5   Faz C: G6, G7, G8   Faz D: G9, G10   Faz E: G11, G12
 
-1. Faz A workflow + Faz B workflow  (A ve B tamamen ayriksa PARALEL)
-2. build + test + lint + code-review
+Birim 1 = Faz A + B + C   |   Birim 2 = Faz D + E
+
+1. Workflow #1 (TEK cagri):  phase A -> parallel[G1,G2,G3]
+                             phase B -> parallel[G4,G5]
+                             phase C -> parallel[G6,G7,G8]
+2. build + test + lint + code-review        (ilk ve tek durak)
 3. gerekiyorsa fix workflow
 4. checkpoint commit + push
-5. Faz C workflow
-6. build + test + lint + code-review
-7. fix (gerekirse) -> commit + push
-8. ... son faza kadar
-9. Kanit toplama -> Adim 8 (analiz sayfasi) -> 8.5 -> 9 (commit skill)
+5. Workflow #2 (TEK cagri):  phase D -> parallel[G9,G10]
+                             phase E -> parallel[G11,G12]
+6. build + test + lint + code-review -> fix -> commit + push
+7. Kanit toplama -> Adim 8 (analiz sayfasi) -> 8.5 -> 9 (commit skill)
 ```
+
+Eski (yanlis) desen: her fazi ayri workflow yapip her fazda durup dogrulamak. Bu her faz
+arasinda bir baslatma + bekleme + dogrulama duragi uretir; is buyudukce duraklar isin kendisinden
+uzun surer.
 
 ---
 
-## 4. Fazlama ve paralellik kurallari
+## 4. Fazlama, gruplama, tavan
 
 ### Faz kurma
 - Bir gorevin **ciktisi** baska bir gorevin **girdisiyse** ayni fazda olamaz — sonraki faza gider
 - Ayni dosyaya yazan iki gorev ayni fazda **paralel** olamaz: ya tek goreve birlestir ya da
-  workflow icinde **ardisik** kostur (`await agent(A)` sonra `await agent(B)`)
+  script icinde **ardisik** kostur (`await agent(A)` sonra `await agent(B)`)
 - Her gorev icin **yazabilecegi dosya yollari** onceden belirlenir; ortusme yoksa paralel
 
-### Iki fazi paralel kosturma
-Iki faz **ancak** su ucu birden sagliyorsa paralel kosar:
-1. Dosya kumeleri kesismiyor
-2. Hicbiri digerinin ciktisina bagli degil
-3. Ikisinin toplam agent sayisi tavani asmiyor (asagi)
+### Fazlar workflow ICINDE zincirlenir
+Sirali fazlar ayri workflow cagrilarina bolunmez. Tek script'te:
+
+```js
+phase('Faz A'); const a = await parallel([...])   // A biter
+phase('Faz B'); const b = await parallel([...])   // B, A'nin ardindan
+```
+
+`parallel()` bir bariyerdir — bir sonraki `phase()` ancak oncekinin tamami bitince baslar, yani
+sirali baglilik script icinde zaten korunur. Ana agent araya girmez, bekleme/baslatma duragi olusmaz.
+
+Gorev basina zincir gerekiyorsa (A'nin ciktisi B'ye girdi, item bazinda) `pipeline()` kullan —
+bariyersiz akar, en hizlisidir.
+
+### Dogrulama birimi — kac faz bir workflow'a girer
+Bir workflow = **bir dogrulama + commit birimi**. Olcut: *build/test'in anlamli sonuc verdigi en
+kucuk butun*. Pratikte **2-4 mantiksal faz**.
+
+| Durum | Ne yap |
+|---|---|
+| Fazlar ayni modulu/katmani tamamliyor | Ayni birime koy — arada dogrulamak bosuna durak |
+| Bir faz mimariyi degistiriyor (sema, migration, ortak arayuz) | Kendi birimi olsun — hatasi sonrakileri komple bozar |
+| Faz cikti uretmiyor, yalniz hazirlik (dosya tasima, rename) | Sonraki fazla ayni birime koy |
+| Toplam gorev sayisi 15'i asiyor | Ikiye bol (oturum workflow buyuklugu rehberi: 15 agent alti) |
+
+### Paralel workflow — YOK
+Iki workflow ayni anda **calistirilmaz**. Gerekce: her workflow kendi esszamanlilik havuzunu acar,
+iki tanesi makinenin cekirdek sayisini asar (`heavy-build` kurali) ve kazanc yerine swap uretir;
+ayrica iki ayri bitis bildirimi ana agentta ek durak demektir. Ayrik isler **ayni script icinde**
+ayri `phase()` bloklari olarak kosar.
 
 ### Agent tavani (M1 Pro 8 cekirdek / 16 GB)
-| Durum | Tavan |
-|---|---|
-| Tek workflow kosuyor | **<= 8 agent** |
-| Iki workflow paralel | **her biri <= 4 agent** (toplam <= 8) |
-
-Is tavani asiyorsa **daha fazla esszamanli agent acma** — workflow **icinde asamalandir**:
-gorevleri `parallel()` bloklarina veya `pipeline()` stage'lerine bol, ardisik kossunlar. Tavan
-makinenin sinirindan gelir; asmak swap'e girer ve sirayla kosmaktan yavaslatir (`heavy-build` kurali).
+- **Bir `parallel()` blogunda <= 6 agent** — harness cap'i zaten `min(16, cekirdek-2)` uygular;
+  fazlasini vermek kuyruk olusturur, hiz kazandirmaz
+- **Workflow toplaminda <= 15 agent** (oturumun workflow buyuklugu rehberi)
+- Is bu tavanlari asiyorsa esszamanli agent artirma — **daha cok `phase()` blogu** ekle, ardisik kossunlar
 
 ---
 
 ## 5. Workflow script sablonu
 
-Her faz icin **inline `script`** ile `Workflow` cagrilir (dosyaya yazma; tool zaten script'i
-oturum dizinine kaydeder ve `scriptPath` doner — duzeltme gerekirse o yol kullanilir).
+Her **dogrulama birimi** icin (birkac faz birden) **inline `script`** ile `Workflow` cagrilir
+(dosyaya yazma; tool script'i oturum dizinine kaydeder ve `scriptPath` doner — duzeltme gerekirse
+`scriptPath` + `resumeFromRunId` ile degismeyen `agent()` cagrilari onbellekten gelir).
 
 ```js
 export const meta = {
-  name: 'faz-a-<konu>',
-  description: '<faz tek cumleyle>',
-  phases: [{ title: 'Uygula', detail: '<n> gorev, dosya-ayrik' }],
+  name: 'birim-1-<konu>',
+  description: '<birim tek cumleyle>',
+  phases: [
+    { title: 'Faz A', detail: '<n> gorev, dosya-ayrik' },
+    { title: 'Faz B', detail: 'A bittikten sonra' },
+    { title: 'Faz C', detail: 'B bittikten sonra' },
+  ],
 }
 
 const RAPOR = {
@@ -198,17 +243,29 @@ const RAPOR = {
   },
 }
 
-const GOREVLER = [
-  { kod: 'G1', brief: `<agent brief'i — Bolum 6>` },
-  { kod: 'G2', brief: `...` },
+const FAZLAR = [
+  { ad: 'Faz A', gorevler: [ { kod: 'G1', brief: `<agent brief'i — Bolum 6>` },
+                             { kod: 'G2', brief: `...` } ] },
+  { ad: 'Faz B', gorevler: [ { kod: 'G3', brief: `...` } ] },
+  { ad: 'Faz C', gorevler: [ { kod: 'G4', brief: `...` } ] },
 ]
 
-phase('Uygula')
-const sonuc = await parallel(GOREVLER.map(g => () =>
-  agent(g.brief, { label: `uygula:${g.kod}`, phase: 'Uygula', model: 'opus', schema: RAPOR })
-))
-return { gorevler: sonuc.filter(Boolean) }
+const cikti = []
+for (const f of FAZLAR) {
+  phase(f.ad)                                     // ilerleme agacinda ayri grup
+  const sonuc = await parallel(f.gorevler.map(g => () =>
+    agent(g.brief, { label: `${f.ad}:${g.kod}`, phase: f.ad, model: 'opus', schema: RAPOR })
+  ))
+  cikti.push({ faz: f.ad, gorevler: sonuc.filter(Boolean) })
+  log(`${f.ad} bitti — ${sonuc.filter(Boolean).length}/${f.gorevler.length}`)
+}
+return { fazlar: cikti }
 ```
+
+- `parallel()` bariyer oldugu icin faz sirasi script icinde korunur — **ana agent araya girmez**
+- Bir onceki fazin ciktisi sonraki fazin brief'ine girecekse `f.gorevler` brief'ini dongude
+  `cikti`'dan besle (ornegin uretilen dosya listesi)
+- Item bazinda zincir gerekiyorsa `pipeline(items, stage1, stage2)` — bariyersiz, en hizlisi
 
 - **Her `agent()` cagrisinda `model` acikca yazilir** (`token-efficiency` kurali). Kod/sema/test
   yazan → `opus`; yalnizca arama/envanter cikaran → `sonnet`. `haiku` kullanilmaz.
@@ -288,19 +345,21 @@ Sirayla:
 
 ## 8. Checkpoint commit + push
 
-Faz yesile dondugunde:
+Birim yesile dondugunde:
 
 ```bash
-git add <faz kapsamindaki dosyalar>      # `git add -A` / `git add .` YOK
-git commit -m "wip(<faz>): <kisa konu>"   # Co-Authored-By satiri eklenir
-git push -u origin <worktree-branch>      # ilk fazda -u, sonrakilerde `git push`
+git add <birim kapsamindaki dosyalar>       # `git add -A` / `git add .` YOK
+git commit -m "wip(<birim>): <kisa konu>"    # Co-Authored-By satiri eklenir
+git push -u origin <worktree-branch>         # ilk seferde -u, sonrakilerde `git push`
 ```
 
 - Bu **ara commit**tir, teslimat degil — bu yuzden `commit` skill cagrilmaz. Nihai teslimat
   (kalite kapisi + PR + Plane kapama) **Adim 9**'da `commit` skill'in isidir (`before-commit` kurali).
 - `--no-verify` yok: pre-commit hook fail olursa duzelt, tekrar dene.
-- Push, oturum olse bile isin kaybolmamasini saglar; yarim faz push edilmez (yalniz yesile
-  donmus faz).
+- Push, oturum olse bile isin kaybolmamasini saglar; yarim birim push edilmez (yalniz yesile
+  donmus birim).
+- Commit atildiktan **hemen sonra** sonraki birimin workflow'u ayni turda baslatilir (Bolum 11) —
+  commit sonrasi kullaniciya donup beklemek yasak.
 
 ---
 
@@ -325,4 +384,42 @@ Tum fazlar bitince ana agent:
 - Bir faz kismen bittiyse "bitti" denmez; ne bitti / ne kaldi ayri yazilir.
 - Agent'in `assumptions`/`open_questions` alanlari **okunur ve raporlanir** — sessizce yutulmaz;
   is akisini degistiren bir varsayim varsa analiz sayfasina islenir.
-- Faz sonu review'i atlanamaz; "kucuk faz" gerekce degildir.
+- Birim sonu review'i atlanamaz; "kucuk birim" gerekce degildir.
+
+---
+
+## 11. Kesintisiz yurutme — ana agent is bitene kadar durmaz
+
+Akisin en pahali kaybi **olu zaman**: workflow biter, ana agent kisa bir ozet yazip turu kapatir,
+kullanici "devam" yazana kadar hicbir sey olmaz. Bu yasaktir.
+
+### Turu kapatmanin izin verilen UC hali
+1. **Tum fazlar bitti** — kanit toplama + Adim 8 sohbet kapisina gelindi
+2. **Sert durak** — mimari ihlal, kullanici karari gerektiren belirsizlik, iki tur ust uste
+   cozulemeyen hata (`AskUserQuestion` ile sorulur)
+3. **Kullanici mudahalesi** — kullanici akisi kesti
+
+Bunlarin disinda tur kapatilmaz. "Faz A bitti, devam edeyim mi?" diye **SORMA** — `ExitPlanMode`
+onayi zaten alindi, plan onaylandi demek "sonuna kadar yurut" demektir.
+
+### Bildirim geldiginde
+- Workflow / arka plan Bash bitis bildirimi geldiginde **ara rapor yazma** — dogrudan sonraki
+  adima gec (dogrula → duzelt → commit → sonraki workflow'u baslat), hepsi **ayni turda**
+- Kullaniciya bilgi vermek gerekiyorsa yol `faz-durumu.html` guncellemesidir, mesaj degil
+
+### Beklerken bosta durma
+Arka planda is varken (build, test, code-review, workflow) ana agent **paralel ilerleyebilecek
+isleri o sirada yapar**:
+- `faz-durumu.html` guncelle
+- sonraki birimin workflow script'ini yaz (hazir beklesin)
+- degismis dosyalari oku, review bulgusuna hazirlan
+
+### Bildirim gelmezse (asilma)
+Bir isten makul surede haber yoksa (en uzun beklenen adimin ~2 kati) durumu **kendin tara**:
+`TaskList` (workflow/agent durumu), `BashOutput` (arka plan komut ciktisi), `git status`.
+Asili is varsa `TaskStop` + ayni script'i `scriptPath` + `resumeFromRunId` ile yeniden baslat —
+degismeyen `agent()` cagrilari onbellekten doner, bastan kosmaz.
+
+Bir kosulun gerceklesmesini beklemek gerekiyorsa `sleep` **kullanma** (on planda bloklu):
+`Bash(run_in_background: true)` + `until <kosul>; do sleep 2; done` deseni ya da `Monitor` kullan —
+kosul saglaninca bildirim gelir, ana agent uyanir.

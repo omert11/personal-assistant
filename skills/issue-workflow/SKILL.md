@@ -249,11 +249,12 @@ Sirayla (`--json` ile):
 ## Adim 7 — Uygula + Test + Kanit
 
 > **Yonetici modunda:** bu adim yerine `references/yonetici-modu.md` Bolum 3 (**Adim 7Y**) kosar —
-> her faz bir `Workflow` script'iyle uygulanir (ad-hoc `Agent` turu yok), faz sonunda ana agent
-> **tek noktada** dogrular (cikti + build + test + lint + code-review), gerekirse duzeltir,
-> checkpoint commit + push atar. Asagidaki `[SESSION_NAME]` loglama kurali agent brief'lerine
-> yazilir; test ortami + unique port + kanit uretimi + durdurma (7a-7d) **tum fazlar bittikten
-> sonra ana agent tarafindan** kosulur.
+> fazlar **dogrulama birimlerine** gruplanir (2-4 faz), her birim **tek `Workflow` script'inde**
+> ardisik `phase()` bloklariyla kosar (ad-hoc `Agent` turu ve paralel workflow YOK), birim sonunda
+> ana agent **tek noktada** dogrular (cikti + build + test + lint + code-review), gerekirse duzeltir,
+> checkpoint commit + push atar ve **ayni turda** sonraki birimi baslatir. Asagidaki `[SESSION_NAME]`
+> loglama kurali agent brief'lerine yazilir; test ortami + unique port + kanit uretimi + durdurma
+> (7a-7d) **tum fazlar bittikten sonra ana agent tarafindan** kosulur.
 
 Plani uygula (`coding` kurallari: hata wrap, TODO yorumlari, workaround yok). Planda paralel is
 paketleri tanimlandiysa `Workflow` ile dagit — cikti dogrulamasi sende (`workflow` kurali;
@@ -386,7 +387,7 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
    [yonetici modu] plan fazlanir: sirali fazlar + gorev basina yazilabilir dosya yollari
 6. Plane issue ise ISLEME AL — OTOMATIK             (started + self + start_date; dolu olana dokunma; idempotent)
 7. Uygula (+[SESSION_NAME] loglar) → test ortami → unique port + arka plan → kanit (loglardan teshis; SCREENSHOT zorunlu) → DURDUR
-   [yonetici modu] 7Y: faz basina Workflow (agent'lar yalniz yazar) → ANA AGENT dogrular (build+test+lint+code-review) → fix → checkpoint commit + push → sonraki faz; kanit en sonda
+   [yonetici modu] 7Y: 2-4 faz = 1 Workflow (script ici ardisik phase blogu; paralel workflow yok) → ANA AGENT dogrular (build+test+lint+code-review) → fix → commit + push → AYNI TURDA sonraki birim; kanit en sonda
 8. HTML B8+B9+B10+B11 ekle (`Edit`) → SOHBET KAPISI ("Commit skill calistir" gelene kadar duzenle/sohbet)
 8.5 [SESSION_NAME] log temizligi — BLOKLAYICI       (gurultu SIL, faydali logdan etiketi cikar; grep bos donene kadar)
 9. commit skill                                      (teslimat + Plane kapama orada)
@@ -405,15 +406,18 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
   yalniz Adim 7 kanit uretiminde kullanilabilir. Obsidian arama/yazma da sub-agent'a
   verilmez — `obsidian-search`/`obsidian-write` ana agent context'inde calisir
 - **Yonetici modu** (Adim 4.5, [references/yonetici-modu.md](references/yonetici-modu.md)): orta
-  ve buyuk isler. Is **fazlara** bolunur, her faz **bir `Workflow` script'iyle** uygulanir —
-  ad-hoc `Agent`/`SendMessage` turu YOK. Agent'lar yalniz kod yazar (test/build/lint/git yasak,
-  salt-okuma self-check serbest); **dogrulama tek noktada ana agentta**: cikti + build + test +
-  lint + code-review. Ayrik iki faz paralel kosabilir (agent tavani: tek workflow <=8, paralelde
-  her biri <=4; asan is workflow **icinde** asamalandirilir). Faz sonu checkpoint commit + push;
-  nihai teslimat yine Adim 9 `commit` skill. Her `agent()` cagrisinda acik model (yazan `opus`,
-  salt-okunur `sonnet`, `haiku` yok). **Durum takibi uc katman**: `TaskCreate`/`TaskUpdate`
-  (oturum ici), `~/.pa-render/active/<isim>/faz-durumu.html` (PA Render ek dosyasi — dashboard'da
-  canli), checkpoint commit + push (kalici)
+  ve buyuk isler. Is fazlanir, fazlar **dogrulama birimlerine** gruplanir (2-4 faz) ve her birim
+  **tek `Workflow` script'inde** ardisik `phase()` bloklariyla kosar — **paralel workflow YOK**,
+  ad-hoc `Agent`/`SendMessage` turu YOK. `parallel()` bariyeri faz sirasini script icinde korur,
+  ana agent araya girmez (fazlar arasi olu zaman olmaz). Agent'lar yalniz kod yazar
+  (test/build/lint/git yasak, salt-okuma self-check serbest); **dogrulama tek noktada ana agentta**,
+  birim sonunda: cikti + build + test + lint + code-review → fix → checkpoint commit + push →
+  **ayni turda** sonraki birim. Tavan: bir `parallel()` blogunda <=6 agent, workflow toplaminda
+  <=15. Her `agent()` cagrisinda acik model (yazan `opus`, salt-okunur `sonnet`, `haiku` yok).
+  **Ana agent is bitene kadar durmaz** — tur yalniz uc halde kapanir: tum fazlar bitti, sert durak,
+  kullanici mudahalesi. **Durum takibi uc katman**: `TaskCreate`/`TaskUpdate` (oturum ici),
+  `~/.pa-render/active/<isim>/faz-durumu.html` (PA Render ek dosyasi — dashboard'da canli),
+  checkpoint commit + push (kalici)
 - **Plan onayi**: tek onay noktasi `ExitPlanMode` (Adim 5); acik konular ondan ONCE (Adim 4,
   B6) kapatilmis olur — plan modunda yeni tartisma acilmaz
 - **Plane isleme alma**: plan onayi SONRASI (Adim 6) — otomatik, onaysiz, idempotent; kapama
