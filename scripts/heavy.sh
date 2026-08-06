@@ -46,6 +46,7 @@ fi
 STATE_DIR="${HEAVY_STATE_DIR:-$HOME/.cache}"
 LOCK_FILE="$STATE_DIR/heavy-build.lock"
 HOLDER_FILE="$STATE_DIR/heavy-build.current"
+WAIT_FILE="$STATE_DIR/heavy-build.waiting"
 WAIT_TIMEOUT="${HEAVY_TIMEOUT:-1200}"
 SLOTS="${HEAVY_SLOTS:-2}"
 # A non-numeric or sub-1 slot count would leave the round-robin loop with
@@ -68,9 +69,10 @@ mkdir -p "$STATE_DIR"
 usage() {
   cat >&2 <<'EOF'
 kullanim:
-  heavy <komut...>        bos bir derleme slotu al, hepsi doluysa sirada bekle
-  heavy --low <komut...>  slot almadan arka plan QoS'unda calistir
-  heavy --status          slotlar dolu mu, hangi komutla
+  heavy <komut...>         bos bir derleme slotu al, hepsi doluysa sirada bekle
+  heavy --queue <komut...> slot bekle ama tavan dolunca yine de calistir
+  heavy --low <komut...>   slot almadan arka plan QoS'unda calistir
+  heavy --status           slotlar dolu mu, hangi komutla
 ortam:
   HEAVY_SLOTS       ayni anda kosacak agir derleme sayisi (varsayilan 2)
   HEAVY_TIMEOUT     bekleme tavani, saniye (varsayilan 1200)
@@ -97,6 +99,25 @@ case "${1:-}" in
         [ -f "$HOLDER_FILE.$i" ] && sed 's/^/  /' "$HOLDER_FILE.$i"
       fi
     done
+    now=$(date +%s)
+    queued=0
+    # Waiters register themselves before sleeping. A killed waiter leaves its
+    # file behind, so anything whose pid is gone is swept here rather than
+    # reported as an eternal queue entry.
+    for f in "$WAIT_FILE".*; do
+      [ -f "$f" ] || continue
+      wpid=${f##*.}
+      if ! kill -0 "$wpid" 2>/dev/null; then
+        rm -f "$f"
+        continue
+      fi
+      queued=$((queued + 1))
+      since=$(sed -n 's/^since=//p' "$f")
+      printf 'sirada %s: %ss bekliyor (%s)\n' \
+        "$queued" "$((now - ${since:-now}))" "$(sed -n 's/^mode=//p' "$f")"
+      grep -v '^since=' "$f" | grep -v '^mode=' | sed 's/^/  /'
+    done
+    [ "$queued" -eq 0 ] && printf 'sirada: bos\n'
     exit 0
     ;;
   --low)
@@ -107,14 +128,26 @@ case "${1:-}" in
     fi
     exec "$@"
     ;;
+  --queue)
+    # Wait for a slot like a normal run, but never skip the command: when the
+    # ceiling is hit, run it unslotted. For work that must not be blocked by a
+    # long build (a commit and its pre-commit hooks) yet should not race it either.
+    shift
+    [ $# -gt 0 ] || { usage; exit 64; }
+    QUEUE_FALLBACK=1
+    ;;
   __exec)
     # Internal: runs with the slot's lock already held by the parent lockf.
     shift
     slot="$1"
     shift
+    # The slot is ours now, so drop the parent's queue entry — otherwise the
+    # same run would be listed as both running and waiting.
+    [ -n "${HEAVY_WAITER:-}" ] && rm -f "$HEAVY_WAITER"
     printf 'pid=%s\nstarted=%s\ncwd=%s\ncmd=%s\n' \
       "$$" "$(date '+%Y-%m-%d %H:%M:%S')" "$PWD" "$*" > "$HOLDER_FILE.$slot"
     trap 'rm -f "$HOLDER_FILE.$slot"' EXIT
+    export HEAVY_SLOT_HELD=1
     "$@"
     rc=$?
     [ $rc -eq $RC_LOCK_BUSY ] && rc=$RC_CMD_75
@@ -126,6 +159,13 @@ case "${1:-}" in
     ;;
 esac
 
+if [ "${HEAVY_SLOT_HELD:-0}" = 1 ]; then
+  # Already running inside a slot (a wrapped command that calls `heavy` again).
+  # Queueing here would wait for a slot this very process tree is holding —
+  # deadlock on a single-slot machine. Reuse the slot instead.
+  exec "$@"
+fi
+
 if ! command -v lockf >/dev/null 2>&1; then
   # No lockf (non-macOS): degrade to running unserialized rather than failing.
   exec "$@"
@@ -136,7 +176,7 @@ SECONDS=0
 
 while :; do
   for i in $(seq 1 "$SLOTS"); do
-    lockf -kst 0 "$LOCK_FILE.$i" "$0" __exec "$i" "$@"
+    HEAVY_WAITER="$WAIT_FILE.$$" lockf -kst 0 "$LOCK_FILE.$i" "$0" __exec "$i" "$@"
     rc=$?
     case $rc in
       $RC_LOCK_BUSY) ;;              # slot busy, try the next one
@@ -146,6 +186,17 @@ while :; do
   done
 
   if [ "$announced" -eq 0 ]; then
+    # Register in the queue so `heavy --status` can show who is waiting on what.
+    printf 'pid=%s\nsince=%s\nmode=%s\ncwd=%s\ncmd=%s\n' \
+      "$$" "$(date +%s)" \
+      "$([ "${QUEUE_FALLBACK:-0}" -eq 1 ] && echo queue || echo slot)" \
+      "$PWD" "$*" > "$WAIT_FILE.$$"
+    # EXIT does the cleanup; INT/TERM must also *stop* the wait loop. A handler
+    # that only deletes the file would return into the loop and keep waiting,
+    # invisible to --status but still ready to run the build.
+    trap 'rm -f "$WAIT_FILE.$$"' EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
     printf '[heavy] %s slotun hepsi dolu:\n' "$SLOTS" >&2
     for i in $(seq 1 "$SLOTS"); do
       printf '[heavy]   slot %s: %s\n' "$i" "$(holder_line "$i")" >&2
@@ -155,6 +206,11 @@ while :; do
   fi
 
   if [ "$SECONDS" -ge "$WAIT_TIMEOUT" ]; then
+    if [ "${QUEUE_FALLBACK:-0}" -eq 1 ]; then
+      printf '[heavy] %ss icinde slot acilmadi, komut slotsuz calistiriliyor\n' "$WAIT_TIMEOUT" >&2
+      rm -f "$WAIT_FILE.$$"  # exec drops the EXIT trap, so clean up first
+      exec "$@"
+    fi
     printf '[heavy] %ss icinde slot acilmadi, komut CALISTIRILMADI\n' "$WAIT_TIMEOUT" >&2
     exit 75
   fi

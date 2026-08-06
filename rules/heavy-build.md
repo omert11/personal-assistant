@@ -8,12 +8,18 @@ Varsayılan **2 slot**: iki ağır derleme paralel koşar, üçüncüsü sırada
 ## `heavy` Sarmalayıcı
 
 ```bash
-heavy cargo build -p pingr     # bos slot varsa hemen koşar, yoksa sırada bekler
-heavy go build ./...           # iki derleme koşuyorsa bekler
-heavy --low cargo tauri dev    # slot ALMAZ, arka plan QoS'unda koşar
-heavy --status                 # hangi slot dolu, hangi komutla (pid + cwd)
-HEAVY_SLOTS=1 heavy cargo test # bu koşu için tek slota düş
+heavy cargo build -p pingr      # bos slot varsa hemen koşar, yoksa sırada bekler
+heavy go build ./...            # başka derleme koşuyorsa bekler
+heavy --queue git commit -m x   # slot bekler ama tavan dolunca yine de koşar
+heavy --low cargo tauri dev     # slot ALMAZ, arka plan QoS'unda koşar
+heavy --status                  # dolu slotlar + kuyrukta bekleyenler (pid, cwd, süre)
+HEAVY_SLOTS=2 heavy cargo test  # bu koşu için iki slota çık
 ```
+
+`--status` hem slotu tutanı hem sırada bekleyenleri listeler: her bekleyen kaç
+saniyedir beklediğini, hangi modda (`slot` / `queue`) olduğunu, cwd'sini ve komutunu
+yazar. Bekleyen kaydı slot alınır alınmaz düşer; öldürülmüş bir bekleyenin artığı
+sonraki `--status` çağrısında temizlenir.
 
 - Slot havuzu: `~/.cache/heavy-build.lock.<n>`, `/usr/bin/lockf` ile (`flock` macOS'ta yok).
   `lockf` tek dosya kilitler, bu yüzden N slot = N kilit dosyası, round-robin denenir.
@@ -29,6 +35,11 @@ HEAVY_SLOTS=1 heavy cargo test # bu koşu için tek slota düş
   çıkış kodu 75 olur — takılan bir derleme herkesi süresiz bloklamasın.
 - Komutun kendisi 75 ile çıkarsa bu "slot dolu" ile karışmaz: iç sarmalayıcı 175'e çevirir,
   dış taraf geri 75 yapar. Aksi hâlde komut ikinci kez çalıştırılırdı.
+- `--queue`: slot bekler ama tavan dolunca komutu **slotsuz çalıştırır** (rc=75 ile atlamaz).
+  Derlemeyle CPU yarışmaması gereken ama hiçbir koşulda bloke olmaması gereken işler için.
+- Slot tutan bir komutun içinden `heavy` çağrılırsa (ör. `heavy bash -c '... heavy go test ...'`)
+  iç çağrı **slot beklemez, mevcut slotu kullanır** (`HEAVY_SLOT_HELD`). Aksi hâlde dış heavy
+  kendi iç heavy'sinin beklediği slotu tutar — tek slotlu makinede kesin kilitlenme.
 - Kaynak: `personal-assistant/scripts/heavy.sh`; oturum başında `~/.local/bin/heavy` symlink'i kurulur.
 
 **Slot sayısını artırmanın bedeli**: iki Rust derlemesi çakışırsa (`jobs = 6` × 2 = 12 iş) 16 GB'da
@@ -42,7 +53,24 @@ swap başlar ve sıraya almanın kazancı geri verilir. 2'nin üstüne çıkmada
 |---|---|
 | `cargo build/test/check/clippy/bench/doc/install`, `cargo tauri build`, `go build/test/vet/install/generate`, `npm\|pnpm\|yarn\|bun run build`, `next\|vite\|tsc\|turbo\|webpack\|esbuild build`, `xcodebuild`, `gradle`, `cmake --build`, `docker build`, `maturin build` | `heavy bash -c '<komut>'` + **run_in_background: true** |
 | `cargo run/watch`, `cargo tauri dev`, `go run`, `air`, `npm/pnpm/yarn/bun run dev\|start\|watch`, `next dev`, `vite`, `nodemon`, `manage.py runserver` | `heavy --low bash -c '<komut>'` (slot almaz) |
+| `git commit`, `git push` | `heavy --queue bash -c '<komut>'` (slot bekler, tavan dolunca yine koşar) |
 | `cargo tree/metadata/fmt`, `go env/list/fmt`, diğer her şey | dokunulmaz |
+
+Sınıflandırma **komut iskeleti** üzerinde yapılır: heredoc gövdeleri, tırnaklı stringler ve
+`#` yorumları maskelenir, `bash -c '<komut>'` içeriği ayrı aday olarak eklenir. Böylece
+`git commit -m "perf: cargo build faster"` bir commit'tir, derleme değil; kanıt dosyasına
+test çıktısı yazan heredoc da derleme sayılmaz. Maskeleme soldan sağa tek geçiştir —
+`"worktree'ye ait"` gibi metindeki apostrof sonraki tırnak aralıklarını kaydırmaz.
+
+`git commit` / `git push` neden kuyruğa girer: **guard yalnız Claude'un yazdığı komutu görür,
+o komutun tetiklediği git hook'larını değil.** pre-commit black/eslint/djlint koşturur,
+lefthook pre-push doğrudan `cargo test` başlatır — bunlar slot havuzunun tamamen dışında
+kalır, `--status` boş görünürken makine rustc'lerle dolar. Çare: hook'u tetikleyen git
+fiili slotu onlar adına alır. `--queue` olduğu için en fazla `HEAVY_TIMEOUT` kadar bekler,
+sonra slotsuz koşar — commit/push hiçbir zaman bloke olmaz. Kuyruğa girebilen her sınıfa
+`timeout: 600000` verilir; Bash tool'un 120 s varsayılanı bekleme tavanından kısadır ve
+komutu daha sırada beklerken öldürürdü. Diğer git fiilleri (status/diff/log) anlıktır,
+dokunulmaz.
 
 Ağır derlemeler **zorunlu olarak arka plana alınır**: slot beklemesi Bash tool'un 10 dakikalık
 tavanını aşabilir. Sonuç bittiğinde bildirim gelir, çıktı ondan sonra okunur.

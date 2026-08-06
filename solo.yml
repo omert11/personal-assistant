@@ -7,6 +7,11 @@ processes:
   render:
     command: bun scripts/render-server.ts
     auto_start: false
+  # Ortak derleme slot havuzunun durumu: hangi slot dolu, hangi komut + pid + cwd.
+  # Repo script'i doğrudan çağrılır — ~/.local/bin/heavy symlink'i PATH'te olmasa da çalışır.
+  heavy-status:
+    command: bash scripts/heavy.sh --status
+    auto_start: false
   # Gerekirse buraya ekle, örnek:
   # test:
   #   command: bash scripts/init-check.sh
