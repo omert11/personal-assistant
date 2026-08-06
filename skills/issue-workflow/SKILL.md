@@ -5,7 +5,7 @@ when_to_use: Trigger — "su ticket'i coz", "issue-workflow ile bak", "bu hatayi
 argument-hint: <ticket-ref | serbest-metin | dosya-yolu>
 disable-model-invocation: false
 effort: max
-allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, Agent, SendMessage, TaskList, TaskGet, TaskStop, WebFetch, Workflow, EnterWorktree, ExitWorktree, EnterPlanMode, ExitPlanMode, Skill
+allowed-tools: Bash, BashOutput, KillShell, Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, Agent, Monitor, SendMessage, TaskList, TaskGet, TaskStop, TaskCreate, TaskUpdate, WebFetch, Workflow, EnterWorktree, ExitWorktree, EnterPlanMode, ExitPlanMode, Skill
 ---
 
 # Issue Workflow — Kaynak → HTML Analiz → Plan → Cozum → Kanit → Commit
@@ -252,7 +252,8 @@ Sirayla (`--json` ile):
 > fazlar **dogrulama birimlerine** gruplanir (2-4 faz), her birim **tek `Workflow` script'inde**
 > ardisik `phase()` bloklariyla kosar (ad-hoc `Agent` turu ve paralel workflow YOK), birim sonunda
 > ana agent **tek noktada** dogrular (cikti + build + test + lint + code-review), gerekirse duzeltir,
-> checkpoint commit + push atar ve **ayni turda** sonraki birimi baslatir. Asagidaki `[SESSION_NAME]`
+> checkpoint commit + push atar ve **ayni turda** sonraki birimi baslatir. Adimin ilk isi
+> **watchdog dongusunu kurmak** (`Monitor` + `.heartbeat`), son isi `.done` ile kapatmaktir. Asagidaki `[SESSION_NAME]`
 > loglama kurali agent brief'lerine yazilir; test ortami + unique port + kanit uretimi + durdurma
 > (7a-7d) **tum fazlar bittikten sonra ana agent tarafindan** kosulur.
 
@@ -415,7 +416,9 @@ Plane kapama (completed + label/priority/target-date) `commit` skill'in Adim 10/
   **ayni turda** sonraki birim. Tavan: bir `parallel()` blogunda <=6 agent, workflow toplaminda
   <=15. Her `agent()` cagrisinda acik model (yazan `opus`, salt-okunur `sonnet`, `haiku` yok).
   **Ana agent is bitene kadar durmaz** — tur yalniz uc halde kapanir: tum fazlar bitti, sert durak,
-  kullanici mudahalesi. **Durum takibi uc katman**: `TaskCreate`/`TaskUpdate` (oturum ici),
+  kullanici mudahalesi. Garantisi **watchdog dongusudur**: 7Y'nin ilk isi `Monitor` ile nabiz
+  izleyici kurmak (180 sn hareketsizlikte uyandirma bildirimi, artan bekleme ile), son isi `.done`
+  ile kapatmaktir. **Durum takibi uc katman**: `TaskCreate`/`TaskUpdate` (oturum ici),
   `~/.pa-render/active/<isim>/faz-durumu.html` (PA Render ek dosyasi — dashboard'da canli),
   checkpoint commit + push (kalici)
 - **Plan onayi**: tek onay noktasi `ExitPlanMode` (Adim 5); acik konular ondan ONCE (Adim 4,

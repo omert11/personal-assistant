@@ -42,14 +42,17 @@ kontrol noktasi, isi tek elden yurutmekten hem hizli hem daha derli topludur.
 5. **Bir workflow = bir dogrulama birimi.** Dogrulama + checkpoint commit workflow **bitiminde**
    yapilir, her faz sonunda degil — ara duraklar isi yavaslatir.
 6. **Duzeltme ucuz tarafta yapilir**: kucuk bulgu ana agentta, buyuk bulgu seti fix workflow'da.
-7. **Ana agent is bitene kadar durmaz** — turu ara raporla kapatmaz (Bolum 11).
+7. **Ana agent is bitene kadar durmaz** — turu ara raporla kapatmaz; garantisi **watchdog
+   dongusudur**: 7Y'nin ilk isi watchdog'u kurmaktir, son isi `.done` ile kapatmaktir (Bolum 11).
 
 ---
 
 ## 3. Adim 7Y — Akis
 
 ```
-[Ana agent] plandaki fazlari sirala (Adim 5'te belirlendi)
+[Ana agent] WATCHDOG KUR (Bolum 11) — ilk is, her seyden once
+   |
+   +-> plandaki fazlari sirala (Adim 5'te belirlendi)
    |
    +-> fazlari DOGRULAMA BIRIMLERINE grupla (2-4 faz = 1 workflow, Bolum 4)
    |
@@ -71,8 +74,10 @@ kontrol noktasi, isi tek elden yurutmekten hem hizli hem daha derli topludur.
    |
    +-> sonraki dogrulama birimi — AYNI TURDA baslat (Bolum 11)
    |
-   +-> tum fazlar bitti -> kanit toplama (Adim 7a-7d, ana agent) -> Adim 8
+   +-> tum fazlar bitti -> `.done` yaz (watchdog kapanir) -> kanit toplama (Adim 7a-7d) -> Adim 8
 ```
+
+Her turun ilk Bash cagrisinda `touch "$EVID/.heartbeat"` — nabiz tazelenmezse watchdog uyandirir.
 
 ### Durum takibi — uc katman
 
@@ -367,6 +372,7 @@ git push -u origin <worktree-branch>         # ilk seferde -u, sonrakilerde `git
 
 Tum fazlar bitince ana agent:
 
+0. **Watchdog'u kapatir** — `touch "$EVID/.done"` (Bolum 11); dongu bir sonraki turda kendini sonlandirir
 1. **Kanit uretir** — standart **Adim 7a-7d**: worktree'de bagimlilik kurulumu → unique port +
    arka planda uygulama → testler/screenshot/API ciktilari `$EVID/` altina → **uygulamayi durdur**.
    Gorsel degisiklikte screenshot zorunlu.
@@ -413,6 +419,62 @@ isleri o sirada yapar**:
 - `faz-durumu.html` guncelle
 - sonraki birimin workflow script'ini yaz (hazir beklesin)
 - degismis dosyalari oku, review bulgusuna hazirlan
+
+### Watchdog dongusu — ZORUNLU (davranis kurali tek basina yetmez)
+
+Yukaridaki kurallar **niyet**tir; ana agent yine de turu kapatip uyuyabilir. Bunu mekanik olarak
+kirmak icin **7Y'ye girer girmez, ilk isten once** bir watchdog dongusu kurulur. Dongu, ana agent
+uyudugunda bildirim uretir — bildirim yeni bir tur acar, akis kaldigi yerden surer.
+
+**1) Nabiz dosyalarini hazirla** (dotfile olduklari icin PA Render dosya panelinde gorunmezler):
+
+```bash
+EVID=~/.pa-render/active/<isim>
+mkdir -p "$EVID" && rm -f "$EVID/.done" && touch "$EVID/.heartbeat"
+```
+
+**2) Watchdog'u kur** — `Monitor` ile, `persistent: true`:
+
+```bash
+EVID=~/.pa-render/active/<isim>
+wait=60
+while [ ! -f "$EVID/.done" ]; do
+  now=$(date +%s)
+  hb=$(stat -f %m "$EVID/.heartbeat" 2>/dev/null || echo "$now")
+  age=$(( now - hb ))
+  if [ "$age" -gt 180 ]; then
+    echo "UYANDIRMA (${age}s hareketsiz) — yonetici modu yarim. faz-durumu.html + git log oku, kaldigin yerden DEVAM ET."
+    wait=$(( wait * 2 )); [ "$wait" -gt 300 ] && wait=300
+  else
+    wait=60
+  fi
+  sleep "$wait"
+done
+echo "WATCHDOG KAPANDI — tum fazlar bitti"
+```
+
+- `Monitor({ command: <yukaridaki>, description: "yonetici modu watchdog — <isim>", persistent: true })`
+- 180 sn hareketsizlik = uyandirma satiri; her satir bir bildirim, bildirim yeni tur acar
+- Ust uste uyarilarda bekleme 60 → 120 → 240 → 300 sn'ye cikar (Monitor'un "cok fazla olay"
+  korumasina takilmamak icin); nabiz tazelenince 60'a doner
+- **Yanlis alarm zararsizdir**: agent uyanir, durumu gorur, calismaya devam eder
+
+**3) Her turda nabzi tazele** — turun ilk Bash cagrisinin basina ekle (dogrulama komutlariyla ayni
+cagriya sikistirilabilir):
+
+```bash
+touch "$EVID/.heartbeat"
+```
+
+**4) Isi bitince dongu kapatilir** — bu **unutulmaz**:
+
+```bash
+touch "$EVID/.done"     # watchdog bir sonraki turda kendini kapatir
+```
+
+`.done` su uc durumda yazilir: tum fazlar bitti (kanit toplamaya geciliyor), **sert durak**
+(kullanici yaniti bekleniyor — bosuna durtmesin), kullanici akisi kesti. Sert duraktan sonra akis
+devam edecekse `.done` silinip watchdog yeniden kurulur.
 
 ### Bildirim gelmezse (asilma)
 Bir isten makul surede haber yoksa (en uzun beklenen adimin ~2 kati) durumu **kendin tara**:
