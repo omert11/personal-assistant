@@ -102,6 +102,22 @@ Bash(
 
 Sonuç bildirimi gelince çıktıyı oku, bulguların hepsini ham haliyle Soru 1'e taşı. Review koşarken bekleme — 3c/3d/3e adımlarını bu sırada yürüt, Soru 1'i kurmadan önce review çıktısını topla.
 
+##### Büyük Diff — Review'i Böl
+
+Diff birden çok modüle yayılmışsa (tipik durum: `issue-workflow` yönetici modu — ara commit atmadan yürütülen tüm iş tek teslimatta gelir), tek oturum tüm diffi yeterince derin inceleyemez. O zaman review **3-4 paralel `claude -p` oturumuna bölünür**:
+
+1. `git diff --name-only` ile değişen dosyaları çıkar, **örtüşmeyen** kümelere ayır (dizin/modül bazlı)
+2. Her küme için ayrı arka plan çağrısı: `cd <path> && claude --model opus -p '/code-review medium — sadece <küme> altındaki değişiklikler'`
+3. Hepsi bitince çıktıları topla, aynı bulguyu **dedup** et, hepsini ham haliyle Soru 1'e taşı
+
+Kural bozulmaz — yol hâlâ ayrı Claude oturumu, subagent/Workflow değil (`token-efficiency` → "Büyük diff — birden fazla oturuma bölme"). Hiçbir değişen dosya kümesiz kalmamalı.
+
+##### Bulgu Düzeltmesi — Workflow'a Dağıtılabilir
+
+Soru 1'de "düzelt" seçilmişse ve bulgular çoksa (>5 bulgu veya 3+ dosya), düzeltme `Workflow` ile dağıtılır: bulgular **dosya bazında** gruplanır, her grup bir `agent()` (`model: 'opus'`, `effort: 'medium'`, açık yazılır — `token-efficiency`). Aynı dosyaya iki ajan yazmaz. Küçük bulgu setinde ana agent kendisi düzeltir — workflow kurulumu bulgudan pahalıdır.
+
+Düzeltme sonrası **etkilenen kümeler için review tekrar koşulur** (yalnız değişen dosyaları kapsayan oturum), yeşile dönmeden commit atılmaz.
+
 #### 3c. Test Kontrolü
 - Değişen dosyaların test'i var mı? (`*.test.*`, `*_test.*`, `tests/`, `__tests__/`)
 - Yoksa **bulgu olarak işaretle** (sormak için bekle)

@@ -129,7 +129,7 @@ function packChunks(langs, target = 200) {
 }
 ```
 
-> **Model**: Çeviri ajanları `model: 'sonnet'` ile çalışır (opts'ta sabit). Belirtilmezse Workflow ajanı ana oturum modelini devralır — pahalı session modelinde paralel çeviri gereksiz maliyet. Sonnet çok dilli lokalizasyon için yeterli kalitede.
+> **Model + effort**: Çeviri ajanları `model: 'sonnet'`, `effort: 'medium'` ile çalışır (opts'ta sabit; effort boş bırakılırsa oturumunki devralınır — `token-efficiency`). Belirtilmezse Workflow ajanı ana oturum modelini devralır — pahalı session modelinde paralel çeviri gereksiz maliyet. Sonnet çok dilli lokalizasyon için yeterli kalitede.
 
 Her ajan **chunk'ındaki dillerin** analiz json'larını **Read** eder, entry'leri çevirir, her dil için `<lang>.<domain>.translations.json` yazar (po-cli `update` formatı: `[{msgid, msgstr, context}]`).
 
@@ -191,7 +191,7 @@ KURALLAR: (1) her entry TEK TEK, toplu replace YASAK. (2) fuzzy msgstr'ye GÜVEN
 (3) placeholder/%%/HTML/URL/JS birebir koru. (4) URL slug'ı o dilin mevcut konvansiyonuna uydur.
 (5) marka adları İngilizce. (6) plural'da yukarıdaki dil-bazlı nplurals notunu uygula. (7) msgstr boş bırakma.
 Her dil×domain için ${OUT}/<lang>.<domain>.translations.json YAZ (dizi: {msgid,msgstr,context}).`,
-    { label: `translate:chunk${i}(${chunk.map(c => c.code).join(',')})`, phase: 'Translate', model: 'sonnet',
+    { label: `translate:chunk${i}(${chunk.map(c => c.code).join(',')})`, phase: 'Translate', model: 'sonnet', effort: 'medium',
       schema: { type:'object', required:['langs'], properties:{ langs:{type:'array',items:{type:'string'}}, notes:{type:'string'} } } }
   ).then((r) => ({ ...r, codes: chunk.map(c => c.code) }))
 }))

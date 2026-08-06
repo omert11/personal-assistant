@@ -89,7 +89,7 @@ Tek `Workflow` çağrısı. Fan-out birimi **pencere × açı** = `M × A` paral
 
 Workflow şablonu için **`references/workflow_template.md`** dosyasını oku — oradaki script'i
 pencere listesi + dosya yolu + (gerekiyorsa) projeye özel açı ile doldurup `Workflow` ile
-çağır. Her `agent()` çağrısı `model: 'sonnet'`, `label: '<P>:<açı>'`, `phase: 'Analyze'`.
+çağır. Her `agent()` çağrısı `model: 'sonnet'`, `effort: 'low'`, `label: '<P>:<açı>'`, `phase: 'Analyze'`.
 
 > **Token verimliliği**: analiz agent'ları yapılandırılmış log okuma işidir → `sonnet`
 > yeter (token-efficiency kuralı). Opus'a düşme.

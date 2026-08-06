@@ -1,7 +1,7 @@
 # Analiz Workflow Şablonu (pencere × açı fan-out)
 
 Bu şablonu doldurup tek `Workflow` çağrısı yap. Fan-out birimi **pencere × açı**.
-Her `agent()`: `model: 'sonnet'`, `label: '<P>:<açı>'`, `phase: 'Analyze'`.
+Her `agent()`: `model: 'sonnet'`, `effort: 'low'`, `label: '<P>:<açı>'`, `phase: 'Analyze'`.
 
 Doldurman gerekenler:
 - `DIR` — `fetch_windows.sh`'in yazdığı pencere dizini (`$SCR/logwin`).
@@ -49,6 +49,7 @@ const results = await parallel(
         label: `${w}:${a.key}`,
         phase: 'Analyze',
         model: 'sonnet',
+        effort: 'low',
       }).then((text) => ({ window: w, angle: a.key, text }))
     )
   )
