@@ -40,7 +40,13 @@ DEV_RE='(^|[[:space:];&|(])(cargo[[:space:]]+(run|watch)|cargo[[:space:]]+tauri[
 
 # Finite, CPU-hungry builds. Whitelist on purpose: `cargo tree`, `go env`,
 # `cargo fmt` and friends are cheap and must stay instant.
-HEAVY_RE='(^|[[:space:];&|(])(cargo[[:space:]]+(build|test|check|clippy|bench|doc|install|fix|nextest)|cargo[[:space:]]+tauri[[:space:]]+(build|android|ios)|go[[:space:]]+(build|test|vet|install|generate)|(npm|pnpm|yarn|bun)[[:space:]]+(run[[:space:]]+)?build|(next|vite|tsc|turbo|webpack|esbuild)[[:space:]]+build|xcodebuild|\./gradlew|gradle[[:space:]]|cmake[[:space:]]+--build|docker[[:space:]]+(build|buildx)|maturin[[:space:]]+(build|develop))'
+#
+# `pytest` is matched separately: unlike two-word names (`cargo build`,
+# `golangci-lint run`) a bare word also appears as an argument — `grep pytest`,
+# `which pytest` — so it only counts at a command position, optionally behind a
+# `timeout N` prefix, which is how long test runs are actually invoked here.
+PYTEST_RE='(^|[[:space:]]*[;&|(][[:space:]]*|timeout[[:space:]]+[0-9]+[[:space:]]+)(pytest|py\.test)([[:space:]]|$)'
+HEAVY_RE='(^|[[:space:];&|(])(cargo[[:space:]]+(build|test|check|clippy|bench|doc|install|fix|nextest)|cargo[[:space:]]+tauri[[:space:]]+(build|android|ios)|go[[:space:]]+(build|test|vet|install|generate)|golangci-lint[[:space:]]+run|(npm|pnpm|yarn|bun)[[:space:]]+(run[[:space:]]+)?build|(npm|pnpm|yarn|bun)[[:space:]]+(run[[:space:]]+)?test([[:space:]]|:|$)|(next|vite|tsc|turbo|webpack|esbuild)[[:space:]]+build|(python|python3)[[:space:]]+-m[[:space:]]+pytest|(python|python3)[[:space:]]+manage\.py[[:space:]]+test([[:space:]]|$)|xcodebuild|\./gradlew|gradle[[:space:]]|cmake[[:space:]]+--build|docker[[:space:]]+(build|buildx)|maturin[[:space:]]+(build|develop))'
 
 # commit and push are cheap themselves, but their hooks are not: pre-commit runs
 # linters and a lefthook pre-push happily starts `cargo test`. Those builds are
@@ -49,7 +55,7 @@ HEAVY_RE='(^|[[:space:];&|(])(cargo[[:space:]]+(build|test|check|clippy|bench|do
 # untouched: status/diff/log are instant and queueing them would only add latency.
 QUEUE_RE='(^|[[:space:];&|(])git[[:space:]]+(commit|push)([[:space:]]|$)'
 
-# Project- or machine-local overrides may redefine DEV_RE / HEAVY_RE / QUEUE_RE.
+# Project- or machine-local overrides may redefine DEV_RE / HEAVY_RE / PYTEST_RE / QUEUE_RE.
 OVERRIDES="${HEAVY_PATTERNS:-$HOME/.config/heavy/patterns.sh}"
 # shellcheck disable=SC1090
 [ -f "$OVERRIDES" ] && . "$OVERRIDES"
@@ -113,7 +119,7 @@ if [[ $CANDIDATES =~ $DEV_RE ]]; then
   emit "$HEAVY_BIN --low '$WRAP_SHELL' -c $QUOTED" false false
 fi
 
-if [[ $CANDIDATES =~ $HEAVY_RE ]]; then
+if [[ $CANDIDATES =~ $HEAVY_RE || $CANDIDATES =~ $PYTEST_RE ]]; then
   emit "$HEAVY_BIN '$WRAP_SHELL' -c $QUOTED" true true
 fi
 

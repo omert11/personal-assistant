@@ -66,7 +66,7 @@ oranı gerçekten yüksek çıkarsa çözüm sırası `CARGO_BUILD_JOBS` sınır
 
 | Komut sınıfı | Ne olur |
 |---|---|
-| `cargo build/test/check/clippy/bench/doc/install`, `cargo tauri build`, `go build/test/vet/install/generate`, `npm\|pnpm\|yarn\|bun run build`, `next\|vite\|tsc\|turbo\|webpack\|esbuild build`, `xcodebuild`, `gradle`, `cmake --build`, `docker build`, `maturin build` | `heavy bash -c '<komut>'` + **run_in_background: true** |
+| `cargo build/test/check/clippy/bench/doc/install`, `cargo tauri build`, `go build/test/vet/install/generate`, `golangci-lint run`, `npm\|pnpm\|yarn\|bun run build\|test`, `pytest`, `python -m pytest`, `manage.py test`, `next\|vite\|tsc\|turbo\|webpack\|esbuild build`, `xcodebuild`, `gradle`, `cmake --build`, `docker build`, `maturin build` | `heavy $SHELL -c '<komut>'` + **run_in_background: true** |
 | `cargo run/watch`, `cargo tauri dev`, `go run`, `air`, `npm/pnpm/yarn/bun run dev\|start\|watch`, `next dev`, `vite`, `nodemon`, `manage.py runserver` | `heavy --low bash -c '<komut>'` (slot almaz) |
 | `git commit`, `git push` | `heavy --queue bash -c '<komut>'` (slot bekler, tavan dolunca yine koşar) |
 | `cargo tree/metadata/fmt`, `go env/list/fmt`, diğer her şey | dokunulmaz |
@@ -91,6 +91,11 @@ Ağır derlemeler **zorunlu olarak arka plana alınır**: slot beklemesi Bash to
 tavanını aşabilir. Sonuç bittiğinde bildirim gelir, çıktı ondan sonra okunur.
 
 Zaten `heavy` / `lockf` / `taskpolicy` içeren komutlar es geçilir — çift sarmalama olmaz.
+
+Test koşucuları ve linter'lar da ağır sınıftadır — derleyici kadar CPU yerler. `pytest` ayrı bir
+desende tutulur (`PYTEST_RE`): `cargo build` gibi iki kelimelik adların aksine tek kelime argüman
+olarak da geçer (`grep pytest`, `which pytest`), bu yüzden yalnız komut pozisyonunda —isteğe bağlı
+`timeout N` önekiyle— sayılır.
 
 Sarmalayıcı kabuk **`$SHELL`**'dir (bu makinede zsh), sabit `bash` değil. macOS'un `/bin/bash`'i
 3.2.57'dir ve `$(cat <<'EOF' … EOF)` içinde apostrof geçen bir heredoc'u parse **edemez** —
