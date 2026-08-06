@@ -14,7 +14,7 @@ set -uo pipefail
 # Machine-local defaults (a 16 GB laptop may want a single slot where the shipped
 # default is 2). Only these knobs are read from the file; HEAVY_CONFIG itself is
 # not, since it already picked the file.
-CONFIG_VARS='HEAVY_SLOTS HEAVY_TIMEOUT HEAVY_STATE_DIR'
+CONFIG_VARS='HEAVY_SLOTS HEAVY_TIMEOUT HEAVY_STATE_DIR HEAVY_LOG'
 CONFIG="${HEAVY_CONFIG:-$HOME/.config/heavy/config.sh}"
 if [ -f "$CONFIG" ]; then
   # Read in a subshell: a config that aborts (unset var under set -u, a stray
@@ -72,13 +72,76 @@ kullanim:
   heavy <komut...>         bos bir derleme slotu al, hepsi doluysa sirada bekle
   heavy --queue <komut...> slot bekle ama tavan dolunca yine de calistir
   heavy --low <komut...>   slot almadan arka plan QoS'unda calistir
-  heavy --status           slotlar dolu mu, hangi komutla
+  heavy --status           slotlar dolu mu + kuyrukta kim bekliyor
+  heavy --stats            kosu logunun ozeti (bekleme orani, load, mod dagilimi)
 ortam:
   HEAVY_SLOTS       ayni anda kosacak agir derleme sayisi (varsayilan 2)
   HEAVY_TIMEOUT     bekleme tavani, saniye (varsayilan 1200)
   HEAVY_STATE_DIR   kilit + holder dosyalarinin dizini (varsayilan ~/.cache)
   HEAVY_CONFIG      makine-lokal ayar dosyasi (varsayilan ~/.config/heavy/config.sh)
+  HEAVY_LOG         kosu logu dosyasi (varsayilan <state>/heavy-build.log, off ile kapali)
 EOF
+}
+
+LOG_FILE="${HEAVY_LOG:-$STATE_DIR/heavy-build.log}"
+
+# Redact anything that looks like a secret before it lands in a file that
+# outlives the run — commands routinely carry API keys inline.
+redact() {
+  sed -E 's/([A-Za-z_]*(KEY|TOKEN|SECRET|PASSWORD|PASS)=)[^[:space:]]*/\1***/g'
+}
+
+# One line per slotted run: how long it queued, how long it ran, and what the
+# machine looked like meanwhile. This is the evidence for whether a dynamic slot
+# count would have paid off and where its threshold should sit — guessing at one
+# without this data is how you get a rule that fires on the wrong signal.
+log_run() {
+  # $1 = mode, $2 = queued seconds, $3 = ran seconds, $4 = exit code, $5.. = command
+  [ "$LOG_FILE" = off ] && return 0
+  mode=$1 queued=$2 ran=$3 rc=$4
+  shift 4
+  # Create it private before the first append: a plain >> would make it 0644 for
+  # as long as it takes to reach the chmod, and the lines carry command text.
+  [ -f "$LOG_FILE" ] || (umask 077; : >> "$LOG_FILE") 2>/dev/null
+  loadnow=$(sysctl -n vm.loadavg 2>/dev/null | tr -d '{}' | awk '{print $1","$2}')
+  printf '%s\tmode=%s\tslots=%s\tqueued=%ss\tran=%ss\trc=%s\tload=%s\tcwd=%s\tcmd=%s\n' \
+    "$(date '+%Y-%m-%dT%H:%M:%S')" "$mode" "$SLOTS" "$queued" "$ran" "$rc" \
+    "${loadnow:-?}" "$PWD" "$(printf '%s' "$*" | tr '\n' ' ' | cut -c1-200)" \
+    | redact >> "$LOG_FILE" 2>/dev/null
+  # Keep the tail rather than growing without bound; this is sampling data, not
+  # an audit trail. Rotation runs under its own lock so two concurrent heavy
+  # runs cannot shred the file; whoever loses the lock just skips this round.
+  # Lines appended between the tail and the mv are lost, which is acceptable
+  # for sampling and why the threshold is far above a normal day's volume.
+  if [ "$(wc -c < "$LOG_FILE" 2>/dev/null || echo 0)" -gt 524288 ] &&
+     command -v lockf >/dev/null 2>&1; then
+    lockf -kst 0 "$LOG_FILE.rotate" sh -c '
+      tmp=$1.$$.tmp
+      tail -n 2000 "$1" > "$tmp" 2>/dev/null && chmod 600 "$tmp" && mv "$tmp" "$1"
+    ' sh "$LOG_FILE" 2>/dev/null
+  fi
+}
+
+# Run a command in the foreground of this process tree while still being able to
+# log afterwards. `exec` would be simpler but leaves nothing to log from; a bare
+# background job would detach stdin (POSIX redirects async jobs to /dev/null,
+# which breaks `git commit -F -`) and would not pass signals on, orphaning a
+# build when the wrapper is killed.
+run_and_log() {
+  # $1 = mode, $2 = seconds already spent queueing, $3.. = command
+  mode=$1 queued=$2
+  shift 2
+  started=$SECONDS
+  exec 3<&0
+  "$@" <&3 &
+  child=$!
+  exec 3<&-
+  trap 'kill -TERM "$child" 2>/dev/null' INT TERM
+  wait "$child"
+  rc=$?
+  trap - INT TERM
+  log_run "$mode" "$queued" "$((SECONDS - started))" "$rc" "$@"
+  exit $rc
 }
 
 slot_is_free() {
@@ -120,6 +183,43 @@ case "${1:-}" in
     [ "$queued" -eq 0 ] && printf 'sirada: bos\n'
     exit 0
     ;;
+  --stats)
+    # Summarise the run log: this is what a dynamic slot count would have to
+    # justify itself against — how much time is actually lost queueing, and at
+    # what load.
+    [ -f "$LOG_FILE" ] || { printf 'log yok: %s\n' "$LOG_FILE"; exit 0; }
+    awk -F'\t' '
+      { delete f                      # else a short line inherits the last record
+        for (i = 1; i <= NF; i++) {
+          p = index($i, "=")          # split() would cut a value at its first =
+          if (p) f[substr($i, 1, p - 1)] = substr($i, p + 1)
+        }
+        if (!("queued" in f)) next
+        runs++
+        q = f["queued"]; sub(/s$/, "", q); q += 0   # force numeric compare
+        r = f["ran"];    sub(/s$/, "", r); r += 0
+        totq += q; totr += r
+        if (f["load"] ~ /^[0-9]/) { split(f["load"], l, ","); totl += l[1]; loadn++ }
+        if (q > maxq) { maxq = q; maxcmd = f["cmd"] }
+        if (q > 0) waited++
+        mode[f["mode"]]++
+      }
+      END {
+        if (!runs) { print "log bos"; exit }
+        printf "kosu:             %d\n", runs
+        printf "kuyrukta bekledi: %d (%.0f%%)\n", waited, waited * 100 / runs
+        printf "toplam bekleme:   %ds (ort %.1fs/kosu)\n", totq, totq / runs
+        printf "toplam calisma:   %ds (ort %.1fs/kosu)\n", totr, totr / runs
+        printf "bekleme/calisma:  %.1f%%\n", (totr ? totq * 100 / totr : 0)
+        if (loadn) printf "ort load (1dk):   %.2f (%d kayit)\n", totl / loadn, loadn
+        else       printf "ort load (1dk):   olculemedi\n"
+        printf "en uzun bekleme:  %ds -- %s\n", maxq, substr(maxcmd, 1, 80)
+        printf "mod dagilimi:    "
+        for (m in mode) printf " %s=%d", m, mode[m]
+        printf "\n"
+      }' "$LOG_FILE"
+    exit 0
+    ;;
   --low)
     shift
     [ $# -gt 0 ] || { usage; exit 64; }
@@ -135,6 +235,7 @@ case "${1:-}" in
     shift
     [ $# -gt 0 ] || { usage; exit 64; }
     QUEUE_FALLBACK=1
+    MODE=queue
     ;;
   __exec)
     # Internal: runs with the slot's lock already held by the parent lockf.
@@ -145,7 +246,7 @@ case "${1:-}" in
     # same run would be listed as both running and waiting.
     [ -n "${HEAVY_WAITER:-}" ] && rm -f "$HEAVY_WAITER"
     printf 'pid=%s\nstarted=%s\ncwd=%s\ncmd=%s\n' \
-      "$$" "$(date '+%Y-%m-%d %H:%M:%S')" "$PWD" "$*" > "$HOLDER_FILE.$slot"
+      "$$" "$(date '+%Y-%m-%d %H:%M:%S')" "$PWD" "$*" | redact > "$HOLDER_FILE.$slot"
     trap 'rm -f "$HOLDER_FILE.$slot"' EXIT
     export HEAVY_SLOT_HELD=1
     "$@"
@@ -163,7 +264,7 @@ if [ "${HEAVY_SLOT_HELD:-0}" = 1 ]; then
   # Already running inside a slot (a wrapped command that calls `heavy` again).
   # Queueing here would wait for a slot this very process tree is holding —
   # deadlock on a single-slot machine. Reuse the slot instead.
-  exec "$@"
+  run_and_log nested 0 "$@"
 fi
 
 if ! command -v lockf >/dev/null 2>&1; then
@@ -176,12 +277,17 @@ SECONDS=0
 
 while :; do
   for i in $(seq 1 "$SLOTS"); do
+    queued=$SECONDS
     HEAVY_WAITER="$WAIT_FILE.$$" lockf -kst 0 "$LOCK_FILE.$i" "$0" __exec "$i" "$@"
     rc=$?
     case $rc in
       $RC_LOCK_BUSY) ;;              # slot busy, try the next one
-      $RC_CMD_75) exit 75 ;;         # the command itself exited 75
-      *) exit $rc ;;
+      $RC_CMD_75)
+        log_run "${MODE:-slot}" "$queued" "$((SECONDS - queued))" 75 "$@"
+        exit 75 ;;                   # the command itself exited 75
+      *)
+        log_run "${MODE:-slot}" "$queued" "$((SECONDS - queued))" "$rc" "$@"
+        exit $rc ;;
     esac
   done
 
@@ -190,7 +296,7 @@ while :; do
     printf 'pid=%s\nsince=%s\nmode=%s\ncwd=%s\ncmd=%s\n' \
       "$$" "$(date +%s)" \
       "$([ "${QUEUE_FALLBACK:-0}" -eq 1 ] && echo queue || echo slot)" \
-      "$PWD" "$*" > "$WAIT_FILE.$$"
+      "$PWD" "$*" | redact > "$WAIT_FILE.$$"
     # EXIT does the cleanup; INT/TERM must also *stop* the wait loop. A handler
     # that only deletes the file would return into the loop and keep waiting,
     # invisible to --status but still ready to run the build.
@@ -208,10 +314,11 @@ while :; do
   if [ "$SECONDS" -ge "$WAIT_TIMEOUT" ]; then
     if [ "${QUEUE_FALLBACK:-0}" -eq 1 ]; then
       printf '[heavy] %ss icinde slot acilmadi, komut slotsuz calistiriliyor\n' "$WAIT_TIMEOUT" >&2
-      rm -f "$WAIT_FILE.$$"  # exec drops the EXIT trap, so clean up first
-      exec "$@"
+      rm -f "$WAIT_FILE.$$"
+      run_and_log queue-fallback "$SECONDS" "$@"
     fi
     printf '[heavy] %ss icinde slot acilmadi, komut CALISTIRILMADI\n' "$WAIT_TIMEOUT" >&2
+    log_run timeout "$SECONDS" 0 75 "$@"
     exit 75
   fi
 

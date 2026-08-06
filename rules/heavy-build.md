@@ -40,10 +40,25 @@ sonraki `--status` çağrısında temizlenir.
 - Slot tutan bir komutun içinden `heavy` çağrılırsa (ör. `heavy bash -c '... heavy go test ...'`)
   iç çağrı **slot beklemez, mevcut slotu kullanır** (`HEAVY_SLOT_HELD`). Aksi hâlde dış heavy
   kendi iç heavy'sinin beklediği slotu tutar — tek slotlu makinede kesin kilitlenme.
+- Her slotlu koşu `~/.cache/heavy-build.log` dosyasına tek satır yazar: mod, slot sayısı,
+  kuyrukta bekleme, çalışma süresi, çıkış kodu, o anki load, cwd, komut. `HEAVY_LOG` ile yeri
+  değişir, `HEAVY_LOG=off` kapatır. Dosya 600 izinli, 512 KB'ı aşınca son 2000 satıra düşer;
+  komuttaki `*_KEY/TOKEN/SECRET/PASSWORD` değerleri `***` ile maskelenir (holder ve kuyruk
+  dosyalarında da).
+- `heavy --stats` bu logu özetler: kaç koşu, kaçı kuyrukta bekledi, toplam/ortalama bekleme,
+  bekleme/çalışma oranı, ortalama load, en uzun bekleyen komut, mod dağılımı.
 - Kaynak: `personal-assistant/scripts/heavy.sh`; oturum başında `~/.local/bin/heavy` symlink'i kurulur.
 
 **Slot sayısını artırmanın bedeli**: iki Rust derlemesi çakışırsa (`jobs = 6` × 2 = 12 iş) 16 GB'da
 swap başlar ve sıraya almanın kazancı geri verilir. 2'nin üstüne çıkmadan önce ölçülmeli.
+
+**Dinamik slot (yüke göre otomatik +/-) neden yapılmadı**: CPU eşiği yanlış sinyaldir — bu
+makinede load 18.47 iken CPU %46 idle ölçüldü, yani kuyruğu şişiren I/O beklemesiydi, "CPU boş"
+kuralı o anda slot açardı. 16 GB'da asıl tavan bellektir, CPU değil; iki Rust derlemesi CPU
+%40'ta bile swap'e girer. Ayrıca açılan slot geri alınamaz (koşan derleme durdurulmaz), bu da
+salınım demektir. Kazanç ise ancak "makine boş **ve** kuyrukta iş var" anında doğar — paralel
+oturumlarda havuz nadiren boş kalır. Karar: önce `heavy --stats` verisi biriktirilecek; bekleme
+oranı gerçekten yüksek çıkarsa çözüm sırası `CARGO_BUILD_JOBS` sınırı → sabit 2 slot → dinamik.
 
 ## Katman 1 — Claude PreToolUse Hook (otomatik)
 
