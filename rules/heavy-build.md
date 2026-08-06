@@ -92,6 +92,12 @@ tavanını aşabilir. Sonuç bittiğinde bildirim gelir, çıktı ondan sonra ok
 
 Zaten `heavy` / `lockf` / `taskpolicy` içeren komutlar es geçilir — çift sarmalama olmaz.
 
+Sarmalayıcı kabuk **`$SHELL`**'dir (bu makinede zsh), sabit `bash` değil. macOS'un `/bin/bash`'i
+3.2.57'dir ve `$(cat <<'EOF' … EOF)` içinde apostrof geçen bir heredoc'u parse **edemez** —
+yani tam olarak conventional commit mesajı kalıbını. `bash -c` ile sarmalamak komutu sessizce
+başka bir dile taşır ve `git commit` sözdizimi hatasıyla düşer. Egzotik kabuklarda
+(fish, nushell — `-c '<komut>'` semantiği farklı) `/bin/bash`'e düşülür.
+
 Desen değiştirmek gerekirse `~/.config/heavy/patterns.sh` içinde `HEAVY_RE` / `DEV_RE` yeniden
 tanımlanır (hook varsa onu okur); plugin güncellemesi bu dosyayı ezmez.
 

@@ -3,7 +3,7 @@
 #
 # Reads the PreToolUse payload on stdin and, when the command looks like a heavy
 # build, rewrites it via hookSpecificOutput.updatedInput so it runs as
-#   heavy bash -c '<original command>'
+#   heavy $SHELL -c '<original command>'
 # and in the background (lock waiting can exceed the Bash tool's 10 min ceiling).
 #
 # Long-lived dev servers are rewritten to `heavy --low ...` instead: background
@@ -74,6 +74,16 @@ emit() {
 
 QUOTED=$(printf '%s' "$INPUT" | jq -r '.tool_input.command | @sh')
 
+# Re-run the command under the same shell that would have run it, not a fixed
+# `bash`. macOS ships bash 3.2, which cannot parse a heredoc carrying an
+# apostrophe inside $( ) — the exact shape of `git commit -m "$(cat <<'EOF'…)"`.
+# Wrapping in bash would silently change the language the command is written in.
+WRAP_SHELL="${SHELL:-/bin/bash}"
+case $WRAP_SHELL in
+  */bash|*/zsh|*/sh|*/dash|*/ksh) ;;   # anything exotic (fish, nushell) is not
+  *) WRAP_SHELL=/bin/bash ;;           # POSIX enough to take -c '<command>'
+esac
+
 # Classify the command skeleton, not the raw text: heredoc bodies and quoted
 # strings are data, not commands. `git commit -m "cargo build faster"` is a
 # commit, not a build, and must not be backgrounded behind a slot.
@@ -100,11 +110,11 @@ CANDIDATES=$(printf '%s' "$CMD" | perl -0777 -e '
 ')
 
 if [[ $CANDIDATES =~ $DEV_RE ]]; then
-  emit "$HEAVY_BIN --low bash -c $QUOTED" false false
+  emit "$HEAVY_BIN --low '$WRAP_SHELL' -c $QUOTED" false false
 fi
 
 if [[ $CANDIDATES =~ $HEAVY_RE ]]; then
-  emit "$HEAVY_BIN bash -c $QUOTED" true true
+  emit "$HEAVY_BIN '$WRAP_SHELL' -c $QUOTED" true true
 fi
 
 # Commits are cheap themselves, but their pre-commit hooks run linters and
@@ -112,7 +122,7 @@ fi
 # the command unslotted once the ceiling is hit, and stays in the foreground so
 # the commit output comes back inline.
 if [[ $CANDIDATES =~ $QUEUE_RE ]]; then
-  emit "$HEAVY_BIN --queue bash -c $QUOTED" false true
+  emit "$HEAVY_BIN --queue '$WRAP_SHELL' -c $QUOTED" false true
 fi
 
 exit 0
