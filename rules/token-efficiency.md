@@ -47,21 +47,31 @@ cd <target_path> && claude --model opus --effort <effort> -p '/code-review <leve
 
 ### Seviye Seçimi — `<level>` + `<effort>`
 
-İşin karmaşıklığına göre agent **dört seviyeden birini** seçer. `/code-review` argümanı review
-derinliğini, `--effort` child oturumun düşünme eforunu belirler; ikisi ayrı eksendir ve birlikte
-tabloya göre yazılır.
+Seviye **değişikliğin büyüklüğünden ölçülür**, öznel "basit/karmaşık" yorumundan değil.
+`/code-review` argümanı review derinliğini, `--effort` child oturumun düşünme eforunu belirler.
 
-| Seviye | Komut kuyruğu | Ne zaman |
-|---|---|---|
-| 1 | `--effort low -p '/code-review low'` | **Çok basit** — tek dosya, birkaç satır, mekanik değişim (rename, typo, sabit güncelleme, import temizliği) |
-| 2 | `--effort medium -p '/code-review low'` | **Basit** — tek modül/dosya, sınırlı mantık değişimi, yeni davranış yok |
-| 3 *(varsayılan)* | `--effort low -p '/code-review medium'` | **Normal** — birkaç dosya, sıradan feature/fix. Seviye belirsizse **bu seçilir** |
-| 4 | `--effort medium -p '/code-review medium'` | **Çok karmaşık** — çok modül, mimari/şema değişimi, güvenlik-eşzamanlılık-ödeme dokunuşu, büyük refactor |
+Ölçüm — review'a girecek diff üzerinden:
 
-- Varsayılan **seviye 3**'tür. Agent gerekçesiz **yükseltmez** — seviye 4 yalnız yukarıdaki
-  karmaşıklık işaretleri gerçekten varsa seçilir.
-- `/code-review high` / `xhigh` / `max` ve `--effort high`+ **yalnızca kullanıcı açıkça isterse**
-  kullanılır; agent kendiliğinden tablo dışına çıkmaz.
+```bash
+git diff --shortstat            # "N files changed, X insertions(+), Y deletions(-)"
+```
+
+`DOSYA` = değişen dosya sayısı, `SATIR` = insertions + deletions.
+
+| Seviye | Komut kuyruğu | Dosya | Satır |
+|---|---|---|---|
+| 1 | `--effort low -p '/code-review low'` | ≤ 10 | ≤ 3.000 |
+| 2 | `--effort medium -p '/code-review low'` | 11 – 20 | 3.001 – 6.000 |
+| 3 | `--effort low -p '/code-review medium'` | 21 – 50 | 6.001 – 10.000 |
+| 4 | `--effort medium -p '/code-review medium'` | > 50 | > 10.000 |
+
+- **Dosya ve satır farklı seviye gösterirse yüksek olan kazanır** — 5 dosyada 8.000 satır
+  değişmişse seviye 3'tür.
+- **Kod harici diff** (dokümantasyon, test, config, asset) review koşulacaksa **seviye 1**'dir,
+  boyutu ne olursa olsun. (`commit` skill'inde yalnız non-kod değişmişse review zaten atlanır —
+  bu satır karışık veya ad-hoc review içindir.)
+- Eşikler dışına çıkmak yok: agent "iş karmaşık geldi" diye seviye yükseltmez, ölçüm ne diyorsa o.
+- `/code-review high` / `xhigh` / `max` ve `--effort high`+ **yalnızca kullanıcı açıkça isterse**.
 - Kullanıcı bir seviye söylediyse (ör. "seviye 2 ile review et") o seviye aynen uygulanır.
 
 ### Büyük diff — birden fazla oturuma bölme

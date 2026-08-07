@@ -72,20 +72,28 @@ cd <target_path> && claude --model opus --effort <effort> -p '/code-review <leve
 
 ##### Seviye Seçimi — `<level>` + `<effort>`
 
-Diffin karmaşıklığına bakarak seviye seçilir. `/code-review` argümanı review derinliğini,
-`--effort` child oturumun düşünme eforunu belirler.
+Seviye **diffin büyüklüğünden ölçülür**, "basit/karmaşık" yorumundan değil:
 
-| Seviye | Komut kuyruğu | Ne zaman |
-|---|---|---|
-| 1 | `--effort low -p '/code-review low'` | **Çok basit** — tek dosya, birkaç satır, mekanik değişim (rename, typo, sabit güncelleme, import temizliği) |
-| 2 | `--effort medium -p '/code-review low'` | **Basit** — tek modül/dosya, sınırlı mantık değişimi, yeni davranış yok |
-| 3 *(varsayılan)* | `--effort low -p '/code-review medium'` | **Normal** — birkaç dosya, sıradan feature/fix. Seviye belirsizse **bu seçilir** |
-| 4 | `--effort medium -p '/code-review medium'` | **Çok karmaşık** — çok modül, mimari/şema değişimi, güvenlik-eşzamanlılık-ödeme dokunuşu, büyük refactor |
+```bash
+git diff --shortstat            # "N files changed, X insertions(+), Y deletions(-)"
+```
 
-- Varsayılan **seviye 3**. Agent gerekçesiz yükseltmez; seviye 4 yalnız gerçek karmaşıklık işareti varsa.
+`DOSYA` = değişen dosya sayısı, `SATIR` = insertions + deletions.
+
+| Seviye | Komut kuyruğu | Dosya | Satır |
+|---|---|---|---|
+| 1 | `--effort low -p '/code-review low'` | ≤ 10 | ≤ 3.000 |
+| 2 | `--effort medium -p '/code-review low'` | 11 – 20 | 3.001 – 6.000 |
+| 3 | `--effort low -p '/code-review medium'` | 21 – 50 | 6.001 – 10.000 |
+| 4 | `--effort medium -p '/code-review medium'` | > 50 | > 10.000 |
+
+- **Dosya ve satır farklı seviye gösterirse yüksek olan kazanır** (5 dosyada 8.000 satır → seviye 3).
+- **Kod harici diff** (dokümantasyon, test, config, asset) review koşulacaksa **seviye 1**'dir.
+  Yalnız non-kod değiştiyse review zaten atlanır (yukarıdaki kural) — bu satır karışık diff içindir.
+- Ölçüm ne diyorsa o: agent kendiliğinden seviye yükseltmez/düşürmez.
 - `high` / `xhigh` / `max` (level veya effort) **yalnızca kullanıcı açıkça isterse**.
 - Kullanıcı seviye belirttiyse o seviye aynen uygulanır.
-- Seçilen seviye Soru 1'de kullanıcıya **belirtilir** (ör. "review: seviye 3").
+- Seçilen seviye Soru 1'de kullanıcıya **belirtilir** (ör. "review: seviye 2 — 14 dosya / 4.100 satır").
 
 Detay: `token-efficiency` kuralı → "Code Review — Tek Kural".
 
@@ -111,7 +119,7 @@ Detay: `token-efficiency` kuralı → "Code Review — Tek Kural".
 
 ```
 Bash(
-  command: "cd /path/to/repo-or-worktree && claude --model opus --effort low -p '/code-review medium'",   // seviye 3 = varsayılan
+  command: "cd /path/to/repo-or-worktree && claude --model opus --effort low -p '/code-review low'",   // örnek: seviye 1 (≤10 dosya, ≤3.000 satır)
   run_in_background: true,
   timeout: 600000
 )
