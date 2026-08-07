@@ -35,25 +35,44 @@ Agent `/code-review` skill'ini doğrudan çağıramaz. Code-review **her zaman a
 oturumuna Bash ile devredilir** — model/oturum fark etmeksizin tek yol:
 
 ```bash
-cd <target_path> && claude --model opus -p '/code-review medium'
+cd <target_path> && claude --model opus --effort <effort> -p '/code-review <level>'
 ```
 
 - `<target_path>` = **çalışma klasörü** (repo kökü veya worktree kökü). `cd` zorunlu — child oturum diff'ini kendi cwd'sinde hesaplar, path'i prompt'a yazmak yetmez (worktree'de yanlış repo review edilir)
 - Model **her zaman `--model opus`** — ana oturum modeli ne olursa olsun
-- Effort **her zaman `medium`** — agent yükseltmez; `high`+ yalnızca kullanıcı açıkça isterse
 - Bash çağrısı **arka planda** koşar (`run_in_background: true`), `timeout: 600000` verilir — asılı review sessizce atlanmasın
 - **Recursion guard**: prompt'u `/code-review` ile başlayan oturum zaten review oturumudur — bu kural orada geçerli değildir, skill doğrudan koşar, yeni delegasyon yapmaz
 - Code-review için **subagent spawn etme, `Workflow({name: "code-review"})` launch etme** — tek yol yukarıdaki komut
 - Çıktı geldiğinde bulgular ham hâliyle alınır, filtrelenmez
+
+### Seviye Seçimi — `<level>` + `<effort>`
+
+İşin karmaşıklığına göre agent **dört seviyeden birini** seçer. `/code-review` argümanı review
+derinliğini, `--effort` child oturumun düşünme eforunu belirler; ikisi ayrı eksendir ve birlikte
+tabloya göre yazılır.
+
+| Seviye | Komut kuyruğu | Ne zaman |
+|---|---|---|
+| 1 | `--effort low -p '/code-review low'` | **Çok basit** — tek dosya, birkaç satır, mekanik değişim (rename, typo, sabit güncelleme, import temizliği) |
+| 2 | `--effort medium -p '/code-review low'` | **Basit** — tek modül/dosya, sınırlı mantık değişimi, yeni davranış yok |
+| 3 *(varsayılan)* | `--effort low -p '/code-review medium'` | **Normal** — birkaç dosya, sıradan feature/fix. Seviye belirsizse **bu seçilir** |
+| 4 | `--effort medium -p '/code-review medium'` | **Çok karmaşık** — çok modül, mimari/şema değişimi, güvenlik-eşzamanlılık-ödeme dokunuşu, büyük refactor |
+
+- Varsayılan **seviye 3**'tür. Agent gerekçesiz **yükseltmez** — seviye 4 yalnız yukarıdaki
+  karmaşıklık işaretleri gerçekten varsa seçilir.
+- `/code-review high` / `xhigh` / `max` ve `--effort high`+ **yalnızca kullanıcı açıkça isterse**
+  kullanılır; agent kendiliğinden tablo dışına çıkmaz.
+- Kullanıcı bir seviye söylediyse (ör. "seviye 2 ile review et") o seviye aynen uygulanır.
 
 ### Büyük diff — birden fazla oturuma bölme
 
 Diff büyükse (çok modül / yüzlerce satır — örn. ara commit atmadan yürütülen `issue-workflow` yönetici modu teslimatı) review **3-4 paralel `claude -p` oturumuna bölünebilir**; her oturum ayrı bir dosya kümesine odaklanır:
 
 ```bash
-cd <target_path> && claude --model opus -p '/code-review medium — sadece <path/alt-dizin> altındaki değişiklikler'
+cd <target_path> && claude --model opus --effort <effort> -p '/code-review <level> — sadece <path/alt-dizin> altındaki değişiklikler'
 ```
 
+- Seviye **tüm kümelerde aynıdır** ve diffin bütününe göre seçilir — bölmek seviyeyi düşürmez
 - Kural bozulmaz: yol hâlâ **ayrı Claude oturumu**, subagent/Workflow değil
 - Kümeler **örtüşmez**; hiçbir değişen dosya kümesiz kalmaz (bölüm listesi `git diff --name-only` üzerinden çıkarılır)
 - Hepsi arka planda başlatılır, çıktılar toplanır, bulgular **birleştirilip dedup edilerek** ham hâliyle sunulur

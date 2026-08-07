@@ -60,15 +60,32 @@ git diff
 Agent `/code-review` skill'ini doğrudan çağıramaz. Review **ayrı bir Claude oturumuna Bash ile devredilir**:
 
 ```bash
-cd <target_path> && claude --model opus -p '/code-review medium'
+cd <target_path> && claude --model opus --effort <effort> -p '/code-review <level>'
 ```
 
 - `<target_path>` = **çalışma klasörü** — repo kökü, worktree'de çalışılıyorsa worktree kökü. `cd` **zorunlu**: child oturum diff'ini kendi cwd'sinde hesaplar; path'i yalnız prompt'a yazmak worktree'de yanlış repo'yu review ettirir.
 - Bash çağrısı **arka planda** koşar (`run_in_background: true`), `timeout: 600000` verilir — sonuç bildirimi gelince çıktı okunur, asılı kalırsa timeout'la yakalanır.
 - **Recursion guard**: prompt'u `/code-review` ile başlayan bir oturumdaysan bu delegasyonu yapma — zaten review oturumusun, skill'i doğrudan koş.
-- Effort **her zaman `medium`** — agent yükseltmez, düşürmez. `high` / `xhigh` / `max` yalnızca kullanıcı açıkça isterse (o zaman komuttaki `medium` yerine yazılır).
+- `<level>` + `<effort>` diffin karmaşıklığına göre **dört seviyeli tablodan** seçilir (aşağıda).
 - Code-review için **subagent spawn etme**, `Workflow({name: "code-review"})` **launch etme** — tek yol yukarıdaki komut.
 - Komut çıktısındaki bulgular **ham hâliyle** alınır (aşağıdaki "Dürüst Review"). Komut hata verirse veya boş dönerse **sessizce geçme** — kullanıcıya raporla.
+
+##### Seviye Seçimi — `<level>` + `<effort>`
+
+Diffin karmaşıklığına bakarak seviye seçilir. `/code-review` argümanı review derinliğini,
+`--effort` child oturumun düşünme eforunu belirler.
+
+| Seviye | Komut kuyruğu | Ne zaman |
+|---|---|---|
+| 1 | `--effort low -p '/code-review low'` | **Çok basit** — tek dosya, birkaç satır, mekanik değişim (rename, typo, sabit güncelleme, import temizliği) |
+| 2 | `--effort medium -p '/code-review low'` | **Basit** — tek modül/dosya, sınırlı mantık değişimi, yeni davranış yok |
+| 3 *(varsayılan)* | `--effort low -p '/code-review medium'` | **Normal** — birkaç dosya, sıradan feature/fix. Seviye belirsizse **bu seçilir** |
+| 4 | `--effort medium -p '/code-review medium'` | **Çok karmaşık** — çok modül, mimari/şema değişimi, güvenlik-eşzamanlılık-ödeme dokunuşu, büyük refactor |
+
+- Varsayılan **seviye 3**. Agent gerekçesiz yükseltmez; seviye 4 yalnız gerçek karmaşıklık işareti varsa.
+- `high` / `xhigh` / `max` (level veya effort) **yalnızca kullanıcı açıkça isterse**.
+- Kullanıcı seviye belirttiyse o seviye aynen uygulanır.
+- Seçilen seviye Soru 1'de kullanıcıya **belirtilir** (ör. "review: seviye 3").
 
 Detay: `token-efficiency` kuralı → "Code Review — Tek Kural".
 
@@ -94,7 +111,7 @@ Detay: `token-efficiency` kuralı → "Code Review — Tek Kural".
 
 ```
 Bash(
-  command: "cd /path/to/repo-or-worktree && claude --model opus -p '/code-review medium'",
+  command: "cd /path/to/repo-or-worktree && claude --model opus --effort low -p '/code-review medium'",   // seviye 3 = varsayılan
   run_in_background: true,
   timeout: 600000
 )
@@ -107,7 +124,7 @@ Sonuç bildirimi gelince çıktıyı oku, bulguların hepsini ham haliyle Soru 1
 Diff birden çok modüle yayılmışsa (tipik durum: `issue-workflow` yönetici modu — ara commit atmadan yürütülen tüm iş tek teslimatta gelir), tek oturum tüm diffi yeterince derin inceleyemez. O zaman review **3-4 paralel `claude -p` oturumuna bölünür**:
 
 1. `git diff --name-only` ile değişen dosyaları çıkar, **örtüşmeyen** kümelere ayır (dizin/modül bazlı)
-2. Her küme için ayrı arka plan çağrısı: `cd <path> && claude --model opus -p '/code-review medium — sadece <küme> altındaki değişiklikler'`
+2. Her küme için ayrı arka plan çağrısı: `cd <path> && claude --model opus --effort <effort> -p '/code-review <level> — sadece <küme> altındaki değişiklikler'` — seviye diffin bütününe göre seçilir ve **tüm kümelerde aynıdır**
 3. Hepsi bitince çıktıları topla, aynı bulguyu **dedup** et, hepsini ham haliyle Soru 1'e taşı
 
 Kural bozulmaz — yol hâlâ ayrı Claude oturumu, subagent/Workflow değil (`token-efficiency` → "Büyük diff — birden fazla oturuma bölme"). Hiçbir değişen dosya kümesiz kalmamalı.
