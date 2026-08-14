@@ -12,6 +12,11 @@ processes:
   heavy-status:
     command: bash scripts/heavy.sh --status
     auto_start: false
+  # deslop kaynak önbelleğini tazele/denetle: hangi kaynak fresh/cached/stale/MISSING.
+  # do-deslop her koşuda kendisi çağırır; bu giriş elle kontrol ve ağ sorunu teşhisi içindir.
+  deslop-sources:
+    command: bash scripts/deslop-sources.sh
+    auto_start: false
   # Gerekirse buraya ekle, örnek:
   # test:
   #   command: bash scripts/init-check.sh

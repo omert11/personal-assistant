@@ -18,9 +18,9 @@ Türkçe iletişim, İngilizce kod yorumu ve commit mesajları.
 - `.claude-plugin/plugin.json`, `marketplace.json` — plugin ve marketplace tanımları
 - `hooks/hooks.json` — SessionStart (kural yükleme, init-check, heavy kurulumu), PreToolUse (heavy guard), UserPromptSubmit hook'ları
 - `rules/` — 15 kural dosyası (oturum başı `~/.claude/rules/` altına materialise edilir)
-- `skills/` — `commit`, `extension-builder`, `project-init`, `obsidian-write`, `obsidian-search`, `obsidian-doc-source`, `crawl2md`, `worktree`, `issue-workflow`, `user-render` vb. (15 adet)
+- `skills/` — `commit`, `extension-builder`, `project-init`, `obsidian-write`, `obsidian-search`, `obsidian-doc-source`, `crawl2md`, `worktree`, `issue-workflow`, `user-render`, `deslop` + `do-deslop` vb. (17 adet)
 - `agents/` — alt agent'lar (`web-scrape-cleaner`)
-- `scripts/` — `load-rules.sh`, `init-check.sh`, `init-check.ps1`, `userprompt-obsidian-hint.sh`, `hook-state.sh` (ortak helper), `heavy.sh` (global derleme kilidi), `heavy-guard.sh` (PreToolUse sarmalayıcı), `install-heavy.sh`, `setup.py`, `render-server.ts` (PA Render — Bun)
+- `scripts/` — `load-rules.sh`, `init-check.sh`, `init-check.ps1`, `userprompt-obsidian-hint.sh`, `hook-state.sh` (ortak helper), `heavy.sh` (global derleme kilidi), `heavy-guard.sh` (PreToolUse sarmalayıcı), `install-heavy.sh`, `deslop-sources.sh` (AI yazım izi kaynakları — 24h TTL önbellek), `setup.py`, `render-server.ts` (PA Render — Bun)
 - `render/lib/` — PA Render UI kit (`pa.css` design system, `pa.js` web component'leri, vendored Chart.js + preact)
 - `commands/`, `bin/` — ek genişletme noktaları
 

@@ -3,7 +3,7 @@ name: commit
 description: Commit oncesi kalite kontrol + teslimat secenekleri (commit, push, PR, branch).
 when_to_use: Trigger — "commit", "commit at", "push et", "PR olustur", "branch ac", "degisiklikleri kaydet", "kodu gonder", "/commit". Her kod teslimat/kaydetme isteginde tetiklenir.
 disable-model-invocation: false
-allowed-tools: Bash(git *), Bash(gh *), Bash(plane-cli *), Read, Grep, Glob, AskUserQuestion, Task
+allowed-tools: Bash(git *), Bash(gh *), Bash(plane-cli *), Read, Grep, Glob, AskUserQuestion, Task, Skill
 ---
 
 # Commit Skill
@@ -46,7 +46,20 @@ git diff --cached --stat  # staged varsa
 git diff
 ```
 
-#### 3b. Code Review — ZORUNLU (kod değişikliği varsa)
+#### 3b. Deslop — ZORUNLU (kullanıcı yüzeyi değiştiyse)
+
+Diff'te son kullanıcının göreceği metin varsa `deslop` skill'i **çalıştırılır**: `.md`, `.html`,
+template, `.po`, i18n JSON/YAML, e-posta şablonu, store metni veya kod içi UI string.
+
+- `Skill` tool ile `deslop` çağrılır, hedef olarak **yalnız diff'teki bu dosyalar** verilir.
+- **Review ile aynı anda, arka planda başlatılır** — biri diğerini beklemez.
+- Yalnız kod mantığı değiştiyse atlanır. Kullanıcı "deslop atla" derse atlanır, bulgu olarak
+  işaretlenir.
+- Deslop raporu Soru 1'e taşınır: değişen dosyalar + düzeltme sayısı + kesilen iddialar.
+- Deslop bir **kod dosyasını** değiştirdiyse (kod içi UI string) review o dosyanın deslop öncesi
+  hâlini görmüştür — bu Soru 1'de not düşülür.
+
+#### 3c. Code Review — ZORUNLU (kod değişikliği varsa)
 
 **Kural kesin**: `git diff --stat` çıktısında herhangi bir **kod dosyası** (`.py`, `.js`, `.ts`, `.tsx`, `.jsx`, `.go`, `.rs`, `.java`, `.kt`, `.swift`, `.dart`, `.rb`, `.php`, `.c`, `.cpp`, `.cs`, `.sh`, `.vue`, `.svelte`) değişmişse review **mutlaka** çalıştırılır.
 
@@ -125,7 +138,7 @@ Bash(
 )
 ```
 
-Sonuç bildirimi gelince çıktıyı oku, bulguların hepsini ham haliyle Soru 1'e taşı. Review koşarken bekleme — 3c/3d/3e adımlarını bu sırada yürüt, Soru 1'i kurmadan önce review çıktısını topla.
+Sonuç bildirimi gelince çıktıyı oku, bulguların hepsini ham haliyle Soru 1'e taşı. Review koşarken bekleme — 3d/3e/3f adımlarını bu sırada yürüt, Soru 1'i kurmadan önce review ve deslop çıktısını topla.
 
 ##### Büyük Diff — Review'i Böl
 
@@ -143,11 +156,11 @@ Soru 1'de "düzelt" seçilmişse ve bulgular çoksa (>5 bulgu veya 3+ dosya), d�
 
 Düzeltme sonrası **etkilenen kümeler için review tekrar koşulur** (yalnız değişen dosyaları kapsayan oturum), yeşile dönmeden commit atılmaz.
 
-#### 3c. Test Kontrolü
+#### 3d. Test Kontrolü
 - Değişen dosyaların test'i var mı? (`*.test.*`, `*_test.*`, `tests/`, `__tests__/`)
 - Yoksa **bulgu olarak işaretle** (sormak için bekle)
 
-#### 3d. Rules Uyum Kontrolü
+#### 3e. Rules Uyum Kontrolü
 
 `~/.claude/rules/` altındaki **tüm** dosyaları + **proje `CLAUDE.md` ve `CLAUDE.local.md`'sini** dinamik tara:
 
@@ -172,7 +185,7 @@ Her dosyayı oku, değişen kodla alakalı kuralları bul. Sabit liste tutma —
 
 İhlal varsa bulgu olarak topla. Alakasız rule dosyası varsa atla.
 
-#### 3e. Plane Issue Bağlantısı (opsiyonel)
+#### 3f. Plane Issue Bağlantısı (opsiyonel)
 `CLAUDE.local.md`'de **Plane proje (UUID) tanımlıysa** (yoksa bu adımı ATLA — görev takibi opsiyonel).
 
 > **Plane CLI kullanımı `plane-cli` skill'ine devredilir.** Tüm `plane-cli` komut sözdizimi, UUID semantiği (`PROJ-N` → `issue get-id`), `--json` parse, REPLACE (`update --assignees/--labels`) vs incremental (`assignee/label --add`) farkı, enum'lar ve hata kodları için **`plane-cli` skill'inin kurallarına uy** (`~/.claude/skills/plane-cli/SKILL.md`). Bu skill yalnızca **commit'e özgü iş kurallarını** (hangi issue, completed'e çekme, self atama, label tipi, branch-bazlı tarih) tanımlar; çağrıların nasıl yapılacağı `plane-cli` skill'inin sorumluluğundadır.
@@ -183,7 +196,7 @@ Açık issue'ları listele (proje UUID ile), yapılan değişikliklerle uyuşan 
 
 Her iki durumda da issue oluşturma/güncelleme **"Plane Alan Doldurma Kuralları"** bölümüne göre alanları (self assignee, tarihler, label) set eder.
 
-#### 3f. Obsidian Kayıt İhtiyacı
+#### 3g. Obsidian Kayıt İhtiyacı
 Bu commit'te vault'a yazılacak kalıcı bir bilgi/karar var mı tespit et (kanonik tanım: `rules/obsidian.md` + `obsidian-write` skill):
 - **Bilgi** — sistem/araç/servis gerçekte nasıl çalışıyor; credential/sunucu/endpoint dahil
 - **Karar** — ne yapılacağına dair verilmiş kalıcı hüküm

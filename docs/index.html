@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 14 kural, 5 hook, 15 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 15 kural, 5 hook, 17 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -196,7 +196,7 @@
     <div class="hero-stats">
       <div class="stat"><div class="num">15</div><div class="lbl">Kural</div></div>
       <div class="stat"><div class="num">7</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">15</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">17</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">1</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -208,7 +208,7 @@
     <div class="sec-head">
       <div class="kicker"><i data-lucide="star"></i> Öne Çıkanlar</div>
       <h2>Plugin ne yapar?</h2>
-      <p>Detaylara inmeden önce, plugin'in en güçlü yetenekleri.</p>
+      <p>Ayrıntıya inmeden önce dört ana parça.</p>
     </div>
     <div class="features">
       <div class="card"><div class="icon"><i data-lucide="brain"></i></div><div class="body">
@@ -448,7 +448,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 15 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 17 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
       <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır — ağır iş agent'lara delege edilir.</p>
     </div>
@@ -458,7 +458,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       <div class="ebody">
         <p><strong>Kod değişikliklerini commit etmeden önce kapsamlı kalite kapısı kurar.</strong> Tüm analizi (code-review, test, rules uyumu, Plane issue, Obsidian) sessizce yapar, bulguları biriktirir, tek toplu soru bloğunda sunar, onay sonrası seçilen teslimatı (commit/push/PR/merge) uygular.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"commit", "push et", "PR oluştur", "branch aç", <code>/commit</code>. <code>before-commit</code> kuralı gereği manuel <code>git commit</code> yerine zorunludur.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → branch tespit → <b>code review (zorunlu)</b> → test → rules tara → Plane issue eşleştir → Obsidian → tek soru bloğu → dosyaları tek tek stage + Co-Authored-By commit → teslimat. Review, arka planda ayrı bir Claude oturumuna devredilir: <code>cd &lt;çalışma-klasörü&gt; &amp;&amp; claude --model opus --effort &lt;effort&gt; -p '/code-review &lt;level&gt;'</code> (repo veya worktree kökü). Skill doğrudan çağrılmaz, subagent/Workflow ile koşturulmaz. Seviye <code>git diff --shortstat</code> ile ölçülür (dosya sayısı + insertions/deletions) ve dört kademeli tablodan seçilir — ≤10 dosya/≤3.000 satırdan &gt;50 dosya/&gt;10.000 satıra; ikisi çelişirse yüksek olan kazanır, kod harici diff seviye 1. <code>high</code>+ yalnızca kullanıcı isterse.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → branch tespit → <b>deslop (zorunlu, kullanıcı yüzeyi varsa)</b> + <b>code review (zorunlu)</b> — ikisi aynı anda arka planda → test → rules tara → Plane issue eşleştir → Obsidian → tek soru bloğu → dosyaları tek tek stage + Co-Authored-By commit → teslimat. Review, arka planda ayrı bir Claude oturumuna devredilir: <code>cd &lt;çalışma-klasörü&gt; &amp;&amp; claude --model opus --effort &lt;effort&gt; -p '/code-review &lt;level&gt;'</code> (repo veya worktree kökü). Skill doğrudan çağrılmaz, subagent/Workflow ile koşturulmaz. Seviye <code>git diff --shortstat</code> ile ölçülür (dosya sayısı + insertions/deletions) ve dört kademeli tablodan seçilir — ≤10 dosya/≤3.000 satırdan &gt;50 dosya/&gt;10.000 satıra; ikisi çelişirse yüksek olan kazanır, kod harici diff seviye 1. <code>high</code>+ yalnızca kullanıcı isterse.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="shield-alert"></i> Öne çıkan</div><p>Code review <strong>atlanamaz</strong> — "hızlıca commit" dense bile çalışır. Ayrı Claude oturumuna Bash ile devredilir (<code>--model opus</code>, arka planda); <code>&lt;level&gt;</code> ve <code>--effort</code> diffin büyüklüğünden ölçülen dört seviyeli tablodan seçilir, <code>high</code>/<code>xhigh</code>/<code>max</code> yalnızca kullanıcı açıkça isterse. Diff birden çok modüle yayılmışsa (tipik durum: <code>issue-workflow</code> yönetici modu — ara commit atılmadığı için tüm iş tek teslimatta gelir) review <strong>3-4 paralel oturuma bölünür</strong>: değişen dosyalar örtüşmeyen kümelere ayrılır, her kümeye ayrı oturum, çıktılar birleştirilip dedup edilir. Bulgu düzeltmesi çoksa (&gt;5 bulgu veya 3+ dosya) <code>Workflow</code> ile dosya bazında dağıtılır — yasak review'a aittir, düzeltmeye değil; sonra etkilenen kümeler yeniden review edilir. Bulgular küçük diye filtrelenemez/yumuşatılamaz; uncertain bulgular bile listelenir, false-positive kararını kullanıcı verir. Asla <code>--amend</code>, asla force push, asla <code>git add -A</code>.</p></div>
       </div>
     </div>
@@ -592,6 +592,26 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       </div>
     </div>
 
+    <!-- deslop -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="eraser"></i></div><div><div class="etitle">deslop</div><div class="emeta">işçi ajanlar: opus · low</div></div></div>
+      <div class="ebody">
+        <p><strong>Metindeki AI yazım izlerini (slop) son kullanıcının gördüğü yüzeylerde temizler.</strong> Yönetici/işçi ayrımı üzerine kurulu: <code>/deslop</code> oturumu kuralları <b>okumaz ve bilmez</b>, <b>tek bir dosyanın bile içeriğine bakmaz</b> — <code>Grep</code>/<code>Glob</code> tool'ları verilmemiştir. Tek <code>find</code> / <code>git status</code> komutuyla düz yol listesi alır, dizin sınırından gruplara böler (<b>grup başına dosya limiti yok</b>), her grubu ayrı <code>claude -p</code> oturumuna verir, dönen raporları birleştirip <code>git diff</code> ile doğrular. Kural bilgisi, <b>kapsam analizi</b> ve düzenleme yetkisi yalnızca <code>do-deslop</code> oturumundadır; kural iskeleti + canlı kaynaklar + dosya içerikleri birlikte yüz binlerce karakterdir ve ana context'te tutulması sonraki işleri bozar.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"slop temizle", "AI izlerini temizle", "metni insanlaştır", <code>/deslop</code>, <code>/deslop ./*</code>, <code>/deslop README.md docs/index.html</code>. Argümansız çağrı <b>git değişikliklerini</b> tarar — repo geneli açık istek olmadan açılmaz. Ayrıca <code>commit</code> skill'i adım 3b'de <b>zorunlu</b> olarak çağırır (diff'te kullanıcı yüzeyi varsa), code review ile <b>aynı anda arka planda</b>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>repo kökü → tek komutla ham yol listesi (argüman → kabuk glob + <code>find</code>; argümansız → <code>git status</code>) → yalnız <b>mekanik</b> eleme (<code>node_modules</code>/<code>dist</code>/<code>.git</code>, lock/minified, &gt;1 MB, binary — <code>grep -Il ''</code>; boyut eşiği <code>-size -1024k</code>, BSD <code>find</code> <code>-1M</code>'i yukarı yuvarlayıp listeyi sessizce boşaltır) → &gt;40 dosyada hacim kapısı → dizin bazlı gruplar (dosya limiti yok), aynı anda ≤6 oturum, kalanlar dalgalar hâlinde → <code>cd &lt;repo&gt; &amp;&amp; claude --model opus --effort low -p '/personal-assistant:do-deslop &lt;paths&gt;'</code> (arka planda, <code>timeout 600000</code>) → <code>git diff</code> ile doğrula → birleşik rapor + bırak/geri al sorusu.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Model her zaman <code>opus</code>, effort her zaman <code>low</code></strong> — ana oturum modeli ne olursa olsun. <strong>Hiçbir grup, hiçbir dosya atlanmaz</strong>: grup sayısı taşarsa eşzamanlılık artırılmaz, dalga eklenir; grup içinde de örnekleme/kırpma yapılmaz, kesilen oturumun işlenmemiş dosyaları yeniden gönderilir. <strong>Kapsam kararı yöneticide değil</strong>: <code>CLAUDE.md</code>, <code>rules/</code>, test, config, <code>.py</code> — hepsi listede kalır ve gönderilir; kapsam dışı olduklarına <code>do-deslop</code> karar verip <code>SKIPPED</code> döner. <strong>Alt oturumun raporu kanıt değildir</strong> — <code>CHANGED</code> dosyaları diff'te doğrulanır, <code>CLEAN</code> dediğinde beklenmedik değişiklik varsa hunk geri alınır. <code>SOURCES: FAILED</code> dönen grup yapılmamış sayılır ve tekrar koşar. Commit bu skill'de yapılmaz — teslimat <code>commit</code> skill'inin işidir.</p></div>
+      </div>
+    </div>
+
+    <!-- do-deslop -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="scan-text"></i></div><div><div class="etitle">do-deslop</div><div class="emeta">deslop işçisi · elle çağrılmaz</div></div></div>
+      <div class="ebody">
+        <p><strong>Verilen dosyalarda AI yazım izlerini canlı kaynaktan okuyup tek tek temizler.</strong> Kural iskeleti (<code>references/ai-writing-rules.md</code>) <b>kelime listesi tutmaz</b> — kelimeler, swap tabloları, dönem/model imzaları ve sayısal eşikler eskir, bu yüzden her koşuda upstream'den okunur: Wikipedia <em>Signs of AI writing</em> (kelime sınıflandırmasında kazanan otorite), <code>jooray/humanizer</code>, <code>haidrrrry/humanize-ai-writing</code> (ai-tells + rewrite-rules + checklist), <code>bharvey2026/humanise-skill</code>, <code>jalaalrd/anti-ai-slop-writing</code>. <code>scripts/deslop-sources.sh</code> bunları 24 saatlik TTL ile <code>~/.cache/deslop-sources/</code> altına atomik yazar; paralel oturumlar aynı önbelleği paylaşır. <b>Zorunlu bir kaynak çekilemezse iş yapılmaz</b> — kurallar hatırlanarak çalışmak yasaktır.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p><code>/do-deslop &lt;dosya|glob|dizin&gt;...</code> — yalnız <code>deslop</code> skill'inin açtığı ayrı <code>claude -p</code> oturumunda. Normal sohbette elle çağrılmaz (<code>disable-model-invocation</code>).</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Kapsam</div><p><b>Yalnız son kullanıcının gördüğü yüzey.</b> Tam dosya: README/docs <code>.md</code>, landing HTML, template (<code>jinja</code>/<code>twig</code>/<code>blade</code>/<code>erb</code>), <code>.po</code> (yalnız <code>msgstr</code>), i18n JSON/YAML <b>değerleri</b>, e-posta şablonu, store metni. Kısmi: kaynak koddaki UI string literal'ları (<code>t()</code>/<code>gettext()</code>, toast, form <code>label</code>/<code>placeholder</code>/<code>help_text</code>, Django <code>verbose_name</code>). <b>Asla</b>: kod mantığı, kod yorumu/docstring, test, config, <code>CLAUDE.md</code>/<code>SKILL.md</code>/<code>rules</code>, CHANGELOG, fenced code block, link hedefi, HTML attribute ve <code>&lt;script&gt;</code>, <code>msgid</code>, i18n anahtarları.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Toplu değiştirme yasak.</strong> <code>sed -i</code>/<code>awk</code>/<code>perl -pi</code> çalıştırılmaz, <code>Edit</code>'te <code>replace_all</code> kullanılmaz — aynı kelime bir cümlede iz, başka cümlede doğru kelimedir. <strong>Her dosya baştan sona okunur</strong> (grep ile ilgili yere atlama yok; bağlam tam metinden gelir, context kaygısı bu oturumda yoktur) ve her düzeltme <b>ayrı bir <code>Edit</code></b> çağrısıdır. Karar <strong>kümelenmeye</strong> dayanır — tek işaret tek başına düzeltme gerekçesi değildir; yanlış pozitif listesi (em dash, kıvrık tırnak, resmî kelime dağarcığı, kusursuz dilbilgisi) korunur. <strong>Olgu/isim/sayı/tarih/atıf eklenmez ve değişmez</strong>; <code>.po</code>'da format belirteçleri (<code>%s</code>, <code>{count}</code>) ve çoğul sırası birebir kalır. Rapor <b>birebir alıntı</b> ister, yüzde/olasılık skoru üretmez.</p></div>
+      </div>
+    </div>
+
     <!-- design-brief -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="layout-template"></i></div><div><div class="etitle">design-brief</div></div></div>
       <div class="ebody">
@@ -651,7 +671,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="sec-head">
       <div class="kicker"><i data-lucide="blocks"></i> Bağımlılıklar · dış araçlar</div>
       <h2>Plugin neye dayanıyor?</h2>
-      <p>Plugin kendi başına çalışır, ama tam gücü dış araçlarla entegrasyonundan gelir. <code>setup.sh</code> hepsini tek komutla kurar; her araç opsiyoneldir — yoksa ilgili özellik sessizce devre dışı kalır.</p>
+      <p>Plugin kendi başına çalışır. <code>setup.sh</code> hepsini tek komutla kurar; her araç opsiyoneldir — yoksa ilgili özellik sessizce devre dışı kalır.</p>
     </div>
 
     <!-- setup -->
@@ -669,7 +689,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       <div class="ebody">
         <p><strong>Nedir:</strong> Markdown tabanlı yerel bilgi tabanı; dosyalar <code>[[wikilink]]</code> ile birbirine bağlanır. Vault düz dosya sistemidir — uygulama açık olmadan da okunur/yazılır. Resmi CLI (<code>obsidian</code> komutu) BM25 arama ekler, zorunlu değildir.</p>
         <p><strong>Ne işe yarar:</strong> Kalıcı teknik gerçeği (sistem davranışı, kalıcı karar, credential) oturumlar arası taşır. Genel alan klasörleri tüm projeleri besler; proje klasörü yalnız kendine özgü olanı tutar.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><strong>Plugin'in kalbi.</strong> 3 skill (<code>obsidian-search</code>/<code>obsidian-write</code>/<code>obsidian-doc-source</code>) doğrudan Obsidian üzerine kurulu — hepsi <b>ana agent context'inde</b> çalışır, subagent yoktur. <code>userprompt-obsidian-hint.sh</code> her non-trivial prompt'ta arama+yazma davranışını hatırlatır. Vault <code>~/Documents/ObsidianVault/</code> altında klasör hiyerarşisidir (genel alan + proje); MOC/index.md kullanılmaz. Erişim <code>Glob</code>/<code>Grep</code>/<code>Read</code> ile, Obsidian CLI opsiyonel.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p>3 skill (<code>obsidian-search</code>/<code>obsidian-write</code>/<code>obsidian-doc-source</code>) doğrudan Obsidian üzerine kurulu — hepsi <b>ana agent context'inde</b> çalışır, subagent yoktur. <code>userprompt-obsidian-hint.sh</code> her non-trivial prompt'ta arama+yazma davranışını hatırlatır. Vault <code>~/Documents/ObsidianVault/</code> altında klasör hiyerarşisidir (genel alan + proje); MOC/index.md kullanılmaz. Erişim <code>Glob</code>/<code>Grep</code>/<code>Read</code> ile, Obsidian CLI opsiyonel.</p></div>
       </div>
     </div>
 
