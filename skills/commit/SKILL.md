@@ -392,6 +392,5 @@ Branch durumuna göre:
 - `~/.claude/rules/before-commit.md` — bu skill'in temel kuralları
 - `~/.claude/rules/coding.md` — kod kalite kuralları
 - `~/.claude/rules/ask-first.md` — AskUserQuestion kullanım kuralları
-- `~/.claude/rules/plane.md` — Plane ID semantiği + CLI kuralları
 - `plane-cli` skill — Plane CLI komut sözdizimi (adım 3e/10/10a buna devreder)
 - `worktree` skill (varsa) — worktree teslim akışı

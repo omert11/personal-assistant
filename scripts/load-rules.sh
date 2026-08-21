@@ -13,6 +13,15 @@ RULES_SRC="${CLAUDE_PLUGIN_ROOT}/rules"
 LOCAL_RULES_SRC="${CLAUDE_PLUGIN_ROOT}/local-rules"
 RULES_DST="$HOME/.claude/rules"
 
+# Guard: without CLAUDE_PLUGIN_ROOT both source dirs resolve to "/rules" and
+# "/local-rules", which do not exist. The prune step below would then see an
+# empty source set and delete every plugin-managed rule from ~/.claude/rules.
+# Bail out before touching anything when no source dir is present.
+if [ ! -d "$RULES_SRC" ] && [ ! -d "$LOCAL_RULES_SRC" ]; then
+  echo "load-rules: no rule source found (CLAUDE_PLUGIN_ROOT unset or wrong); nothing loaded." >&2
+  exit 0
+fi
+
 mkdir -p "$RULES_DST"
 
 # Copy new/changed rules. Plain cp -u covers this cheaply; on macOS cp
