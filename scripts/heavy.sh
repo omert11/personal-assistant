@@ -5,6 +5,16 @@
 #   heavy --low <cmd...>   background QoS, no slot (long-lived dev servers)
 #   heavy --status         which slots are busy and with what
 #
+# The pool has a fixed base width and a soft ceiling. When every lane is taken
+# but the CPU has stayed under HEAVY_CPU_CEIL for a whole HEAVY_GROW_WINDOW, a
+# busy pool is not a busy machine, so one extra lane opens — one per clean
+# window, up to HEAVY_MAX_SLOTS, past which the queue is hard.
+#
+# That window is a fact about the machine, not about the run asking. Slot
+# holders append CPU samples to a shared history, so an arrival reads the last
+# HEAVY_GROW_WINDOW seconds and decides at once instead of standing in line to
+# re-observe an idleness that already happened.
+#
 # macOS ships no flock(1); /usr/bin/lockf is the system equivalent. lockf holds
 # one file, so N concurrent slots are N lock files tried round-robin. Slots are
 # shared by every language and project: a Rust build and a Go build compete for
@@ -14,7 +24,8 @@ set -uo pipefail
 # Machine-local defaults (a 16 GB laptop may want a single slot where the shipped
 # default is 2). Only these knobs are read from the file; HEAVY_CONFIG itself is
 # not, since it already picked the file.
-CONFIG_VARS='HEAVY_SLOTS HEAVY_TIMEOUT HEAVY_STATE_DIR HEAVY_LOG'
+CONFIG_VARS='HEAVY_SLOTS HEAVY_TIMEOUT HEAVY_STATE_DIR HEAVY_LOG
+HEAVY_MAX_SLOTS HEAVY_GROW_WINDOW HEAVY_CPU_CEIL'
 CONFIG="${HEAVY_CONFIG:-$HOME/.config/heavy/config.sh}"
 if [ -f "$CONFIG" ]; then
   # Read in a subshell: a config that aborts (unset var under set -u, a stray
@@ -47,14 +58,30 @@ STATE_DIR="${HEAVY_STATE_DIR:-$HOME/.cache}"
 LOCK_FILE="$STATE_DIR/heavy-build.lock"
 HOLDER_FILE="$STATE_DIR/heavy-build.current"
 WAIT_FILE="$STATE_DIR/heavy-build.waiting"
+CPU_FILE="$STATE_DIR/heavy-build.cpu"
 WAIT_TIMEOUT="${HEAVY_TIMEOUT:-1200}"
 SLOTS="${HEAVY_SLOTS:-2}"
-# A non-numeric or sub-1 slot count would leave the round-robin loop with
+MAX_SLOTS="${HEAVY_MAX_SLOTS:-4}"    # hard ceiling for the side lanes
+GROW_WINDOW="${HEAVY_GROW_WINDOW:-30}"  # seconds of idle CPU that buy one lane
+CPU_CEIL="${HEAVY_CPU_CEIL:-90}"     # busy percent that counts as bottlenecked
+
+# A non-numeric or sub-minimum value would leave the round-robin loop with
 # nothing to try, so the command would never run.
-case "$SLOTS" in
-  ''|*[!0-9]*) SLOTS=1 ;;
-  *) [ "$SLOTS" -lt 1 ] && SLOTS=1 ;;
-esac
+num_or() {  # $1 = value, $2 = fallback, $3 = minimum
+  case "$1" in
+    ''|*[!0-9]*) printf '%s' "$2"; return ;;
+  esac
+  [ "$1" -lt "$3" ] && { printf '%s' "$2"; return; }
+  printf '%s' "$1"
+}
+SLOTS=$(num_or "$SLOTS" 1 1)
+MAX_SLOTS=$(num_or "$MAX_SLOTS" 4 1)
+GROW_WINDOW=$(num_or "$GROW_WINDOW" 30 1)
+CPU_CEIL=$(num_or "$CPU_CEIL" 90 1)
+# A ceiling under the base would shrink the pool instead of extending it.
+[ "$MAX_SLOTS" -lt "$SLOTS" ] && MAX_SLOTS=$SLOTS
+# How wide this run currently believes the pool is; grows, never shrinks.
+SLOT_LIMIT=$SLOTS
 POLL_INTERVAL=2
 
 # lockf exits 75 (EX_TEMPFAIL) when it cannot take the lock. A wrapped command
@@ -75,7 +102,10 @@ kullanim:
   heavy --status           slotlar dolu mu + kuyrukta kim bekliyor
   heavy --stats            kosu logunun ozeti (bekleme orani, load, mod dagilimi)
 ortam:
-  HEAVY_SLOTS       ayni anda kosacak agir derleme sayisi (varsayilan 2)
+  HEAVY_SLOTS       taban slot sayisi (varsayilan 2)
+  HEAVY_MAX_SLOTS   ek slotlarla cikilabilecek tavan (varsayilan 4)
+  HEAVY_GROW_WINDOW ek slot icin gereken bos-CPU suresi, saniye (varsayilan 30)
+  HEAVY_CPU_CEIL    bu yuzdenin ustundeki CPU darbogaz sayilir (varsayilan 90)
   HEAVY_TIMEOUT     bekleme tavani, saniye (varsayilan 1200)
   HEAVY_STATE_DIR   kilit + holder dosyalarinin dizini (varsayilan ~/.cache)
   HEAVY_CONFIG      makine-lokal ayar dosyasi (varsayilan ~/.config/heavy/config.sh)
@@ -105,7 +135,7 @@ log_run() {
   [ -f "$LOG_FILE" ] || (umask 077; : >> "$LOG_FILE") 2>/dev/null
   loadnow=$(sysctl -n vm.loadavg 2>/dev/null | tr -d '{}' | awk '{print $1","$2}')
   printf '%s\tmode=%s\tslots=%s\tqueued=%ss\tran=%ss\trc=%s\tload=%s\tcwd=%s\tcmd=%s\n' \
-    "$(date '+%Y-%m-%dT%H:%M:%S')" "$mode" "$SLOTS" "$queued" "$ran" "$rc" \
+    "$(date '+%Y-%m-%dT%H:%M:%S')" "$mode" "${SLOT_LIMIT:-$SLOTS}" "$queued" "$ran" "$rc" \
     "${loadnow:-?}" "$PWD" "$(printf '%s' "$*" | tr '\n' ' ' | cut -c1-200)" \
     | redact >> "$LOG_FILE" 2>/dev/null
   # Keep the tail rather than growing without bound; this is sampling data, not
@@ -148,17 +178,79 @@ slot_is_free() {
   lockf -kst 0 "$LOCK_FILE.$1" true 2>/dev/null
 }
 
+# Busy CPU percent averaged over $1 seconds, empty when it cannot be read.
+# iostat's own interval doubles as the poll sleep, so sampling costs no extra
+# wall-clock while queued. Idle is always the fourth field from the end — the
+# three load averages trail it — whatever the disk count on the line.
+cpu_busy() {
+  iostat -c 2 -w "$1" 2>/dev/null |
+    awk 'END { if (NF > 4 && $(NF-3) ~ /^[0-9.]+$/) printf "%d", 100 - $(NF-3) }'
+}
+
+# Take one sample and append it to the shared history. Lines are short and
+# opened O_APPEND, so concurrent samplers interleave safely rather than needing
+# a lock; a duplicate second costs nothing since the reader only asks whether
+# any sample in the window was over the ceiling.
+cpu_sample_append() {
+  busy=$(cpu_busy "$1")
+  [ -n "$busy" ] || return 1
+  [ -f "$CPU_FILE" ] || (umask 077; : >> "$CPU_FILE") 2>/dev/null
+  printf '%s %s\n' "$(date +%s)" "$busy" >> "$CPU_FILE" 2>/dev/null
+  # Bounded by rewrite rather than by rotation: the file is tiny and only the
+  # recent tail is ever read.
+  if [ "$(wc -l < "$CPU_FILE" 2>/dev/null || echo 0)" -gt 400 ]; then
+    tmp="$CPU_FILE.$$.tmp"
+    if tail -n 200 "$CPU_FILE" > "$tmp" 2>/dev/null; then
+      chmod 600 "$tmp" 2>/dev/null
+      mv "$tmp" "$CPU_FILE" 2>/dev/null || rm -f "$tmp"
+    else
+      rm -f "$tmp"
+    fi
+  fi
+}
+
+# What the shared history says about the last $1 seconds:
+#   clean  window fully covered, fresh, no gaps, every sample under the ceiling
+#   busy   at least one sample at or over the ceiling
+#   thin   not enough history to judge — absent, stale, short or holed
+# `thin` is deliberately not `clean`: missing evidence is not evidence of an
+# idle machine, so a run that finds it falls back to filling the window itself.
+cpu_window_verdict() {
+  [ -f "$CPU_FILE" ] || { printf thin; return; }
+  awk -v now="$(date +%s)" -v win="$1" -v ceil="$CPU_CEIL" \
+      -v gap="$((POLL_INTERVAL * 3))" '
+    ($1 + 0) >= now - win {
+      t = $1 + 0
+      n++
+      if (($2 + 0) >= ceil) busy = 1
+      if (t > newest) newest = t
+      if (!oldest || t < oldest) oldest = t
+      if (prev && t - prev > gap) holes = 1
+      prev = t
+    }
+    END {
+      if (busy)                       { print "busy"; exit }
+      if (!n || now - newest > gap)   { print "thin"; exit }
+      if (oldest > now - win + gap)   { print "thin"; exit }
+      if (holes)                      { print "thin"; exit }
+      print "clean"
+    }' "$CPU_FILE" 2>/dev/null || printf thin
+}
+
 holder_line() {
   sed -n 's/^cmd=//p' "$HOLDER_FILE.$1" 2>/dev/null | head -1
 }
 
 case "${1:-}" in
   --status)
-    for i in $(seq 1 "$SLOTS"); do
+    # Lanes above the base only exist while something holds them, but they are
+    # listed either way: a run that grew into slot 3 is invisible otherwise.
+    for i in $(seq 1 "$MAX_SLOTS"); do
+      if [ "$i" -le "$SLOTS" ]; then kind=taban; else kind=ek; fi
       if slot_is_free "$i"; then
-        printf 'slot %s/%s: bos\n' "$i" "$SLOTS"
+        printf 'slot %s/%s (%s): bos\n' "$i" "$MAX_SLOTS" "$kind"
       else
-        printf 'slot %s/%s: dolu\n' "$i" "$SLOTS"
+        printf 'slot %s/%s (%s): dolu\n' "$i" "$MAX_SLOTS" "$kind"
         [ -f "$HOLDER_FILE.$i" ] && sed 's/^/  /' "$HOLDER_FILE.$i"
       fi
     done
@@ -247,7 +339,20 @@ case "${1:-}" in
     [ -n "${HEAVY_WAITER:-}" ] && rm -f "$HEAVY_WAITER"
     printf 'pid=%s\nstarted=%s\ncwd=%s\ncmd=%s\n' \
       "$$" "$(date '+%Y-%m-%d %H:%M:%S')" "$PWD" "$*" | redact > "$HOLDER_FILE.$slot"
-    trap 'rm -f "$HOLDER_FILE.$slot"' EXIT
+    # Keep the shared window fed for as long as this lane is held. A full pool
+    # always implies at least one holder, so the history exists exactly when
+    # somebody needs to judge it. Duplicate samplers are harmless.
+    #
+    # The loop runs until the trap kills it: a failed sample costs one reading,
+    # never the sampler. Letting a transient iostat hiccup end it would leave
+    # this lane held for the rest of a long build while the window it was
+    # supposed to fill goes thin, quietly freezing growth for everybody else.
+    sampler=
+    if [ "${HEAVY_NO_SAMPLER:-0}" != 1 ] && command -v iostat >/dev/null 2>&1; then
+      ( while :; do cpu_sample_append "$POLL_INTERVAL" || sleep "$POLL_INTERVAL"; done ) &
+      sampler=$!
+    fi
+    trap 'rm -f "$HOLDER_FILE.$slot"; [ -n "$sampler" ] && kill "$sampler" 2>/dev/null' EXIT
     export HEAVY_SLOT_HELD=1
     "$@"
     rc=$?
@@ -275,21 +380,58 @@ fi
 announced=0
 SECONDS=0
 
+last_grant=
+
 while :; do
-  for i in $(seq 1 "$SLOTS"); do
+  for i in $(seq 1 "$SLOT_LIMIT"); do
     queued=$SECONDS
     HEAVY_WAITER="$WAIT_FILE.$$" lockf -kst 0 "$LOCK_FILE.$i" "$0" __exec "$i" "$@"
     rc=$?
+    # Runs that only started because a lane was granted are tagged, so --stats
+    # can show what the growth actually bought.
+    runmode="${MODE:-slot}"
+    [ "$i" -gt "$SLOTS" ] && runmode="$runmode-grown"
     case $rc in
       $RC_LOCK_BUSY) ;;              # slot busy, try the next one
       $RC_CMD_75)
-        log_run "${MODE:-slot}" "$queued" "$((SECONDS - queued))" 75 "$@"
+        log_run "$runmode" "$queued" "$((SECONDS - queued))" 75 "$@"
         exit 75 ;;                   # the command itself exited 75
       *)
-        log_run "${MODE:-slot}" "$queued" "$((SECONDS - queued))" "$rc" "$@"
+        log_run "$runmode" "$queued" "$((SECONDS - queued))" "$rc" "$@"
         exit $rc ;;
     esac
   done
+
+  if [ "$SECONDS" -ge "$WAIT_TIMEOUT" ]; then
+    if [ "${QUEUE_FALLBACK:-0}" -eq 1 ]; then
+      printf '[heavy] %ss icinde slot acilmadi, komut slotsuz calistiriliyor\n' "$WAIT_TIMEOUT" >&2
+      rm -f "$WAIT_FILE.$$"
+      run_and_log queue-fallback "$SECONDS" "$@"
+    fi
+    printf '[heavy] %ss icinde slot acilmadi, komut CALISTIRILMADI\n' "$WAIT_TIMEOUT" >&2
+    log_run timeout "$SECONDS" 0 75 "$@"
+    exit 75
+  fi
+
+  # Side lane. Every lane is taken, but a busy pool is not a busy machine. The
+  # verdict comes from history the holders already recorded, so an arrival that
+  # finds the machine idle grows and runs *now* — waiting out a second window
+  # would only re-measure an idleness that has already been measured.
+  #
+  # Gradualism lives in last_grant, not in the wait: the first lane is free the
+  # instant the window reads clean, each further lane costs GROW_WINDOW of wall
+  # clock after the previous grant. At MAX_SLOTS the queue is hard.
+  if [ "$SLOT_LIMIT" -lt "$MAX_SLOTS" ] &&
+     { [ -z "$last_grant" ] ||
+       [ "$(($(date +%s) - last_grant))" -ge "$GROW_WINDOW" ]; }; then
+    if [ "$(cpu_window_verdict "$GROW_WINDOW")" = clean ]; then
+      SLOT_LIMIT=$((SLOT_LIMIT + 1))
+      last_grant=$(date +%s)
+      printf '[heavy] CPU son %ss boyunca %%%s altinda, ek slot: %s/%s\n' \
+        "$GROW_WINDOW" "$CPU_CEIL" "$SLOT_LIMIT" "$MAX_SLOTS" >&2
+      continue                        # retry the wider pool at once, no sleep
+    fi
+  fi
 
   if [ "$announced" -eq 0 ]; then
     # Register in the queue so `heavy --status` can show who is waiting on what.
@@ -303,24 +445,21 @@ while :; do
     trap 'rm -f "$WAIT_FILE.$$"' EXIT
     trap 'exit 130' INT
     trap 'exit 143' TERM
-    printf '[heavy] %s slotun hepsi dolu:\n' "$SLOTS" >&2
-    for i in $(seq 1 "$SLOTS"); do
+    printf '[heavy] %s slotun hepsi dolu:\n' "$SLOT_LIMIT" >&2
+    for i in $(seq 1 "$SLOT_LIMIT"); do
       printf '[heavy]   slot %s: %s\n' "$i" "$(holder_line "$i")" >&2
     done
     printf '[heavy] sirada bekleniyor (tavan %ss)...\n' "$WAIT_TIMEOUT" >&2
     announced=1
   fi
 
-  if [ "$SECONDS" -ge "$WAIT_TIMEOUT" ]; then
-    if [ "${QUEUE_FALLBACK:-0}" -eq 1 ]; then
-      printf '[heavy] %ss icinde slot acilmadi, komut slotsuz calistiriliyor\n' "$WAIT_TIMEOUT" >&2
-      rm -f "$WAIT_FILE.$$"
-      run_and_log queue-fallback "$SECONDS" "$@"
-    fi
-    printf '[heavy] %ss icinde slot acilmadi, komut CALISTIRILMADI\n' "$WAIT_TIMEOUT" >&2
-    log_run timeout "$SECONDS" 0 75 "$@"
-    exit 75
+  # No lane this round. Sampling doubles as the poll sleep and feeds the shared
+  # window, so a `thin` history fills itself in — after GROW_WINDOW of quiet
+  # this run's own samples are what turn the verdict clean. A `busy` verdict
+  # clears the same way: the offending sample ages out of the window.
+  if [ "$SLOT_LIMIT" -lt "$MAX_SLOTS" ]; then
+    cpu_sample_append "$POLL_INTERVAL" || sleep "$POLL_INTERVAL"
+  else
+    sleep "$POLL_INTERVAL"
   fi
-
-  sleep "$POLL_INTERVAL"
 done

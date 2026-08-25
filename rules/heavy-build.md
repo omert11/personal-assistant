@@ -3,7 +3,13 @@
 Makinede (M1 Pro, 8 çekirdek / 16 GB) aynı anda birden fazla ağır derleme koşunca — özellikle
 farklı projelerde paralel Claude oturumları varken — CPU ve bellek sıkışır, hepsi birden yavaşlar.
 Çözüm: **ağır derlemeler proje ve dil fark etmeksizin ortak bir slot havuzundan geçer.**
-Varsayılan **2 slot**: iki ağır derleme paralel koşar, üçüncüsü sırada bekler.
+Havuzun **taban genişliği** (`HEAVY_SLOTS`, varsayılan 2) garantilidir; üstündeki slotlar
+çalışma anında **kazanılır** — taban doluyken **son** 30 saniyede CPU %90'ın altında kalmışsa
+bir ek slot açılır. Tavan `HEAVY_MAX_SLOTS` (varsayılan 4); orada kuyruk serttir.
+
+Pencere **makinenin** özelliğidir, bekleyenin değil: slotu tutanlar CPU örneklerini ortak bir
+geçmişe yazar, yeni gelen iş bu geçmişe bakıp **anında** karar verir. Makine 10 dakikadır boşsa
+yeni gelen 30 saniye beklemez — zaten ölçülmüş bir boşluğu yeniden ölçmenin anlamı yok.
 
 ## `heavy` Sarmalayıcı
 
@@ -13,7 +19,8 @@ heavy go build ./...            # başka derleme koşuyorsa bekler
 heavy --queue git commit -m x   # slot bekler ama tavan dolunca yine de koşar
 heavy --low cargo tauri dev     # slot ALMAZ, arka plan QoS'unda koşar
 heavy --status                  # dolu slotlar + kuyrukta bekleyenler (pid, cwd, süre)
-HEAVY_SLOTS=2 heavy cargo test  # bu koşu için iki slota çık
+HEAVY_SLOTS=2 heavy cargo test  # bu koşu için tabanı iki slota çık
+HEAVY_MAX_SLOTS=1 heavy go test # bu koşu için ek slot açılmasını tamamen kapat
 ```
 
 `--status` hem slotu tutanı hem sırada bekleyenleri listeler: her bekleyen kaç
@@ -23,13 +30,39 @@ sonraki `--status` çağrısında temizlenir.
 
 - Slot havuzu: `~/.cache/heavy-build.lock.<n>`, `/usr/bin/lockf` ile (`flock` macOS'ta yok).
   `lockf` tek dosya kilitler, bu yüzden N slot = N kilit dosyası, round-robin denenir.
-- Slot sayısı `HEAVY_SLOTS` (varsayılan 2). Tek sıra istenirse `HEAVY_SLOTS=1`.
+- Taban slot sayısı `HEAVY_SLOTS` (varsayılan 2). Tek sıra istenirse `HEAVY_SLOTS=1`.
+- **Paylaşılan CPU geçmişi**: `~/.cache/heavy-build.cpu`, satır başına `<epoch> <busy%>`.
+  Slotu tutan her koşu arka planda `iostat` ile 2 sn'de bir örnek **ekler** (`>>`, satırlar
+  kısa olduğu için kilit gerekmez; yinelenen saniye zararsız). Havuz doluysa tanım gereği en az
+  bir tutan vardır — yani karar anında geçmiş de vardır. Sampler işi bitince ölür, dosya son
+  200 satıra kırpılır.
+- **Ek slot (yan yol)**: taban dolu bulan koşu geçmişe bakar ve şu üç karardan birini alır:
+  - `clean` — pencere baştan sona kapalı, taze, boşluksuz ve her örnek `HEAVY_CPU_CEIL`
+    (varsayılan 90) altında → genişlik **anında** bir artar, yeni kilit **beklemeden** denenir.
+  - `busy` — pencerede tavanı aşan en az bir örnek var → büyüme yok. Örnek pencereden
+    kayınca (30 sn) karar kendiliğinden `clean`'e döner.
+  - `thin` — geçmiş yok / bayat / kısa / delikli → büyüme yok. Bekleyen kendi örneklerini
+    aynı dosyaya yazar, pencere dolunca `clean` olur. **Ölçüm yokluğu "makine boş" kanıtı
+    değildir**; `iostat` hiç yoksa büyüme hiç olmaz.
+- **Kademelilik beklemede değil, `last_grant`'te**: ilk ek slot pencere temizse bedavadır;
+  sonraki her slot bir öncekinden **30 sn duvar saati** sonra gelir. `HEAVY_MAX_SLOTS`'a
+  ulaşınca büyüme durur, kuyruk sertleşir.
+- Genişlik **koşu başınadır, paylaşılmaz**: 1 slotla başlayan bir bekleyen, başkasının açtığı
+  3. slotu görmez; oraya girmek için kendisinin de oraya kadar büyümesi gerekir. Kilitler ortak
+  olduğu için eşzamanlı iş sayısı yine `HEAVY_MAX_SLOTS`'u aşamaz.
+- Ek slotta koşan iş loga `mode=slot-grown` olarak yazılır — `heavy --stats` mod dağılımında
+  büyümenin ne kadar iş kurtardığı görünür.
+- `heavy --status` tabandan tavana kadar tüm slotları listeler (`taban` / `ek` etiketiyle);
+  aksi hâlde 3. slota büyümüş bir koşu hiçbir yerde görünmezdi.
 - Makine-lokal ayar: `~/.config/heavy/config.sh` (`HEAVY_CONFIG` ile değiştirilir). Yalnız
-  `HEAVY_SLOTS` / `HEAVY_TIMEOUT` / `HEAVY_STATE_DIR` okunur; plugin güncellemesi dosyayı ezmez,
+  `HEAVY_SLOTS` / `HEAVY_MAX_SLOTS` / `HEAVY_GROW_WINDOW` / `HEAVY_CPU_CEIL` /
+  `HEAVY_TIMEOUT` / `HEAVY_STATE_DIR` / `HEAVY_LOG` okunur (`HEAVY_NO_SAMPLER=1` sampler'ı
+  kapatır, yalnız test için); plugin güncellemesi dosyayı ezmez,
   her çağrı için geçerlidir (Claude hook, solo, terminal, launchd). **Komut satırındaki env her
   zaman üstün gelir** — dosya yalnız boş bırakılanı doldurur. Dosya alt kabukta okunur: bozuk bir
   config (tanımsız değişken, `exit`) uyarı verip varsayılana düşer, derlemeyi sessizce atlamaz.
-  Bu makinede dosya `HEAVY_SLOTS=1` — 16 GB'da iki paralel Rust derlemesi swap'e giriyor.
+  Bu makinede dosya `HEAVY_SLOTS=1` + `HEAVY_MAX_SLOTS=4`: tek garanti slot, üstü CPU
+  penceresiyle kazanılır.
 - Tutan süreç `~/.cache/heavy-build.current.<n>` dosyasına yazılır — bekleyen neyi beklediğini görür.
 - Bekleme tavanı `HEAVY_TIMEOUT` (varsayılan 1200 s). Tavan aşılırsa komut **çalıştırılmaz**,
   çıkış kodu 75 olur — takılan bir derleme herkesi süresiz bloklamasın.
@@ -50,15 +83,20 @@ sonraki `--status` çağrısında temizlenir.
 - Kaynak: `personal-assistant/scripts/heavy.sh`; oturum başında `~/.local/bin/heavy` symlink'i kurulur.
 
 **Slot sayısını artırmanın bedeli**: iki Rust derlemesi çakışırsa (`jobs = 6` × 2 = 12 iş) 16 GB'da
-swap başlar ve sıraya almanın kazancı geri verilir. 2'nin üstüne çıkmadan önce ölçülmeli.
+swap başlar ve sıraya almanın kazancı geri verilir. Tabanı yükseltmek bu bedeli **koşulsuz**
+öder; yan yol ise yalnız makine boş göründüğünde öder — tabanın 1'de tutulup tavanın 4'e
+açılmasının sebebi budur.
 
-**Dinamik slot (yüke göre otomatik +/-) neden yapılmadı**: CPU eşiği yanlış sinyaldir — bu
-makinede load 18.47 iken CPU %46 idle ölçüldü, yani kuyruğu şişiren I/O beklemesiydi, "CPU boş"
-kuralı o anda slot açardı. 16 GB'da asıl tavan bellektir, CPU değil; iki Rust derlemesi CPU
-%40'ta bile swap'e girer. Ayrıca açılan slot geri alınamaz (koşan derleme durdurulmaz), bu da
-salınım demektir. Kazanç ise ancak "makine boş **ve** kuyrukta iş var" anında doğar — paralel
-oturumlarda havuz nadiren boş kalır. Karar: önce `heavy --stats` verisi biriktirilecek; bekleme
-oranı gerçekten yüksek çıkarsa çözüm sırası `CARGO_BUILD_JOBS` sınırı → sabit 2 slot → dinamik.
+**Yan yolun bilinen kör noktası — CPU bellek darboğazını görmez.** Kapı 25 Ağustos 2026'da
+bilinçli olarak CPU-only seçildi, ama ölçüm şunu gösteriyor: tek bir `cargo tauri build`
+koşarken CPU idle %55-70, `kern.memorystatus_vm_pressure_level` = 2 (warn), swap 9531/10240 MB
+dolu. O anda CPU kapısı **ek slot açar** ve ikinci derleme 700 MB boş swap'e girer. Daha eski
+bir ölçüm de aynı yöne bakıyordu: load 18.47 iken CPU %46 idle — kuyruğu şişiren I/O
+beklemesiydi. 16 GB'da asıl tavan bellektir. Ayrıca açılan slot geri alınamaz (koşan derleme
+durdurulmaz), yani yanlış açılan bir slot o iş bitene kadar taşınır.
+İzleme: `heavy --stats` mod dağılımında `slot-grown` payı ile `sysctl -n vm.swapusage`.
+Swap büyümesi `slot-grown` koşularıyla birlikte artıyorsa kapıya bellek koşulu eklenir
+(`kern.memorystatus_vm_pressure_level = 1` şartı) veya `HEAVY_MAX_SLOTS` düşürülür.
 
 ## Katman 1 — Claude PreToolUse Hook (otomatik)
 
