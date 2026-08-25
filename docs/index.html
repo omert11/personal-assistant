@@ -188,7 +188,7 @@
   <div class="wrap">
     <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.37.0 · MIT</span>
     <h1>Claude Code'a <span class="accent">hafıza, disiplin<br/>ve otomasyon</span> kazandıran plugin</h1>
-    <p class="lead">Her oturum başında global kuralları yükler, proje yapılandırmasını denetler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir. Aşağıda her parça tek tek anlatılıyor.</p>
+    <p class="lead">Her oturum başında global kuralları yükler, proje yapılandırmasını denetler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir.</p>
     <div class="cta-row">
       <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub</a>
       <a class="btn btn-ghost" href="#ozet">Sunuma Başla <i data-lucide="arrow-down"></i></a>
@@ -208,7 +208,7 @@
     <div class="sec-head">
       <div class="kicker"><i data-lucide="star"></i> Öne Çıkanlar</div>
       <h2>Plugin ne yapar?</h2>
-      <p>Ayrıntıya inmeden önce dört ana parça.</p>
+      <p>Dört ana parça.</p>
     </div>
     <div class="features">
       <div class="card"><div class="icon"><i data-lucide="brain"></i></div><div class="body">
@@ -233,7 +233,7 @@
     <div class="sec-head">
       <div class="kicker"><i data-lucide="gavel"></i> Rules · 15 global kural</div>
       <h2>Her oturumda yüklenen davranış disiplini</h2>
-      <p><code>load-rules.sh</code> hook'u bu kuralları <code>~/.claude/rules/</code> altına materialise eder. Her biri Claude'un nasıl davranacağını belirler.</p>
+      <p><code>load-rules.sh</code> hook'u bu kuralları <code>~/.claude/rules/</code> altına materialise eder.</p>
     </div>
 
     <!-- ask-first -->
@@ -384,7 +384,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="sec-head">
       <div class="kicker"><i data-lucide="zap"></i> Hooks · 7 hook, 3 event</div>
       <h2>Oturum yaşam döngüsü otomasyonu</h2>
-      <p>SessionStart (5) · PreToolUse (1) · UserPromptSubmit (1). Hepsi shell, bağımlılık minimal. Her hook ne yapıyor, nasıl çalışıyor ve ne kazandırıyor.</p>
+      <p>SessionStart (5) · PreToolUse (1) · UserPromptSubmit (1). Hepsi shell, bağımlılık minimal.</p>
     </div>
 
     <!-- load-rules -->
@@ -410,7 +410,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       <div class="ebody">
         <p><strong>Her non-trivial prompt'a iki davranış enjekte eder.</strong> <b>ARAMA</b> — iş akışının herhangi bir anında ek efor gerektiren bir iş doğduğunda (sorun çözme, araştırma, doğrulama, log analizi, credential arama) o anda <code>obsidian-search</code> çağrılır; sonuç boşsa iş kendin yapılır, bulgu sonradan yazılır. <b>KAYIT</b> — kalıcı bilgi/karar doğduysa <code>obsidian-write</code> çağrılır; devam eden iş varsa yazma bitene kadar bekletilir ve kalan-iş raporuna dahil edilir. Kriterler ve akış skill dosyalarındadır; hook yalnız <em>ne zaman hangi skill</em> der.</p>
         <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Klasör çıkarılır, prompt &lt;15 char ise skip. ARAMA her prompt'ta. KAYIT geciktirmeli: <code>last_learning_hook</code>'tan 5 dk geçmişse eklenir. HINT tek satır (jq <code>--arg</code> çok satırı escape etmez), <code>hookSpecificOutput.additionalContext</code> ile basılır. HINT skill akışını <b>tekrarlamaz</b> — yalnız "ne zaman hangi skill" der, akış skill çağrılınca yüklenir.</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Sıfırdan uğraşmadan önce geçmiş bilgi hatırlanır; kayda değer yeni bilgi rahatsız etmeden çıktıyla beraber kalıcılaşır — hem hatırlama hem öğrenme prompt akışına gömülür.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Sıfırdan uğraşmadan önce geçmiş bilgi hatırlanır; kayda değer yeni bilgi rahatsız etmeden çıktıyla beraber kalıcılaşır.</p></div>
       </div>
     </div>
 
@@ -437,7 +437,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
       <div class="ebody">
         <p><strong>Hook'ların oturum başına seyreltilmesi için TSV tabanlı state tablosu yönetir; tüm hook'ların paylaştığı <code>hook_obsidian_folder</code> çıkarım fonksiyonunu sağlar.</strong> (Hook değil, diğer scriptlerin source ettiği kütüphane.)</p>
         <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>State: <code>session_id ⇥ session_start ⇥ (kullanılmayan) ⇥ last_learning_hook</code> — 3. kolon daily hook'ları kaldırılınca boşaldı, kolon sırası bozulmasın diye yer tutucu duruyor. Saf <code>awk</code> (jq/sqlite yok), <code>mkdir</code> tabanlı atomik kilit lost-update'i önler, 7 günden eski satırlar budanır. <code>hook_obsidian_folder</code> bitişik/düz/tablo formatını destekler, placeholder/quote satırlarını eler.</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Tüm hook'lar tek kaynaktan (DRY) çalışır; harici bağımlılık olmadan macOS+Linux'ta güvenilir, kilitli, kendini temizleyen state mekanizması.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Tüm hook'lar tek kaynaktan (DRY) çalışır; harici bağımlılık olmadan macOS+Linux'ta çalışan, kilitli ve kendini temizleyen state mekanizması.</p></div>
       </div>
     </div>
 
@@ -650,7 +650,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="sec-head">
       <div class="kicker"><i data-lucide="bot"></i> Agents · 1 adet</div>
       <h2>İzole context'te çalışan uzman alt-agent'lar</h2>
-      <p>Mimari: skill'ler ince tetikleyici, ağır iş agent'lara delege. Obsidian ekosistemi merkezde.</p>
+      <p>Mimari: skill'ler ince tetikleyici, ağır iş agent'lara delege.</p>
     </div>
 
     <!-- web-scrape-cleaner -->
