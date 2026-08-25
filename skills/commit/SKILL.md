@@ -79,36 +79,46 @@ cd <target_path> && claude --model opus --effort <effort> -p '/code-review <leve
 - `<target_path>` = **çalışma klasörü** — repo kökü, worktree'de çalışılıyorsa worktree kökü. `cd` **zorunlu**: child oturum diff'ini kendi cwd'sinde hesaplar; path'i yalnız prompt'a yazmak worktree'de yanlış repo'yu review ettirir.
 - Bash çağrısı **arka planda** koşar (`run_in_background: true`), `timeout: 600000` verilir — sonuç bildirimi gelince çıktı okunur, asılı kalırsa timeout'la yakalanır.
 - **Recursion guard**: prompt'u `/code-review` ile başlayan bir oturumdaysan bu delegasyonu yapma — zaten review oturumusun, skill'i doğrudan koş.
-- `<level>` + `<effort>` diffin karmaşıklığına göre **dört seviyeli tablodan** seçilir (aşağıda).
+- `<level>` + `<effort>` **kullanıcıya sorulur** (aşağıdaki "Seviye Seçimi") — agent kendi seçmez.
 - Code-review için **subagent spawn etme**, `Workflow({name: "code-review"})` **launch etme** — tek yol yukarıdaki komut.
 - Komut çıktısındaki bulgular **ham hâliyle** alınır (aşağıdaki "Dürüst Review"). Komut hata verirse veya boş dönerse **sessizce geçme** — kullanıcıya raporla.
 
-##### Seviye Seçimi — `<level>` + `<effort>`
+##### Seviye Seçimi — `<level>` + `<effort>` → KULLANICI SEÇER
 
-Seviye **diffin büyüklüğünden ölçülür**, "basit/karmaşık" yorumundan değil:
+Seviyeyi **agent seçmez**. Review başlatılmadan önce `AskUserQuestion` ile **kullanıcıya sorulur**.
+Önerilen seçenek **her zaman seviye 1** (`--effort low -p '/code-review low'`) — diff ne kadar
+büyük olursa olsun `(Recommended)` etiketi seviye 1'de kalır.
+
+Soru sorulmadan önce diff ölçülür; ölçüm **seçim değil, karar bilgisidir** — soru metnine yazılır:
 
 ```bash
 git diff --shortstat            # "N files changed, X insertions(+), Y deletions(-)"
 ```
 
-`DOSYA` = değişen dosya sayısı, `SATIR` = insertions + deletions.
+`AskUserQuestion` çağrısı:
 
-| Seviye | Komut kuyruğu | Dosya | Satır |
-|---|---|---|---|
-| 1 | `--effort low -p '/code-review low'` | ≤ 10 | ≤ 3.000 |
-| 2 | `--effort medium -p '/code-review low'` | 11 – 20 | 3.001 – 6.000 |
-| 3 | `--effort low -p '/code-review medium'` | 21 – 50 | 6.001 – 10.000 |
-| 4 | `--effort medium -p '/code-review medium'` | > 50 | > 10.000 |
+- header: `Review`
+- question: `Code review seviyesi? (<DOSYA> dosya / <SATIR> satır)`
+- options (bu sırayla, tam 4):
 
-- **Dosya ve satır farklı seviye gösterirse yüksek olan kazanır** (5 dosyada 8.000 satır → seviye 3).
-- **Kod harici diff** (dokümantasyon, test, config, asset) review koşulacaksa **seviye 1**'dir.
-  Yalnız non-kod değiştiyse review zaten atlanır (yukarıdaki kural) — bu satır karışık diff içindir.
-- Ölçüm ne diyorsa o: agent kendiliğinden seviye yükseltmez/düşürmez.
-- `high` / `xhigh` / `max` (level veya effort) **yalnızca kullanıcı açıkça isterse**.
-- Kullanıcı seviye belirttiyse o seviye aynen uygulanır.
-- Seçilen seviye Soru 1'de kullanıcıya **belirtilir** (ör. "review: seviye 2 — 14 dosya / 4.100 satır").
+| Label | description | Komut kuyruğu |
+|---|---|---|
+| `Seviye 1 (Recommended)` | En hızlı/ucuz — varsayılan | `--effort low -p '/code-review low'` |
+| `Seviye 2` | Aynı derinlik, daha yüksek efor | `--effort medium -p '/code-review low'` |
+| `Seviye 3` | Daha geniş kapsam, düşük efor | `--effort low -p '/code-review medium'` |
+| `Seviye 4` | Geniş kapsam + yüksek efor | `--effort medium -p '/code-review medium'` |
 
-Detay: `token-efficiency` kuralı → "Code Review — Tek Kural".
+- Kullanıcı mesajında seviyeyi **zaten belirttiyse** ("seviye 3 ile review et", "medium review")
+  soru **sorulmaz**, söylediği aynen uygulanır.
+- `high` / `xhigh` / `max` (level veya effort) seçenek olarak **sunulmaz** — yalnız kullanıcı
+  açıkça isterse kullanılır ("Other" ile yazabilir).
+- Bu soru review'i **bloklar** (cevap gelmeden komut başlatılamaz), bu yüzden 3a/3b'den hemen
+  sonra sorulur ve arka plan review'i cevapla birlikte başlar. Soru 1'in toplu bloğuna
+  **birleştirilmez** — Soru 1 zaten review bulgularını taşır, ondan önce koşması gerekir.
+- Seçilen seviye Soru 1'de kullanıcıya **belirtilir** (ör. "review: seviye 1 — 14 dosya / 4.100 satır").
+
+`token-efficiency` kuralındaki diff-boyutu tablosu **commit akışı dışındaki** ad-hoc review'ler
+içindir; burada seçim kullanıcınındır.
 
 ##### Dürüst Review — KESKİN KURAL
 
@@ -132,7 +142,7 @@ Detay: `token-efficiency` kuralı → "Code Review — Tek Kural".
 
 ```
 Bash(
-  command: "cd /path/to/repo-or-worktree && claude --model opus --effort low -p '/code-review low'",   // örnek: seviye 1 (≤10 dosya, ≤3.000 satır)
+  command: "cd /path/to/repo-or-worktree && claude --model opus --effort low -p '/code-review low'",   // kullanıcının seçtiği seviye (örnek: seviye 1)
   run_in_background: true,
   timeout: 600000
 )
@@ -145,7 +155,7 @@ Sonuç bildirimi gelince çıktıyı oku, bulguların hepsini ham haliyle Soru 1
 Diff birden çok modüle yayılmışsa (tipik durum: `issue-workflow` yönetici modu — ara commit atmadan yürütülen tüm iş tek teslimatta gelir), tek oturum tüm diffi yeterince derin inceleyemez. O zaman review **3-4 paralel `claude -p` oturumuna bölünür**:
 
 1. `git diff --name-only` ile değişen dosyaları çıkar, **örtüşmeyen** kümelere ayır (dizin/modül bazlı)
-2. Her küme için ayrı arka plan çağrısı: `cd <path> && claude --model opus --effort <effort> -p '/code-review <level> — sadece <küme> altındaki değişiklikler'` — seviye diffin bütününe göre seçilir ve **tüm kümelerde aynıdır**
+2. Her küme için ayrı arka plan çağrısı: `cd <path> && claude --model opus --effort <effort> -p '/code-review <level> — sadece <küme> altındaki değişiklikler'` — kullanıcının seçtiği seviye **tüm kümelerde aynen** kullanılır, bölmek seviyeyi değiştirmez
 3. Hepsi bitince çıktıları topla, aynı bulguyu **dedup** et, hepsini ham haliyle Soru 1'e taşı
 
 Kural bozulmaz — yol hâlâ ayrı Claude oturumu, subagent/Workflow değil (`token-efficiency` → "Büyük diff — birden fazla oturuma bölme"). Hiçbir değişen dosya kümesiz kalmamalı.
@@ -155,6 +165,17 @@ Kural bozulmaz — yol hâlâ ayrı Claude oturumu, subagent/Workflow değil (`t
 Soru 1'de "düzelt" seçilmişse ve bulgular çoksa (>5 bulgu veya 3+ dosya), düzeltme `Workflow` ile dağıtılır: bulgular **dosya bazında** gruplanır, her grup bir `agent()` (`model: 'opus'`, `effort: 'medium'`, açık yazılır — `token-efficiency`). Aynı dosyaya iki ajan yazmaz. Küçük bulgu setinde ana agent kendisi düzeltir — workflow kurulumu bulgudan pahalıdır.
 
 Düzeltme sonrası **etkilenen kümeler için review tekrar koşulur** (yalnız değişen dosyaları kapsayan oturum), yeşile dönmeden commit atılmaz.
+
+##### Review Loop — Tavan 3 Tur
+
+- **Seviye ilk seçimde sabitlenir.** Tekrar review'ler kullanıcının seçtiği aynı `<level>` +
+  `<effort>` ile koşar. Tekrar için seviye **yeniden sorulmaz**, agent kendiliğinden
+  yükseltmez/düşürmez.
+- **Tavan 3 tur** (1 ilk review + düzeltme sonrası en fazla 2 tekrar). Tur sayacı tutulur.
+- 3. tur bitiminde hâlâ bulgu varsa **döngü durur** — dördüncü review koşulmaz. Kalan bulgular
+  ham hâliyle `AskUserQuestion` ile sunulur: `["Bulgularla commit et", "Düzeltmeyi bırak, commit etme"]`.
+  Karar kullanıcınındır; agent "kalan bulgular önemsiz" diye kendisi geçemez.
+- Bir turda bulgu **sıfırsa** döngü orada biter, tavana kadar koşturulmaz.
 
 #### 3d. Test Kontrolü
 - Değişen dosyaların test'i var mı? (`*.test.*`, `*_test.*`, `tests/`, `__tests__/`)
