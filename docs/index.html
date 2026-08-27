@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 15 kural, 5 hook, 17 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 15 kural, 7 hook, 17 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -334,7 +334,7 @@ python manage.py runserver</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="globe"></i></div><div><div class="etitle">browser-testing</div><div class="emeta">Frontend Test</div></div></div>
       <div class="ebody">
         <p><strong>Tarayıcı otomasyonu ve frontend testi için MCP yerine Playwright CLI (<code>playwright-cli</code>) kullanılır.</strong></p>
-        <p>CLI token-efficient ve Microsoft'un coding agent'lar için önerdiği yol — MCP playwright kaldırıldı. Snapshot + ref tabanlı etkileşim (a11y tree token maliyeti yok). Kalıcı <code>@playwright/test</code> spec yazımı için ise <code>playwright-best-practices</code> skill'i kurulur (currents.dev, MIT — POM, locator, assertion, flaky debug, CI/CD rehberi).</p>
+        <p>CLI token-efficient ve Microsoft'un coding agent'lar için önerdiği yol — MCP playwright kaldırıldı. Snapshot + ref tabanlı etkileşim (a11y tree token maliyeti yok). Kalıcı <code>@playwright/test</code> spec yazımı için ise <code>playwright-best-practices</code> skill'i kurulur (currents.dev, MIT — POM, locator, assertion, flaky debug, CI/CD rehberi). <strong>İki skill birbirine bağlıdır</strong>: <code>playwright-cli</code> çağrıldığında <code>playwright-best-practices</code> de çağrılır — bağ vendored SKILL.md içine gömülüdür, <code>setup.py</code> her kurulumda idempotent olarak yeniden uygular (skill gövdesi npm paketinden geldiği için).</p>
         <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>playwright-cli open https://example.com
 playwright-cli snapshot
 playwright-cli click e15
@@ -750,7 +750,7 @@ CLAUDE.local.md → Plane proje UUID (opsiyonel)</code></pre></div>
         <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Destekleyici stack</div><ul>
           <li><strong>uv</strong> — Python paket/script yöneticisi; <code>setup.py</code>, <code>crawl2md</code> ve tüm Python akışlarının temeli (pip yasak, kural gereği).</li>
           <li><strong>Playwright CLI</strong> — tarayıcı otomasyonu ve frontend testi (<code>browser-testing</code> kuralı; MCP yerine CLI).</li>
-          <li><strong>playwright-best-practices</strong> — <code>@playwright/test</code> ile E2E/component/API/visual spec yazımı için harici skill (currents.dev, MIT); <code>~/.claude/skills/</code> altına klonlanır.</li>
+          <li><strong>playwright-best-practices</strong> — <code>@playwright/test</code> ile E2E/component/API/visual spec yazımı için harici skill (currents.dev, MIT); <code>~/.claude/skills/</code> altına klonlanır. <code>playwright-cli</code> skill'i tarafından zorunlu eşlikçi olarak çağrılır.</li>
           <li><strong>Context7 (ctx7)</strong> — kütüphane/framework dökümanını canlı çeker; <code>obsidian-doc-source</code> library modunda zorunlu.</li>
           <li><strong>Plane (plane-cli)</strong> — proje/issue yönetimi; <code>user-message</code> ile issue yanıtı üretimi.</li>
           <li><strong>markitdown</strong> — PDF/Office/ses/görsel → markdown; <code>crawl2md</code> ve <code>obsidian-doc-source</code> dosya kaynaklarında.</li>

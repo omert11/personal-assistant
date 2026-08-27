@@ -3,7 +3,10 @@
 ## Tercih Sirasi
 - Tarayici otomasyonu ve frontend testi icin **Playwright CLI** (`playwright-cli`) kullan
 - `playwright-cli` skill'i otomatik aktif (`~/.claude/skills/playwright-cli/`)
-- 
+- `playwright-cli` skill'i cagrildiginda `playwright-best-practices` skill'i de cagrilir — CLI yuzeyi
+  ile dogru Playwright pratigi (locator, assertion/bekleme, POM, fixture, mock, CI, flake) ayri
+  dosyalarda; ikisi birlikte okunur. Bag skill icine gomulu (`setup.py` her kurulumda yeniden uygular).
+
 ## Ne Zaman Playwright CLI
 - AI agent ile web scraping / otomasyon
 - Frontend testi ve assertion'lar

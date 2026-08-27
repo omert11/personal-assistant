@@ -632,6 +632,58 @@ def section_po_cli():
     ensure_skill_from_repo("po-cli", "omert11/po-cli")
 
 
+PLAYWRIGHT_COMPANION_MARKER = "<!-- pa:companion-skill -->"
+
+PLAYWRIGHT_COMPANION_BLOCK = """<!-- pa:companion-skill -->
+## Companion skill — playwright-best-practices (mandatory)
+
+Whenever this skill is invoked, also invoke the `playwright-best-practices` skill and follow its
+guidance. This skill covers *how to drive the CLI*; `playwright-best-practices` covers *what
+correct Playwright work looks like* — locators, assertions/waiting, POM, fixtures, mocking,
+auth/storage state, CI config, flake elimination.
+
+Load it before, not after, writing or fixing anything: locator choice, waiting strategy and test
+structure are decided up front, and reverse-engineering them out of a finished script is wasted work.
+
+Applies to both modes:
+
+* **Live automation** (`playwright-cli open/goto/click/...`) — use its locator and
+  assertion/waiting rules so the actions and any generated code are stable.
+* **Spec authoring/debugging** (`@playwright/test` files) — it is the primary reference; this
+  file is only the CLI surface used to run and inspect them.
+<!-- /pa:companion-skill -->
+"""
+
+PLAYWRIGHT_COMPANION_TASK_LINE = (
+    "* **Playwright best practices (locators, POM, fixtures, CI, flake)** — "
+    "invoke the `playwright-best-practices` skill\n"
+)
+
+
+def patch_playwright_cli_companion(skill_dir: Path) -> None:
+    """Make the vendored playwright-cli skill pull in playwright-best-practices.
+
+    The skill body ships inside the @playwright/cli npm package, so the cross-reference
+    has to be re-applied after every (re)install. Idempotent via an HTML comment marker.
+    """
+    skill_md = skill_dir / "SKILL.md"
+    if not skill_md.exists():
+        return
+    body = skill_md.read_text()
+    if PLAYWRIGHT_COMPANION_MARKER in body:
+        skip("playwright-cli → best-practices bağı mevcut")
+        return
+    anchor = "\n## Quick start\n"
+    if anchor not in body:
+        warn("playwright-cli SKILL.md yapısı değişmiş — companion bloğu eklenemedi")
+        return
+    body = body.replace(anchor, "\n" + PLAYWRIGHT_COMPANION_BLOCK + anchor, 1)
+    if PLAYWRIGHT_COMPANION_TASK_LINE.strip() not in body:
+        body = body.rstrip("\n") + "\n" + PLAYWRIGHT_COMPANION_TASK_LINE
+    skill_md.write_text(body)
+    ok("playwright-cli → playwright-best-practices bağı eklendi")
+
+
 def section_playwright_cli():
     """Install @playwright/cli globally and copy skills to user-level.
 
@@ -656,6 +708,7 @@ def section_playwright_cli():
     skill_dst = CLAUDE_DIR / "skills" / "playwright-cli"
     if (skill_dst / "SKILL.md").exists():
         skip("playwright-cli skill kurulu")
+        patch_playwright_cli_companion(skill_dst)
         return
 
     # `playwright-cli install --skills` writes to ./.claude/skills/, so install
@@ -668,6 +721,7 @@ def section_playwright_cli():
             skill_dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(src), str(skill_dst))
             ok(f"playwright-cli skill kuruldu: {skill_dst}")
+            patch_playwright_cli_companion(skill_dst)
         else:
             warn("playwright-cli skill bulunamadı — manuel: playwright-cli install --skills")
 
