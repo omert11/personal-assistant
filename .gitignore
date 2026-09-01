@@ -1,7 +1,8 @@
 local-rules/
-claude.local.md
-CLAUDE.local.md
 .claude/settings.local.json
 .DS_Store
 __pycache__/
 *.pyc
+
+# Ajan proje baglami (yerel, birlesik)
+AGENTS.md
