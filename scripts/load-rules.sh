@@ -1,88 +1,79 @@
 #!/bin/bash
-# Rules loader for personal-assistant plugin
-# SessionStart hook — stdout is injected into Claude's context
+# Rules + local skills loader for personal-assistant plugin
+# SessionStart hook — materialises:
+#   rules/*.md          -> ~/.claude/rules/<name>.md
+#   local-skills/<name>/ -> ~/.claude/skills/<name>/   (gitignored; credentials)
 #
-# Strategy: copy rule files to ~/.claude/rules/ so Claude can Read them
-# by a stable path, and emit a SHORT index (filename + summary) to stdout
-# instead of concatenating ~19KB of rule content. Avoids Claude Code's
-# ~2KB hook preview truncation.
+# Claude Code loads both user-level dirs natively, so this script prints
+# nothing: any stdout would duplicate content already in context. Its only job
+# is copy + prune. Each destination keeps a manifest so pruning only touches
+# entries this plugin created (e.g. ctx7's context7.md is never removed).
 
 set -e
 
 RULES_SRC="${CLAUDE_PLUGIN_ROOT}/rules"
-LOCAL_RULES_SRC="${CLAUDE_PLUGIN_ROOT}/local-rules"
+SKILLS_SRC="${CLAUDE_PLUGIN_ROOT}/local-skills"
 RULES_DST="$HOME/.claude/rules"
+SKILLS_DST="$HOME/.claude/skills"
 
-# Guard: without CLAUDE_PLUGIN_ROOT both source dirs resolve to "/rules" and
-# "/local-rules", which do not exist. The prune step below would then see an
-# empty source set and delete every plugin-managed rule from ~/.claude/rules.
-# Bail out before touching anything when no source dir is present.
-if [ ! -d "$RULES_SRC" ] && [ ! -d "$LOCAL_RULES_SRC" ]; then
-  echo "load-rules: no rule source found (CLAUDE_PLUGIN_ROOT unset or wrong); nothing loaded." >&2
+# Guard: without CLAUDE_PLUGIN_ROOT the sources resolve to "/rules" and
+# "/local-skills", which do not exist. Pruning would then see an empty source
+# set and delete every plugin-managed entry. Bail out before touching anything.
+if [ ! -d "$RULES_SRC" ] && [ ! -d "$SKILLS_SRC" ]; then
+  echo "load-rules: no source found (CLAUDE_PLUGIN_ROOT unset or wrong); nothing loaded." >&2
   exit 0
 fi
 
-mkdir -p "$RULES_DST"
-
-# Copy new/changed rules. Plain cp -u covers this cheaply; on macOS cp
-# doesn't have -u so we compare mtimes via cmp if cp -u unsupported.
-copy_if_newer() {
-  local src=$1
-  local dst="$RULES_DST/$(basename "$src")"
-  if [ ! -f "$dst" ] || [ "$src" -nt "$dst" ]; then
-    cp "$src" "$dst"
+# prune <dst-dir> <current-names> — remove manifest entries no longer in the
+# source, then rewrite the manifest.
+prune() {
+  local dst=$1 current=$2 manifest="$1/.personal-assistant-manifest" name
+  if [ -f "$manifest" ]; then
+    while IFS= read -r name; do
+      [ -n "$name" ] || continue
+      printf '%s' "$current" | grep -qxF "$name" || rm -rf "${dst:?}/$name"
+    done < "$manifest"
   fi
+  printf '%s' "$current" | sort -u > "$manifest"
 }
 
-[ -d "$RULES_SRC" ] && for f in "$RULES_SRC"/*.md; do
-  [ -f "$f" ] && copy_if_newer "$f"
-done
-
-[ -d "$LOCAL_RULES_SRC" ] && for f in "$LOCAL_RULES_SRC"/*.md; do
-  [ -f "$f" ] && copy_if_newer "$f"
-done
-
-# Prune rules this plugin materialised earlier but that no longer exist in
-# any source, so deleted rules stop loading into context every session.
-# A manifest limits pruning to plugin-managed files: rules written by other
-# tools into ~/.claude/rules (e.g. ctx7's context7.md) are never touched.
-MANIFEST="$RULES_DST/.personal-assistant-manifest"
+# --- rules ---------------------------------------------------------------
+mkdir -p "$RULES_DST"
 CURRENT=""
-for d in "$RULES_SRC" "$LOCAL_RULES_SRC"; do
-  [ -d "$d" ] || continue
-  for f in "$d"/*.md; do
+if [ -d "$RULES_SRC" ]; then
+  for f in "$RULES_SRC"/*.md; do
     [ -f "$f" ] || continue
+    dst="$RULES_DST/$(basename "$f")"
+    if [ ! -f "$dst" ] || [ "$f" -nt "$dst" ]; then
+      cp "$f" "$dst"
+    fi
     CURRENT="$CURRENT$(basename "$f")
 "
   done
-done
-
-if [ -f "$MANIFEST" ]; then
-  while IFS= read -r name; do
-    [ -n "$name" ] || continue
-    if ! printf '%s' "$CURRENT" | grep -qxF "$name"; then
-      rm -f "$RULES_DST/$name"
-    fi
-  done < "$MANIFEST"
 fi
+prune "$RULES_DST" "$CURRENT"
 
-printf '%s' "$CURRENT" | sort -u > "$MANIFEST"
-
-# Build the index
-echo "# Active Rules"
-echo ""
-echo "Rules materialised at \`~/.claude/rules/\`. Read a specific file when its topic becomes relevant to the current task."
-echo ""
-
-for f in "$RULES_DST"/*.md; do
-  [ -f "$f" ] || continue
-  name=$(basename "$f" .md)
-  # Prefer the first H2 heading, fall back to the first H1 or first non-empty line
-  desc=$(grep -m1 '^## ' "$f" 2>/dev/null | sed 's/^## //' | cut -c1-80)
-  [ -z "$desc" ] && desc=$(grep -m1 '^# ' "$f" 2>/dev/null | sed 's/^# //' | cut -c1-80)
-  [ -z "$desc" ] && desc=$(grep -m1 '^[A-Za-zÇĞİÖŞÜçğıöşü]' "$f" 2>/dev/null | cut -c1-80)
-  [ -z "$desc" ] && desc="(no description)"
-  printf -- "- **%s** — %s\n" "$name" "$desc"
-done
+# --- local skills ----------------------------------------------------------
+mkdir -p "$SKILLS_DST"
+MANAGED=""
+[ -f "$SKILLS_DST/.personal-assistant-manifest" ] && MANAGED=$(cat "$SKILLS_DST/.personal-assistant-manifest")
+CURRENT=""
+if [ -d "$SKILLS_SRC" ]; then
+  for d in "$SKILLS_SRC"/*/; do
+    [ -f "$d/SKILL.md" ] || continue
+    name=$(basename "$d")
+    dst="$SKILLS_DST/$name"
+    # Never overwrite a skill this plugin did not create.
+    if [ -e "$dst" ] && ! printf '%s' "$MANAGED" | grep -qxF "$name"; then
+      echo "load-rules: ~/.claude/skills/$name exists and is not plugin-managed; skipped." >&2
+      continue
+    fi
+    rm -rf "$dst"
+    cp -R "$d" "$dst"
+    CURRENT="$CURRENT$name
+"
+  done
+fi
+prune "$SKILLS_DST" "$CURRENT"
 
 exit 0

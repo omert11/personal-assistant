@@ -7,8 +7,8 @@ __pycache__/
 AGENTS.md
 CLAUDE.md
 
-# Yerel kurallar — sunucu/DB kimlikleri icerir, asla commit edilmez
-local-rules/
+# Yerel skill'ler — sunucu/DB kimlikleri icerir, asla commit edilmez
+local-skills/
 
-# omp portu build ciktisi (local-rules icerir, commit edilmez)
+# omp portu build ciktisi (local-skills icerir, commit edilmez)
 targets/

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 15 kural, 7 hook, 17 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 14 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -186,17 +186,17 @@
 <!-- HERO -->
 <header class="hero">
   <div class="wrap">
-    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.80.0 · MIT</span>
+    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.82.0 · MIT</span>
     <h1>Claude Code'a <span class="accent">hafıza, disiplin<br/>ve otomasyon</span> kazandıran plugin</h1>
-    <p class="lead">Her oturum başında global kuralları yükler, proje yapılandırmasını denetler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir.</p>
+    <p class="lead">Her oturum başında global kuralları yükler, Django projelerini tanıyıp ilgili kuralları ekler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir.</p>
     <div class="cta-row">
       <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub</a>
       <a class="btn btn-ghost" href="#ozet">Sunuma Başla <i data-lucide="arrow-down"></i></a>
     </div>
     <div class="hero-stats">
-      <div class="stat"><div class="num">15</div><div class="lbl">Kural</div></div>
-      <div class="stat"><div class="num">7</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">17</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">1</div><div class="lbl">Kural</div></div>
+      <div class="stat"><div class="num">4</div><div class="lbl">Hook</div></div>
+      <div class="stat"><div class="num">14</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">1</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -213,16 +213,16 @@
     <div class="features">
       <div class="card"><div class="icon"><i data-lucide="brain"></i></div><div class="body">
         <h3>Obsidian Proje Belleği</h3>
-        <p>Klasör hiyerarşisinde saf gerçek: genel alan klasörleri (<code>flight/</code>, <code>payment/</code>, <code>django/</code>) tüm projeleri besler, proje klasörleri yalnız kendine özgü bilgiyi tutar. <code>obsidian-write</code> yazar, <code>obsidian-search</code> bulur. Kronoloji ve proje yapısı tutulmaz — dosya <b>şu anki gerçeği</b> taşır.</p></div></div>
+        <p>Klasör hiyerarşisinde saf gerçek: genel alan klasörleri (<code>flight/</code>, <code>payment/</code>, <code>django/</code>) tüm projeleri besler, proje klasörleri yalnız kendine özgü bilgiyi tutar. <code>obsidian-write</code> yazar, <code>obsidian-search</code> bulur. Kronoloji ve proje yapısı tutulmaz; dosya <b>şu anki gerçeği</b> taşır.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="shield-check"></i></div><div class="body">
         <h3>Commit Kalite Kapısı</h3>
-        <p><code>commit</code> skill, kod değişen her teslimatta <code>/code-review</code>'u <strong>zorunlu</strong> çalıştırır — "hızlıca commit" dense bile. Dürüst review, hiçbir bulgu gizlenemez; soruları biriktirip tek onayla teslim eder. Plane issue oluşturup/kapatırken <strong>self atama, başlangıç/bitiş tarihi ve hata/geliştirme label'ını</strong> otomatik doldurur.</p></div></div>
+        <p><code>commit</code> skill, kod değişen her teslimatta <code>/code-review</code>'u <strong>zorunlu</strong> çalıştırır; kullanıcı "hızlıca commit" dese bile. Bulgular sorulmadan düzeltilir, commit mesajı diff'ten üretilir, yalnız teslimat şekli sorulur. Plane issue oluşturup/kapatırken <strong>self atama, başlangıç/bitiş tarihi ve hata/geliştirme label'ını</strong> otomatik doldurur.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="scroll-text"></i></div><div class="body">
         <h3>Oturum Başı Kural Disiplini</h3>
-        <p>SessionStart'ta 15 global kural materialise edilir. Claude her oturumda tutarlı kurallarla çalışır: <code>uv</code> zorunlu, <code>AskUserQuestion</code> zorunlu, vault erişimi ana agent'ta, commit skill zorunlu.</p></div></div>
-      <div class="card"><div class="icon"><i data-lucide="wrench"></i></div><div class="body">
-        <h3>Extension Builder</h3>
-        <p>Claude Code'un 8 genişletme tipini (skill/plugin/agent/hook/MCP/output-style/channel/marketplace) resmi dökümanı <code>WebFetch</code> ile <em>canlı</em> çekerek üretir — schema uydurmaz.</p></div></div>
+        <p>SessionStart'ta tek çekirdek kural dosyası <code>~/.claude/rules/</code> altına kopyalanır; Django projelerinde <code>django</code> skill'i otomatik yüklenir. Plugin omp üzerinde de çalışır: kurallar, skill'ler ve hook'lar <code>scripts/build-omp.py</code> ile çevrilir.</p></div></div>
+      <div class="card"><div class="icon"><i data-lucide="presentation"></i></div><div class="body">
+        <h3>Görsel Rapor</h3>
+        <p><code>user-report</code> yapılan işi tek dosyalık HTML rapora döker: ölçülmüş KPI'lar, önce/sonra grafikleri, değişim haritası. <code>issue-workflow</code> sonuç raporu da buradan üretilir.</p></div></div>
     </div>
   </div>
 </section>
@@ -231,147 +231,25 @@
 <section id="rules">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="gavel"></i> Rules · 15 global kural</div>
+      <div class="kicker"><i data-lucide="gavel"></i> Rules · 1 kural</div>
       <h2>Her oturumda yüklenen davranış disiplini</h2>
-      <p><code>load-rules.sh</code> hook'u bu kuralları <code>~/.claude/rules/</code> altına materialise eder.</p>
+      <p><code>load-rules.sh</code> hook'u kuralı <code>~/.claude/rules/</code> altına kopyalar; Claude Code bu dizini kendisi yükler.</p>
     </div>
 
-    <!-- ask-first -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-circle-question"></i></div><div><div class="etitle">ask-first</div><div class="emeta">Önce Sor</div></div></div>
+    <!-- core -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="scroll-text"></i></div><div><div class="etitle">core</div><div class="emeta">Temel Kurallar · rules/core.md</div></div></div>
       <div class="ebody">
-        <p><strong>Kullanıcıya yöneltilen her soru, seçim veya onay düz metinle değil, yalnızca <code>AskUserQuestion</code> tool çağrısıyla sorulur.</strong> Düz metin soru tamamen yasaktır.</p>
-        <p>Kural mutlaktır: tek bir evet/hayır onayı bile ("devam edeyim mi?" gibi tek satır metin yasak — yerine <code>["Evet","Hayır"]</code> tool çağrısı); commit/destructive/geri-alınamaz onaylarda metinle "onaylıyor musun?" yasak; çoklu seçenekte markdown <code>1. 2. 3.</code> liste yasak. Felsefe: varsayım = hata, sormak = kalite; çelişki görünce sor, bilgi eksikse tahmin etme.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="git-fork"></i> Self-Check</div><p>Metne <code>?</code> yazmadan önce dur: (1) kullanıcıya soru mu? → <code>AskUserQuestion</code>; (2) "A mı B mi?" fragment yasak; (3) "onaylıyor musun" formları hep tool. Önerilen seçenek ilk sırada <code>(Recommended)</code> etiketiyle.</p></div>
-      </div>
-    </div>
-
-    <!-- coding -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="code"></i></div><div><div class="etitle">coding</div><div class="emeta">Kod Disiplini</div></div></div>
-      <div class="ebody">
-        <p><strong>İletişim Türkçe, kod yorumları ve commit mesajları İngilizce.</strong> Küçük ihlaller sessizce düzeltilir, mimari ihlaller durdurularak raporlanır.</p>
-        <p>Proaktif hijyen: unused import, typo, formatting sessizce düzeltilir; mimari ihlal (güvenlik açığı, yanlış pattern) görülürse işlem DURDURULUR ve <code>AskUserQuestion</code> ile raporlanır. Otonom çözüm: hata verildiğinde yönlendirme beklenmez. Geçici çözüm (workaround) yerine doğru çözüm bulunur. Hatalar her zaman wrap edilir.</p>
-        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>Go:     fmt.Errorf(": %w", err)
-Python: raise X from err
-TODO:   # TODO: hard-coded değer, placeholder, eksik validasyon</code></pre></div>
-      </div>
-    </div>
-
-    <!-- python -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="container"></i></div><div><div class="etitle">python</div><div class="emeta">Paket Yönetimi</div></div></div>
-      <div class="ebody">
-        <p><strong>Paket yönetiminde her zaman <code>uv</code> kullanılır (pip değil), venv aktive edilerek çalışılır, <code>uv run</code> kullanılmaz.</strong></p>
-        <p><code>.venv</code> yoksa <code>uv venv</code> ile oluşturulur, bağımlılıklar <code>uv pip install</code> ile kurulur, sonra <code>source .venv/bin/activate</code> ile aktive edilip normal <code>python</code>/<code>pytest</code>/<code>manage.py</code> çalıştırılır.</p>
-        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>uv venv
-uv pip install -r requirements.txt
-source .venv/bin/activate
-python manage.py runserver</code></pre></div>
-      </div>
-    </div>
-
-    <!-- django -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="server-cog"></i></div><div><div class="etitle">django</div><div class="emeta">Diji Django Standartları</div></div></div>
-      <div class="ebody">
-        <p><strong>Diji'nin Django projelerine özgü çeviri domain'i (<code>djangof7</code>), proje yapısı, uv kurulum reçeteleri ve mobil publish domain pre-flight kuralını standartlaştırır.</strong></p>
-        <p>Template yorumları <code>{% comment %}</code> ile zorunlu. Standart <code>django</code>/<code>djangojs</code>'e ek olarak <code>djangof7</code> domain'i F7 framework çevirilerini yönetir. Mobil repo <code>./mobile/&lt;repo&gt;/</code>, loglar <code>server/logs/</code>, logolar <code>assets/app/</code> altında. PR merge = deploy tetiklenir, ek işlem gerekmez. Panel template SmartAdmin; B2C'de Django Admin <code>superadmin/</code>, panel <code>admin/</code>. <strong>Mobil publish öncesi bloklayıcı kontrol:</strong> app'in backend domain'i (<code>window.domain_name</code>) aksi söylenmedikçe MUTLAKA prod olmalı — dev domain'iyle store'a sızma vakası yaşandı.</p>
-        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Kurulum (uv)</div><pre><code>uv python pin 3.13 && uv venv && uv pip install -r requirements.txt
-# 3.11 reçetesi eski projeler için kuralda</code></pre></div>
-      </div>
-    </div>
-
-    <!-- workflow -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="users"></i></div><div><div class="etitle">workflow</div><div class="emeta">Görev Takibi + Goal + Subagent + Background</div></div></div>
-      <div class="ebody">
-        <p><strong>Çok adımlı işte görevler <code>TaskCreate</code>/<code>TaskUpdate</code> ile canlı takip edilir; subagent/workflow task zorluğuna göre serbest — ama iş delegasyondan önce kesinleştirilir ve çıktı doğrulanır.</strong></p>
-        <p><strong>Görev takibi:</strong> 3+ adım / çok dosya / planlı akış başlayınca <code>TaskCreate</code> ile görev listesi açılır ve süreç boyunca canlı tutulur — kullanıcı akışın nerede olduğunu görsün, hiçbir adım unutulmasın.</p>
-        <p><strong>Subagent/workflow — üç keskin şart:</strong> (1) delegasyondan önce iş kesinleştirilir — girdi, kapsam sınırı, beklenen çıktı formatı ve "ne yapılmayacak" prompt'a net yazılır, muğlak tanımla agent çağırmak yasak; (2) gereksiz kontrol önlenir — çıktıyı ana agent doğrulayacaksa subagent'a "review/test yapma, kontrol bende" sınırı konur; (3) çıktıya "doğru değilmiş" gözüyle bakılır — iddialar kendin teyit edilir, parçalar çelişki ayıklanarak birleştirilir, doğrulanamayan şey doğrulanmış gibi raporlanmaz.</p>
-        <p><strong>Çalıştırma:</strong> bloklamayan işler varken bloklayan komut background'a alınır (subagent, uzun Bash, workflow); açık kalması gerekmeyen her Bash komutuna timeout konur.</p>
-      </div>
-    </div>
-
-    <!-- obsidian -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="network"></i></div><div><div class="etitle">obsidian</div><div class="emeta">Bellek Kullanımı</div></div></div>
-      <div class="ebody">
-        <p><strong>Vault, hızlı ve kesin bilgi erişim kaynağıdır</strong> — not defteri veya geçmiş kaydı değil.</p>
-        <p>Yalnız iki tip yazılır: <b>bilgi</b> (sistem/servis gerçekte nasıl çalışıyor, credential dahil) ve <b>karar</b>. Bug'ın kendisi değil nihai öğretisi. Yapı klasör hiyerarşisidir (<code>&lt;alan&gt;/</code> genel + <code>&lt;proje&gt;/&lt;modül&gt;/</code>), max 3 seviye; <code>index.md</code>/MOC kullanılmaz — klasör zaten haritadır (tek istisna <code>docs/</code>: dış kaynak dokümantasyonunun bölüm listesi). Erişim <code>Glob</code>/<code>Grep</code>/<code>Read</code> ile doğrudan filesystem'den; Obsidian CLI opsiyonel BM25 tamamlayıcısıdır.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Karar</div><p>Obsidian → teknik gerçek (proje veya alan geneli) · <code>~/.claude/memory/</code> → kullanıcı profili · <code>~/.claude/rules/</code> → tüm projeler. <b>Subagent yok</b>: arama/yazma ana agent context'inde.</p></div>
-      </div>
-    </div>
-
-    <!-- init -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="clipboard-check"></i></div><div><div class="etitle">init</div><div class="emeta">Oturum Başı Kontrol</div></div></div>
-      <div class="ebody">
-        <p><strong>Her konuşmanın ilk mesajında proje yapılandırması (CLAUDE.md/local + Solo/Obsidian ID'leri) denetlenir; Plane proje tanımlıysa sorun bildirilince ilgili issue kontrol edilir ve vault ön-aranır.</strong></p>
-        <p>5 madde kontrol edilir; eksikse "⚠️ Eksik Yapılandırma: <code>/project-init</code>" notu eklenir. Kullanıcı somut görev verince ve Obsidian Folder tanımlıysa, göreve başlamadan önce <code>obsidian-search</code> ile geçmiş bilgi aranır — ana agent arar, subagent devri yok (selamlaşma/kavramsal soruda tetiklenmez).</p>
-      </div>
-    </div>
-
-    <!-- learnings -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="lightbulb"></i></div><div><div class="etitle">learnings</div><div class="emeta">Bilgi Kalıcılaştırma</div></div></div>
-      <div class="ebody">
-        <p><strong>Kullanıcı tekrar eden bir komut/iş akışı/yapılandırma/bağlantı paylaştığında, bunu kural olarak kaydetmeyi <code>AskUserQuestion</code> ile teklif eder.</strong></p>
-        <p>Değerli tekrar kullanılabilir bilgilerin uçup gitmesini önleyip <code>/rule-manager</code> ile kalıcılaştırmak için — header "Kural", options ["Evet, kaydet", "Hayır"].</p>
-      </div>
-    </div>
-
-    <!-- before-commit -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="git-commit-horizontal"></i></div><div><div class="etitle">before-commit</div><div class="emeta">Teslimat Kapısı</div></div></div>
-      <div class="ebody">
-        <p><strong>Her commit/push/PR/branch teslimat isteğinde mutlaka <code>commit</code> skill'i çalıştırılır; manuel <code>git commit</code> yasaktır.</strong></p>
-        <p>Skill teslimat öncesi tüm kontrolleri (code-review, test, rules uyumu, Plane issue, son onay) zaten yürütür — böylece tutarlı kalite kapısı her teslimatta uygulanır.</p>
-      </div>
-    </div>
-
-    <!-- cli-tools -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="terminal-square"></i></div><div><div class="etitle">cli-tools</div><div class="emeta">CLI Referansı</div></div></div>
-      <div class="ebody">
-        <p><strong>Sık kullanılan CLI araçlarının minimal komut referansı.</strong></p>
-        <p>Kural token bütçesi için ince tutulur: <code>markitdown</code> ile dosya → markdown dönüşümü; deploy/release durumu <code>gh</code> watch ile izlenir.</p>
-        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>markitdown dosya.pdf &gt; cikti.md</code></pre></div>
-      </div>
-    </div>
-
-    <!-- browser-testing -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="globe"></i></div><div><div class="etitle">browser-testing</div><div class="emeta">Frontend Test</div></div></div>
-      <div class="ebody">
-        <p><strong>Tarayıcı otomasyonu ve frontend testi için MCP yerine Playwright CLI (<code>playwright-cli</code>) kullanılır.</strong></p>
-        <p>CLI token-efficient ve Microsoft'un coding agent'lar için önerdiği yol — MCP playwright kaldırıldı. Snapshot + ref tabanlı etkileşim (a11y tree token maliyeti yok). Kalıcı <code>@playwright/test</code> spec yazımı için ise <code>playwright-best-practices</code> skill'i kurulur (currents.dev, MIT — POM, locator, assertion, flaky debug, CI/CD rehberi). <strong>İki skill birbirine bağlıdır</strong>: <code>playwright-cli</code> çağrıldığında <code>playwright-best-practices</code> de çağrılır — bağ vendored SKILL.md içine gömülüdür, <code>setup.py</code> her kurulumda idempotent olarak yeniden uygular (skill gövdesi npm paketinden geldiği için).</p>
-        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>playwright-cli open https://example.com
-playwright-cli snapshot
-playwright-cli click e15
-playwright-cli fill e20 "kullanici" --submit</code></pre></div>
-      </div>
-    </div>
-
-    <!-- soloterm -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="square-terminal"></i></div><div><div class="etitle">soloterm</div><div class="emeta">Process Yönetimi</div></div></div>
-      <div class="ebody">
-        <p><strong>Tekrar eden shell komutları için mutlaka <code>solo.yml</code> oluşturulur ve komutlar <code>solo</code> CLI üzerinden process olarak yönetilir.</strong></p>
-        <p>Proje ID <code>CLAUDE.local.md</code>'den alınır; binary <code>~/.local/bin/solo</code> (<code>solo --version</code> ile doğrulanır). Bir komut ileride tekrar kullanılabilecekse önce <code>solo.yml</code> kontrol edilir; varsa Solo üzerinden çalıştırılır, yoksa önce eklenir. Process'ler başlatılabilir, durdurulabilir, yeniden başlatılabilir ve <strong>çıktısı <code>solo processes output</code> ile okunabilir</strong>.</p>
-      </div>
-    </div>
-
-    <!-- token-efficiency -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="coins"></i></div><div><div class="etitle">token-efficiency</div><div class="emeta">Model Ekonomisi</div></div></div>
-      <div class="ebody">
-        <p><strong>Subagent ve Workflow ajanlarında model her zaman bilinçli seçilir — en küçük <em>yeterli</em> model.</strong></p>
-        <p>Agent frontmatter'ına her zaman açık <code>model:</code> yazılır (<code>haiku</code>/<code>sonnet</code>/<code>opus</code>/<code>fable</code>, tam ID veya <code>inherit</code>); workflow <code>agent()</code> çağrılarında <code>opts.model</code> açıkça belirtilir. <strong>Mutlak kural — sub/agent fable YASAK:</strong> hiçbir workflow <code>agent()</code> çağrısı veya subagent fable ile çalıştırılmaz; fable oturumunda <code>opts.model</code> boş bırakmak fable'ı devralır, bu yüzden her çağrıya açık model yazılır (en yükseği <code>opus</code>). Hazır/named workflow'lar (<code>Workflow({name: ...})</code>) model override taşımadığından fable oturumunda doğrudan launch edilmez — script kopyasına her <code>agent()</code> için açık model yazılıp <code>scriptPath</code> ile çalıştırılır (mekanik/finder <code>sonnet</code>, derin verify/judge <code>opus</code>); kopya mümkün değilse launch edilmez, kullanıcıya sorulur. <strong>Code review — tek kural:</strong> agent <code>/code-review</code> skill'ini doğrudan çağıramaz; code-review'i tetikleyen her yer (commit, issue-workflow, ad-hoc) aynı komutu kullanır — arka planda <code>cd &lt;çalışma-klasörü&gt; &amp;&amp; claude --model opus --effort &lt;effort&gt; -p '/code-review &lt;level&gt;'</code>. Subagent spawn edilmez, Workflow launch edilmez. <strong>Seviye dört kademelidir ve diffin büyüklüğünden ölçülür</strong> (<code>git diff --shortstat</code>; satır = insertions + deletions) — 1: <code>--effort low</code> + <code>review low</code> (≤10 dosya / ≤3.000 satır), 2: <code>--effort medium</code> + <code>review low</code> (11-20 dosya / 3.001-6.000 satır), 3: <code>--effort low</code> + <code>review medium</code> (21-50 dosya / 6.001-10.000 satır), 4: <code>--effort medium</code> + <code>review medium</code> (&gt;50 dosya / &gt;10.000 satır). Dosya ve satır farklı seviye gösterirse <strong>yüksek olan kazanır</strong>; kod harici diff (dokümantasyon/test/config) boyutu ne olursa olsun seviye 1. Agent ölçümün dışına çıkmaz; <code>high</code>+ yalnızca kullanıcı isterse. <strong>Büyük diff'te review bölünür:</strong> değişen dosyalar örtüşmeyen kümelere ayrılıp 3-4 paralel <code>claude -p</code> oturumu koşar (yol hâlâ ayrı oturum — subagent/Workflow değil), bulgular birleştirilip dedup edilir. <strong>Effort de model kadar önemlidir:</strong> her <code>agent()</code> çağrısına açık <code>effort</code> yazılır — boş bırakılırsa ajan oturumun effort'unu devralır, yani <code>effort: max</code> ile koşan bir skill'de mekanik bir ajan bile <code>max</code> düşünür. Eşik: mimari tasarım / imza-şema üretimi / derin verify <code>high</code>, sıradan kod-çeviri-fix <code>medium</code>, mekanik ve salt-okunur iş <code>low</code>.</p>
-        <div class="block example"><div class="bt"><i data-lucide="terminal"></i> Örnek</div><pre><code>agent(prompt, { label: 'translate:ar', model: 'sonnet', effort: 'low', schema })</code></pre></div>
-      </div>
-    </div>
-
-    <!-- user-render -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="layout-template"></i></div><div><div class="etitle">user-render</div><div class="emeta">Görsel Sunum</div></div></div>
-      <div class="ebody">
-        <p><strong>Kullanıcıya görsel HTML sayfası gerektiğinde Artifact tool yerine <code>user-render</code> skill'i kullanılır.</strong></p>
-        <p>Sayfa claude.ai'ye yüklenmez — lokalde <code>~/.pa-render/active/&lt;konu&gt;/index.html</code> olarak yazılır; kullanıcı PA Render dashboard'undan (Bun server, SSE auto-reload) tek ekrandan izler. Agent yalnız dosyayı yazar/günceller; sunmaz, açmaz, server yönetmez. İstisna: kullanıcı açıkça "Artifact olarak yayınla" derse Artifact tool kullanılır.</p>
-      </div>
-    </div>
-
-    <!-- heavy-build -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="cpu"></i></div><div><div class="etitle">heavy-build</div><div class="emeta">Derleme Slotu</div></div></div>
-      <div class="ebody">
-        <p><strong>Ağır derlemeler proje ve dil fark etmeksizin ortak bir slot havuzundan geçer (varsayılan 2 eşzamanlı)</strong> — paralel oturumlarda CPU/bellek sıkışması biter.</p>
-        <p><code>heavy &lt;komut&gt;</code> ortak slot havuzundan boş bir slot alır; <code>lockf</code> tek dosya kilitlediği için N slot = N kilit dosyasıdır (<code>~/.cache/heavy-build.lock.&lt;n&gt;</code>), round-robin denenir. Havuzun <strong>taban genişliği</strong> <code>HEAVY_SLOTS</code>'tur (varsayılan 2): o kadar derleme paralel koşar, fazlası slotları tutan komut+pid ekrana yazılıp bekler (tavan <code>HEAVY_TIMEOUT</code>, varsayılan 1200 s; aşılırsa komut çalıştırılmaz, rc=75). Komutun kendi 75'i "slot dolu" ile karışmaz — iç sarmalayıcı 175'e çevirir, yoksa komut ikinci kez koşardı. Uzun ömürlü dev sunucuları (<code>cargo tauri dev</code>, <code>air</code>, <code>runserver</code>) slot almaz — <code>heavy --low</code> ile <code>taskpolicy -b</code> arka plan QoS'una alınır, aksi hâlde slotu saatlerce tutup guard'ın kendisi tıkanma sebebi olurdu. Üçüncü bir mod <code>heavy --queue</code>: slot bekler ama tavan dolunca komutu <em>slotsuz yine çalıştırır</em> — <code>git commit</code> ve <code>git push</code> bu moda girer. Sebep: guard yalnız Claude'un yazdığı komutu görür, onun tetiklediği git hook'larını değil — pre-commit linter koşturur, lefthook pre-push <code>cargo test</code> başlatır ve bu derlemeler slot havuzunun tamamen dışında kalır. Hook'u tetikleyen git fiili slotu onlar adına alır, ama <code>--queue</code> sayesinde commit/push hiçbir koşulda bloke olmaz. <code>heavy --status</code> dolu slotların yanında kuyrukta bekleyenleri de listeler (mod, bekleme süresi, pid, cwd, komut); slot alınınca kayıt düşer, ölmüş bekleyenin artığı süpürülür. Slot tutan bir komutun içinden <code>heavy</code> çağrılırsa iç çağrı mevcut slotu kullanır (<code>HEAVY_SLOT_HELD</code>) — aksi hâlde dış heavy, iç heavy'sinin beklediği slotu tutar ve tek slotlu makinede kilitlenir. Her slotlu koşu <code>~/.cache/heavy-build.log</code>'a tek satır yazar (mod, slot sayısı, bekleme, çalışma, rc, load, cwd, komut; secret'lar maskeli, dosya 600, 512 KB'da kırpılır) ve <code>heavy --stats</code> bunu özetler — kaç koşu kuyrukta bekledi, bekleme/çalışma oranı, ortalama load. Taban genişliğin üstünde bir <strong>yan yol</strong> vardır ve kapısı <em>geçmişe</em> bakar: slotu tutan her koşu arka planda <code>iostat</code> ile 2 sn'de bir CPU örneğini ortak bir geçmişe (<code>~/.cache/heavy-build.cpu</code>) ekler, taban dolu bulan yeni iş bu geçmişteki son <code>HEAVY_GROW_WINDOW</code> (varsayılan 30 s) saniyeyi okuyup <strong>anında</strong> karar verir. Pencere makinenin özelliğidir, bekleyenin değil — makine 10 dakikadır boşsa yeni gelen işi 30 sn bekletmek zaten ölçülmüş bir boşluğu yeniden ölçmek olurdu. Üç karar: <code>clean</code> (pencere baştan sona kapalı, taze, boşluksuz ve her örnek <code>HEAVY_CPU_CEIL</code>'in altında) &rarr; genişlik beklemeden bir artar ve yeni kilit hemen denenir; <code>busy</code> (tavanı aşan örnek var) &rarr; büyüme yok, örnek pencereden kayınca karar kendiliğinden döner; <code>thin</code> (geçmiş yok/bayat/kısa/delikli) &rarr; büyüme yok, bekleyen kendi örneklerini aynı dosyaya yazarak pencereyi doldurur — ölçüm yokluğu &quot;makine boş&quot; kanıtı değildir, <code>iostat</code> hiç yoksa büyüme hiç olmaz. Kademelilik beklemede değil <code>last_grant</code>'tedir: ilk ek slot pencere temizse bedava, sonraki her slot bir öncekinden 30 sn sonra; <code>HEAVY_MAX_SLOTS</code>'ta (varsayılan 4) kuyruk sertleşir. Havuz doluysa tanım gereği en az bir slot tutanı vardır, yani karar anında geçmiş de vardır; sampler işiyle birlikte ölür, dosya son 200 satıra kırpılır. Genişlik koşu başınadır, paylaşılmaz — başkasının açtığı 3. slotu görmek için o koşunun da oraya büyümesi gerekir; kilitler ortak olduğu için toplam eşzamanlılık yine tavanı aşmaz. Ek slotta koşan iş loga <code>mode=slot-grown</code> yazılır, <code>--status</code> tüm slotları <code>taban</code>/<code>ek</code> etiketiyle listeler. <strong>Kapının bilinen kör noktası CPU'nun bellek darboğazını görmemesidir</strong>: tek bir <code>cargo tauri build</code> koşarken CPU idle %55-70 ölçülürken bellek basıncı <em>warn</em> ve swap 9531/10240 MB doluydu — o anda kapı slot açar. İzleme <code>--stats</code>'taki <code>slot-grown</code> payı ile swap büyümesi üzerinden yapılır; birlikte artıyorlarsa kapıya bellek koşulu eklenir veya tavan düşürülür. Makine-lokal ayar <code>~/.config/heavy/config.sh</code> ile verilir (<code>HEAVY_SLOTS</code>/<code>HEAVY_MAX_SLOTS</code>/<code>HEAVY_GROW_WINDOW</code>/<code>HEAVY_CPU_CEIL</code>/<code>HEAVY_TIMEOUT</code>/<code>HEAVY_STATE_DIR</code>/<code>HEAVY_LOG</code>; plugin güncellemesi ezmez, komut satırındaki env her zaman üstün gelir) — az bellekli makinede tek slota düşmek için repo varsayılanını değiştirmek gerekmez. Dosya alt kabukta okunur: bozuk bir config uyarı verip varsayılana düşer, yoksa guard her derlemeyi arka planda sarmaladığı için bir typo tüm build'leri sessiz no-op'a çevirirdi. Uygulama iki katmanda: <code>heavy-guard.sh</code> PreToolUse hook'u (otomatik) ve <code>solo.yml</code> komutları (elle). PATH shim bilinçli kurulmadı — <code>cargo tree</code>/<code>go env</code> gibi anlık komutları da yakalayıp kırılganlık üretiyor.</p>
+        <p><strong>Tüm global davranış kuralları tek dosyada, kısa maddeler hâlinde.</strong></p>
+        <div class="block howto"><div class="bt"><i data-lucide="list-checks"></i> Kurallar</div><ul>
+          <li>Emin olmadığın her konuda sor. Varsayım = hata, sormak = kalite.</li>
+          <li>Cevap barizse gereksiz soru sorma; en iyi seçeneği seç.</li>
+          <li>İletişim Türkçe; kod yorumları ve commit mesajları İngilizce.</li>
+          <li>Unused import, typo, formatting gibi küçük ihlaller sessizce düzeltilir.</li>
+          <li>Workaround yok, doğru çözüm bulunur.</li>
+          <li>Zorunlu olarak yarım kalan iş <code>TODO:</code> yorumuyla işaretlenebilir.</li>
+          <li>Önceki notlar <code>obsidian-search</code> ile aranır, yenileri <code>obsidian-write</code> ile eklenir.</li>
+        </ul></div>
+        <div class="block trig"><div class="bt"><i data-lucide="info"></i> Genel bilgiler</div><p>Global bir kilit ağır build/test komutlarını kuyruğa alır; guard hook bunları <code>heavy</code>'ye sarıp arka plana atar. Obsidian vault not defteri değil, <b>hızlı ve kesin bilgi kaynağıdır</b> (<code>~/Documents/ObsidianVault/</code>).</p></div>
       </div>
     </div>
 
@@ -382,35 +260,25 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
 <section id="hooks">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="zap"></i> Hooks · 7 hook, 3 event</div>
+      <div class="kicker"><i data-lucide="zap"></i> Hooks · 4 hook, 2 event</div>
       <h2>Oturum yaşam döngüsü otomasyonu</h2>
-      <p>SessionStart (5) · PreToolUse (1) · UserPromptSubmit (1). Hepsi shell, bağımlılık minimal.</p>
+      <p>SessionStart (3) · PreToolUse (1). Hepsi shell, bağımlılık minimal.</p>
     </div>
 
     <!-- load-rules -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="download"></i></div><div><div class="etitle">load-rules.sh</div><div class="emeta">SessionStart</div></div></div>
       <div class="ebody">
-        <p><strong>Oturum başında plugin'in <code>rules/</code> klasöründeki tüm kural dosyalarını <code>~/.claude/rules/</code> altına materialise eder</strong> ve context'e ~19KB ham metin yerine yalnızca kısa bir indeks (dosya adı + tek satır özet) basar.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>set -e</code> fail-fast. Her <code>.md</code> için <code>copy_if_newer</code>: hedef yoksa veya kaynak daha yeniyse (<code>-nt</code> mtime) kopyalanır. Kaynak dizin guard'ı: <code>CLAUDE_PLUGIN_ROOT</code> boş/yanlışsa kaynak dizinler bulunamaz, script prune'a girmeden stderr uyarısıyla çıkar — aksi hâlde boş kaynak kümesi tüm materialise edilmiş kuralları sildirirdi. Manifest tabanlı prune: plugin'in materialise ettiği dosyalar <code>.personal-assistant-manifest</code>'e yazılır; kaynaktan silinen kural bir sonraki oturumda hedeften de silinir — başka araçların yazdığı dosyalara (örn. ctx7'nin <code>context7.md</code>'si) dokunulmaz. Sonra "# Active Rules" başlığı + her kural için bir satır (ilk H2 → H1 → ilk satır, 80 char). Claude Code'un ~2KB hook preview truncation sınırını aşar.</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Kurallar her oturumda güncel ve sabit yoldan erişilebilir; context bütçesi şişmez — Claude ilgili kuralı gerektiğinde <code>Read</code> ile açar.</p></div>
+        <p><strong>Oturum başında plugin'in <code>rules/</code> kurallarını <code>~/.claude/rules/</code>, gitignore'daki <code>local-skills/</code> skill'lerini (credential'lar) <code>~/.claude/skills/</code> altına kopyalar ve artık kaynağı olmayanları budar.</strong> Claude Code iki dizini de kendisi yükler; script context'e hiçbir şey basmaz.</p>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>set -e</code> fail-fast. Kurallar hedef yoksa veya kaynak daha yeniyse (<code>-nt</code> mtime) kopyalanır; local skill'ler her oturum yenilenir. Her hedefte bir manifest tutulur: budama yalnız plugin'in oluşturduğu girdilere dokunur, başka araçların kural/skill'lerini (ör. ctx7) silmez ve plugin'e ait olmayan aynı adlı skill'in üzerine yazmaz. Kaynak dizin guard'ı: <code>CLAUDE_PLUGIN_ROOT</code> boş/yanlışsa script prune'a girmeden stderr uyarısıyla çıkar.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Kurallar her oturumda güncel ve sabit yoldan yüklenir; ayrı indeks ya da <code>Read</code> adımı gerekmez.</p></div>
       </div>
     </div>
 
-    <!-- init-check -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="search-check"></i></div><div><div class="etitle">init-check.sh</div><div class="emeta">SessionStart · + .ps1</div></div></div>
+    <!-- django-detect -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="server-cog"></i></div><div><div class="etitle">django-detect.sh</div><div class="emeta">SessionStart</div></div></div>
       <div class="ebody">
-        <p><strong>CLAUDE.md/CLAUDE.local.md varlığını ve Solo/Obsidian Folder tanımlarını denetleyip tek satırlık sonuç (<code>INIT_OK</code> / <code>INIT_MISSING</code> / <code>INIT_MALFORMED</code>) basar.</strong></p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p><code>hook-state.sh</code> source edilip ortak <code>hook_obsidian_folder</code> yüklenir. Esnek pattern (<code>Obsidian.*Folder</code>) bitişik VE markdown-tablo formatını yakalar. Satır var ama değer çıkmıyorsa MALFORMED (sessiz tuzak yakalanır). Öncelik: eksik &gt; bozuk &gt; OK. Windows'ta <code>init-check.ps1</code> karşılığı.</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Eksik/bozuk yapılandırma oturum başında yakalanır; entegrasyonlar sessizce devre dışı kalmaz, <code>/project-init</code> ile tamamlanır.</p></div>
-      </div>
-    </div>
-
-    <!-- userprompt-obsidian-hint -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-square-text"></i></div><div><div class="etitle">userprompt-obsidian-hint.sh</div><div class="emeta">UserPromptSubmit</div></div></div>
-      <div class="ebody">
-        <p><strong>Her non-trivial prompt'a iki davranış enjekte eder.</strong> <b>ARAMA</b> — iş akışının herhangi bir anında ek efor gerektiren bir iş doğduğunda (sorun çözme, araştırma, doğrulama, log analizi, credential arama) o anda <code>obsidian-search</code> çağrılır; sonuç boşsa iş kendin yapılır, bulgu sonradan yazılır. <b>KAYIT</b> — kalıcı bilgi/karar doğduysa <code>obsidian-write</code> çağrılır; devam eden iş varsa yazma bitene kadar bekletilir ve kalan-iş raporuna dahil edilir. Kriterler ve akış skill dosyalarındadır; hook yalnız <em>ne zaman hangi skill</em> der.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Klasör çıkarılır, prompt &lt;15 char ise skip. ARAMA her prompt'ta. KAYIT geciktirmeli: <code>last_learning_hook</code>'tan 5 dk geçmişse eklenir. HINT tek satır (jq <code>--arg</code> çok satırı escape etmez), <code>hookSpecificOutput.additionalContext</code> ile basılır. HINT skill akışını <b>tekrarlamaz</b> — yalnız "ne zaman hangi skill" der, akış skill çağrılınca yüklenir.</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Sıfırdan uğraşmadan önce geçmiş bilgi hatırlanır; kayda değer yeni bilgi rahatsız etmeden çıktıyla beraber kalıcılaşır.</p></div>
+        <p><strong>Oturum dizininde (kökte veya bir alt seviyede) <code>manage.py</code> varsa <code>django</code> skill'inin gövdesini context'e basar;</strong> başka projelerde tamamen sessizdir.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Django kuralları yalnız ihtiyaç olan projede context'e girer; diğer oturumlar token harcamaz.</p></div>
       </div>
     </div>
 
@@ -418,26 +286,17 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="cpu"></i></div><div><div class="etitle">heavy-guard.sh</div><div class="emeta">PreToolUse · Bash</div></div></div>
       <div class="ebody">
         <p><strong>Ağır derlemeleri makine genelindeki slot havuzuna sokar:</strong> Bash komutu ağır bir derlemeyse <code>heavy bash -c '&lt;komut&gt;'</code> olarak yeniden yazılır ve arka plana alınır; uzun ömürlü dev sunucuları <code>heavy --low</code> ile slotsuz, arka plan QoS'unda koşar. Paralel oturumlarda cargo + go aynı anda derlenip makineyi boğmaz.</p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>stdin'deki PreToolUse payload'ı <code>jq</code> ile okunur. Sınıflandırma ham metne değil <strong>komut iskeletine</strong> uygulanır: heredoc gövdeleri, tırnaklı stringler ve <code>#</code> yorumları maskelenir (soldan sağa tek geçiş, böylece metindeki apostrof aralıkları kaydırmaz), <code>bash -c '&lt;komut&gt;'</code> içeriği ayrı aday olarak eklenir — <code>git commit -m "perf: cargo build faster"</code> commit'tir, derleme değil. Sonra komut ERE'lerle sınıflanır: <code>DEV_RE</code> (dev sunucusu) önce, sonra <code>HEAVY_RE</code> + <code>PYTEST_RE</code> (whitelist — derlemelerin yanında test koşucuları ve linter'lar da ağırdır: <code>golangci-lint run</code>, <code>npm/pnpm test</code>, <code>pytest</code>, <code>manage.py test</code>; <code>cargo tree</code>, <code>go env</code>, <code>cargo fmt</code> gibi anlık komutlar kasten dışarıda), en son <code>QUEUE_RE</code> (<code>git commit</code>/<code>push</code>). <code>pytest</code> ayrı desendedir çünkü tek kelimelik ad argüman olarak da geçer (<code>grep pytest</code>) — yalnız komut pozisyonunda sayılır. Eşleşirse <code>hookSpecificOutput.updatedInput</code> ile <code>tool_input</code> korunarak <code>command</code> değiştirilir; ağır sınıfta ayrıca <code>run_in_background: true</code> zorlanır. Kuyruğa girebilen her sınıf (ağır + queue) <code>timeout: 600000</code> alır — Bash tool'un 120 s varsayılanı <code>HEAVY_TIMEOUT</code>'tan kısadır ve komutu daha sırada beklerken öldürürdü. Orijinal komut <code>jq @sh</code> ile tırnaklanır, bileşik komutlar (<code>&amp;&amp;</code>, tırnak içeren) bozulmaz ve sarmalayıcı kabuk <code>$SHELL</code>'dir, sabit <code>bash</code> değil — macOS'un bash 3.2'si <code>$(cat &lt;&lt;'EOF'…)</code> içinde apostrof geçen heredoc'u parse edemez, yani <code>bash -c</code> ile sarmalamak conventional commit mesajlarını sözdizimi hatasıyla düşürürdü. Zaten <code>heavy</code>/<code>lockf</code>/<code>taskpolicy</code> içeren komut es geçilir — komutun yalnız başında değil, komutun başlayabildiği her yerde (<code>cd x &amp;&amp; heavy go test</code> dahil), aksi hâlde dış sarmalayıcı iç <code>heavy</code>'nin beklediği slotu tutup kilitlenir. Desenler <code>~/.config/heavy/patterns.sh</code> ile ezilebilir; eşleşme yoksa çıktı üretilmez (exit 0, passthrough).</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Guard manuel disipline bağlı değil: hangi projede, hangi oturumda olursa olsun ağır derleme otomatik sıraya girer, dev sunucuları bloklanmaz.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>stdin'deki PreToolUse payload'ı <code>jq</code> ile okunur. Sınıflandırma ham metne değil <strong>komut iskeletine</strong> uygulanır: heredoc gövdeleri, tırnaklı stringler ve <code>#</code> yorumları maskelenir (soldan sağa tek geçiş, böylece metindeki apostrof aralıkları kaydırmaz), <code>bash -c '&lt;komut&gt;'</code> içeriği ayrı aday olarak eklenir; örneğin <code>git commit -m "perf: cargo build faster"</code> commit'tir, derleme değil. Sonra komut ERE'lerle sınıflanır: <code>DEV_RE</code> (dev sunucusu) önce, sonra <code>HEAVY_RE</code> + <code>PYTEST_RE</code> (whitelist; derlemelerin yanında test koşucuları ve linter'lar da ağırdır: <code>golangci-lint run</code>, <code>npm/pnpm test</code>, <code>pytest</code>, <code>manage.py test</code>; <code>cargo tree</code>, <code>go env</code>, <code>cargo fmt</code> gibi anlık komutlar kasten dışarıda), en son <code>QUEUE_RE</code> (<code>git commit</code>/<code>push</code>). <code>pytest</code> ayrı desendedir çünkü tek kelimelik ad argüman olarak da geçer (<code>grep pytest</code>), bu yüzden yalnız komut pozisyonunda sayılır. Eşleşirse <code>hookSpecificOutput.updatedInput</code> ile <code>tool_input</code> korunarak <code>command</code> değiştirilir; ağır sınıfta ayrıca <code>run_in_background: true</code> zorlanır. Kuyruğa girebilen her sınıf (ağır + queue) <code>timeout: 600000</code> alır, çünkü Bash tool'un 120 s varsayılanı <code>HEAVY_TIMEOUT</code>'tan kısadır ve komutu daha sırada beklerken öldürürdü. Orijinal komut <code>jq @sh</code> ile tırnaklanır, bileşik komutlar (<code>&amp;&amp;</code>, tırnak içeren) bozulmaz ve sarmalayıcı kabuk <code>$SHELL</code>'dir, sabit <code>bash</code> değil. macOS'un bash 3.2'si <code>$(cat &lt;&lt;'EOF'…)</code> içinde apostrof geçen heredoc'u parse edemez, yani <code>bash -c</code> ile sarmalamak conventional commit mesajlarını sözdizimi hatasıyla düşürürdü. Zaten <code>heavy</code>/<code>lockf</code>/<code>taskpolicy</code> içeren komut es geçilir. Bu kontrol komutun yalnız başında değil, başlayabildiği her yerde yapılır (<code>cd x &amp;&amp; heavy go test</code> dahil); aksi hâlde dış sarmalayıcı iç <code>heavy</code>'nin beklediği slotu tutup kilitlenir. Desenler <code>~/.config/heavy/patterns.sh</code> ile ezilebilir; eşleşme yoksa çıktı üretilmez (exit 0, passthrough).</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Hangi projede, hangi oturumda olursa olsun ağır derleme elle müdahale gerekmeden sıraya girer; dev sunucuları bloklanmaz.</p></div>
       </div>
     </div>
 
     <!-- install-heavy -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="link"></i></div><div><div class="etitle">install-heavy.sh</div><div class="emeta">SessionStart</div></div></div>
       <div class="ebody">
-        <p><strong><code>~/.local/bin/heavy</code> symlink'ini plugin'in <code>scripts/heavy.sh</code>'ine bağlar</strong> — böylece slot sarmalayıcısı terminalden ve <code>solo.yml</code> komutlarından da çağrılabilir.</p>
+        <p><strong><code>~/.local/bin/heavy</code> symlink'ini plugin'in <code>scripts/heavy.sh</code>'ine bağlar</strong>, böylece slot sarmalayıcısı terminalden ve <code>solo.yml</code> komutlarından da çağrılabilir.</p>
         <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Kaynağa <code>chmod +x</code>, hedef dizin <code>mkdir -p</code>. Yalnız kendi symlink'ini yönetir: hedefte gerçek bir dosya varsa dokunmaz, symlink yanlış yeri gösteriyorsa düzeltir. SessionStart stdout'u context'e düştüğü için tamamen sessiz.</p></div>
         <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Plugin güncellemesi sarmalayıcıyı da günceller; kullanıcı ayrı kurulum yapmaz.</p></div>
-      </div>
-    </div>
-
-    <!-- hook-state -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="database"></i></div><div><div class="etitle">hook-state.sh</div><div class="emeta">Altyapı · shared</div></div></div>
-      <div class="ebody">
-        <p><strong>Hook'ların oturum başına seyreltilmesi için TSV tabanlı state tablosu yönetir; tüm hook'ların paylaştığı <code>hook_obsidian_folder</code> çıkarım fonksiyonunu sağlar.</strong> (Hook değil, diğer scriptlerin source ettiği kütüphane.)</p>
-        <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>State: <code>session_id ⇥ session_start ⇥ (kullanılmayan) ⇥ last_learning_hook</code> — 3. kolon daily hook'ları kaldırılınca boşaldı, kolon sırası bozulmasın diye yer tutucu duruyor. Saf <code>awk</code> (jq/sqlite yok), <code>mkdir</code> tabanlı atomik kilit lost-update'i önler, 7 günden eski satırlar budanır. <code>hook_obsidian_folder</code> bitişik/düz/tablo formatını destekler, placeholder/quote satırlarını eler.</p></div>
-        <div class="block trig"><div class="bt"><i data-lucide="gift"></i> Fayda</div><p>Tüm hook'lar tek kaynaktan (DRY) çalışır; harici bağımlılık olmadan macOS+Linux'ta çalışan, kilitli ve kendini temizleyen state mekanizması.</p></div>
       </div>
     </div>
 
@@ -448,68 +307,56 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 17 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 14 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
-      <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır — ağır iş agent'lara delege edilir.</p>
+      <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır; ağır iş agent'lara delege edilir.</p>
     </div>
 
     <!-- commit -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="git-commit-horizontal"></i></div><div><div class="etitle">commit</div></div></div>
       <div class="ebody">
-        <p><strong>Kod değişikliklerini commit etmeden önce kalite kapısı kurar.</strong> Tüm analizi (code-review, test, rules uyumu, Plane issue, Obsidian) sessizce yapar, bulguları biriktirir, tek toplu soru bloğunda sunar, onay sonrası seçilen teslimatı (commit/push/PR/merge) uygular.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"commit", "push et", "PR oluştur", "branch aç", <code>/commit</code>. <code>before-commit</code> kuralı gereği manuel <code>git commit</code> yerine zorunludur.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → branch tespit → <b>deslop (zorunlu, kullanıcı yüzeyi varsa)</b> + <b>code review (zorunlu)</b> — ikisi aynı anda arka planda → test → rules tara → Plane issue eşleştir → Obsidian → tek soru bloğu → dosyaları tek tek stage + Co-Authored-By commit → teslimat. Review, arka planda ayrı bir Claude oturumuna devredilir: <code>cd &lt;çalışma-klasörü&gt; &amp;&amp; claude --model opus --effort &lt;effort&gt; -p '/code-review &lt;level&gt;'</code> (repo veya worktree kökü). Skill doğrudan çağrılmaz, subagent/Workflow ile koşturulmaz. Seviyeyi <b>agent seçmez, kullanıcı seçer</b>: review başlamadan önce <code>AskUserQuestion</code> ile dört seviye sunulur ve <b>önerilen her zaman seviye 1</b> (<code>--effort low</code> + <code>review low</code>), diff ne kadar büyük olursa olsun. <code>git diff --shortstat</code> ölçümü yalnız soru metnine bilgi olarak yazılır. Kullanıcı seviyeyi mesajında zaten söylediyse soru sorulmaz; <code>high</code>+ seçenek olarak sunulmaz.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="shield-alert"></i> Öne çıkan</div><p>Code review <strong>atlanamaz</strong> — "hızlıca commit" dense bile çalışır. Ayrı Claude oturumuna Bash ile devredilir (<code>--model opus</code>, arka planda); <code>&lt;level&gt;</code> ve <code>--effort</code> kullanıcıya sorulur (dört seviye, önerilen daima seviye 1 — <code>low</code>/<code>low</code>), <code>high</code>/<code>xhigh</code>/<code>max</code> yalnızca kullanıcı açıkça isterse. Diff birden çok modüle yayılmışsa (tipik durum: <code>issue-workflow</code> yönetici modu — ara commit atılmadığı için tüm iş tek teslimatta gelir) review <strong>3-4 paralel oturuma bölünür</strong>: değişen dosyalar örtüşmeyen kümelere ayrılır, her kümeye ayrı oturum, çıktılar birleştirilip dedup edilir. Bulgu düzeltmesi çoksa (&gt;5 bulgu veya 3+ dosya) <code>Workflow</code> ile dosya bazında dağıtılır — yasak review'a aittir, düzeltmeye değil; sonra etkilenen kümeler yeniden review edilir. <b>Review loop tavanı 3 tur</b> (1 ilk + en fazla 2 tekrar) ve tekrarlar ilk seçilen seviyeyle koşar — seviye yeniden sorulmaz. 3. tur sonunda bulgu kalırsa döngü durur, karar kullanıcıya sorulur (bulgularla commit / commit etme). Bulgular küçük diye filtrelenemez/yumuşatılamaz; uncertain bulgular bile listelenir, false-positive kararını kullanıcı verir. Asla <code>--amend</code>, asla force push, asla <code>git add -A</code>.</p></div>
+        <p><strong>Kod değişikliklerini commit etmeden önce kalite kapısı kurar.</strong> Analizi sessizce yapar, bulguları sormadan düzeltir, commit mesajını diff'ten üretir; yalnız teslimat şeklini sorar (kullanıcı söylemediyse), ek soruları iş bitince sorar.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"commit", "push et", "PR oluştur", "branch aç", <code>/commit</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → branch tespit → teslimat sorusu → <b>deslop</b> (kullanıcı yüzeyi varsa) + <b>code review</b> (kod değiştiyse) arka planda → test (gerekiyorsa yazılır) → Plane eşleştir → Obsidian → bulgular düzeltilir → otomatik mesajlı commit (Co-Authored-By) → teslimat → Plane otomatik kapat/oluştur → son sorular (Obsidian, worktree) → sonuç özeti.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="shield-alert"></i> Öne çıkan</div><p>Code review kod değiştiyse zorunlu, <strong>tek tur</strong> ve tek seviye: <code>claude -p '/code-review low'</code> ayrı oturumda arka planda; büyük diff modül bazlı 3-4 paralel oturuma bölünür. Tüm bulgular (uncertain dahil) düzeltilir. Yasaklar ayrı bölümde: <code>git add -A</code>, <code>--no-verify</code>, <code>--amend</code>, ana branch'e force push, bulgu filtrelemek.</p></div>
       </div>
     </div>
 
-    <!-- extension-builder -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="wrench"></i></div><div><div class="etitle">extension-builder</div></div></div>
+    <!-- django -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="server-cog"></i></div><div><div class="etitle">django</div></div></div>
       <div class="ebody">
-        <p><strong>Claude Code'u genişleten her bileşeni (skill/plugin/agent/hook/MCP/output-style/channel/marketplace) yazar.</strong> Schema/alan isimlerini bellekten asla uydurmaz — resmi dökümanı canlı çeker.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"skill yaz", "plugin oluştur", "hook ekle", "MCP server yap", "agent tanımla", "marketplace oluştur".</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Tip netleştir → <code>references/INDEX.md</code>'den resmi URL → <code>WebFetch</code> ile <code>code.claude.com/docs/...md</code> çek → detay topla → frontmatter limiti uygula → schema'ya birebir uyan dosya yapısı → versiyon bump.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>8 genişletme tipi, her biri için ayrı resmi URL. <strong>Schema uydurmama</strong> çekirdek kural. Mimari hatırlatmalar gömülü: klasörler <code>.claude-plugin/</code> dışında, hook tipleri, MCP transport, plugin içi agent kısıtları.</p></div>
-      </div>
-    </div>
-
-    <!-- project-init -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="folder-plus"></i></div><div><div class="etitle">project-init</div></div></div>
-      <div class="ebody">
-        <p><strong>Bir projeyi Claude Code ekosistemine entegre eder</strong> — CLAUDE.md/local, solo.yml, .gitignore eksiklerini tespit edip tamamlar, Plane (opsiyonel)/Solo/Obsidian entegrasyonlarını kurar.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"projeyi kur", "init", "setup", "CLAUDE.md oluştur". <code>init.md</code> oturum başı eksik tespit edince otomatik önerir.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Durum tespiti → manifest'ten stack çıkarımı → eksik listesi → toplu soru bloğu → stack'e uygun dosya üretimi → entegrasyon (plane project create, Solo, Obsidian klasör).</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Obsidian klasörü <b>boş oluşturulur</b> — <code>index.md</code> veya alt klasör yazılmaz; yapı ilk bilgi yazılırken <code>obsidian-write</code> tarafından içeriğe göre şekillenir. Mevcut klasör seçilince dosyalara dokunulmaz. Override etmez, sadece eksik doldurur. Stack belirsizse durur ve sorar.</p></div>
+        <p><strong>Diji Django projeleri için zorunlu kurallar</strong>: CSRF ve full-page cache uyumu, F7 çeviri domain'i (<code>djangof7</code>), uv ile proje kurulumu, mobil publish öncesi domain pre-flight, proje yapısı ve deploy tetikleyicisi (PR merge = deploy).</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>Django projesinde çalışırken (template/form/AJAX/CSRF, makemessages, kurulum, mobil release, deploy). <code>manage.py</code> olan projelerde <code>django-detect.sh</code> hook'u skill'i oturum başında otomatik yükler.</p></div>
       </div>
     </div>
 
     <!-- obsidian-write -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="file-edit"></i></div><div><div class="etitle">obsidian-write</div></div></div>
       <div class="ebody">
-        <p><strong>Kalıcı bilgi/kararı vault'a yazar</strong> — konumlandırma (genel alan mı proje mi), saf gerçek formatı ve arama yüzeyi kuralları burada. <b>Ana agent yazar</b>, subagent devri yok: devirde teknik kesinlik (parametre adı, limit değeri, hata metni) prompt serileştirmesinde kaybolur.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"obsidian'a yaz", "bunu kaydet", "vault'a ekle", <code>/obsidian-write</code>. <code>commit</code> skill S5 ve UserPromptSubmit kayıt hint'i de buraya yönlendirir.</p></div>
+        <p><strong>Kalıcı bilgi/kararı vault'a yazar</strong>. Konumlandırma (genel alan mı proje mi), saf gerçek formatı ve arama yüzeyi kuralları bu skill'de tanımlı. <b>Ana agent yazar</b>, subagent devri yok: devirde teknik kesinlik (parametre adı, limit değeri, hata metni) prompt serileştirmesinde kaybolur.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"obsidian'a yaz", "bunu kaydet", "vault'a ekle", <code>/obsidian-write</code>. <code>commit</code> skill'in Obsidian sorusu da buraya yönlendirir.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> 11 adımlı self-check</div><p>Noktaları ayrıştır (kaç bilgi/karar var, kalıcı mı) → her nokta için ayrı döngü: genel mi proje mi → kategori/yol → <b>saf öğreti cümlesi</b> → zaman-bağlı ifade temizliği → <b>vault'ta var mı (istisnasız bak)</b> → varsa düzelt, yeterliyse yazma → bulunamadıysa arama stratejisini kullanıcıya bildir → tekrarı ortaklaştır → <b>6 ay sonra hangi terimle ararım</b> → dosya hâlâ saf mı.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Bug yazılmaz, nihai öğretiye dönüştürülür</strong>: "hash açığı vardı, kapatıldı" değil → "ödeme <code>HashParamsVal</code> ile doğrulanmalı". Kanıt (ticket/PNR/commit), hikâye ve kronoloji yazılmaz; dosya <b>şu anki gerçeği</b> taşır. Frontmatter yalnız <code>tags</code>+<code>aliases</code> (arama yüzeyi) — <code>date</code>/<code>confidence</code>/<code>source</code> bayatladığı için yazılmaz. Credential tam yazılır (vault lokal dosya sistemi).</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Bug yazılmaz, nihai öğretiye dönüştürülür</strong>: "hash açığı vardı, kapatıldı" değil → "ödeme <code>HashParamsVal</code> ile doğrulanmalı". Kanıt (ticket/PNR/commit), hikâye ve kronoloji yazılmaz; dosya <b>şu anki gerçeği</b> taşır. Frontmatter yalnız <code>tags</code>+<code>aliases</code> (arama yüzeyi); <code>date</code>/<code>confidence</code>/<code>source</code> bayatladığı için yazılmaz. Credential tam yazılır (vault lokal dosya sistemi).</p></div>
       </div>
     </div>
 
     <!-- obsidian-search -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="search"></i></div><div><div class="etitle">obsidian-search</div></div></div>
       <div class="ebody">
-        <p><strong>Vault'ta sorgu bazlı hedefli arama</strong> — aranan konuyu bulur, dosyaları okur, sentezlenmiş cevap + wikilink kaynak listesi döner. <b>Ana agent arar</b>, subagent devri yok: devralan taraf bulguyu özetler ve teknik kesinlik serileştirmede kaybolur.</p>
+        <p><strong>Vault'ta sorgu bazlı hedefli arama yapar</strong>. Aranan konuyu bulur, dosyaları okur, sentezlenmiş cevap + wikilink kaynak listesi döner. <b>Ana agent arar</b>, subagent devri yok: devralan taraf bulguyu özetler ve teknik kesinlik serileştirmede kaybolur.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"obsidian'da ara", "X hakkında ne not almışım", "Y sorununu nasıl çözmüştük", <code>/obsidian-search [sorgu]</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Sorguyu terimlere ayır (<b>TR + EN çifti</b> — tek dilde arama eksik döner) → <code>Glob</code> ile yol tahmini → <code>Grep</code> ile içerik (<code>docs/</code> hariç) → aday dosyaların başlıklarını oku → en alakalı 1-3 dosyayı tam oku → sentez + kaynaklar. BM25 (<code>obsidian search</code>) tamamlayıcı: tek terim + <code>path=</code> şart.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Salt-okur</strong>; yazma gerekince <code>obsidian-write</code>'a geçilir. <code>docs/</code> (300+ dosya) genel aramadan hariç tutulur, ayrıca aranır. Genel alan (<code>flight/</code>, <code>django/</code>) ile proje klasörü <b>birbirini tamamlar</b> — ikisine de bakılır. <strong>Sıfır sonuç bir bilgidir</strong>: "arama başarısız" değil, "bu konu henüz yazılmamış" — raporlanır, iş bitince yazılır.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Sorguyu terimlere ayır (<b>TR + EN çifti</b>; tek dilde arama eksik döner) → <code>Glob</code> ile yol tahmini → <code>Grep</code> ile içerik (<code>docs/</code> hariç) → aday dosyaların başlıklarını oku → en alakalı 1-3 dosyayı tam oku → sentez + kaynaklar. BM25 (<code>obsidian search</code>) tamamlayıcı: tek terim + <code>path=</code> şart.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Salt-okur</strong>; yazma gerekince <code>obsidian-write</code>'a geçilir. <code>docs/</code> (300+ dosya) genel aramadan hariç tutulur, ayrıca aranır. Genel alan (<code>flight/</code>, <code>django/</code>) ile proje klasörü <b>birbirini tamamlar</b>, ikisine de bakılır. <strong>Sıfır sonuç</strong> konunun henüz yazılmadığını gösterir; bu durum raporlanır, konu iş bitince yazılır.</p></div>
       </div>
     </div>
 
     <!-- obsidian-doc-source -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="book-marked"></i></div><div><div class="etitle">obsidian-doc-source</div></div></div>
       <div class="ebody">
-        <p><strong>Dış kaynağı (URL/kütüphane/PDF/repo) global docs klasörüne sectioned API reference olarak dokümante eder.</strong> Proje folder'ı altında DEĞİL — tüm projeler aynı docs havuzunu paylaşır.</p>
+        <p><strong>Dış kaynağı (URL/kütüphane/PDF/repo) global docs klasörüne sectioned API reference olarak dokümante eder.</strong> Proje folder'ı altına yazılmaz; tüm projeler aynı docs havuzunu paylaşır.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"bu kaynağı dokümante et", "API'yi dokümante et", "kütüphaneyi kaydet", <code>/obsidian-doc-source &lt;kaynak&gt;</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Router ile tip tespit (GitHub→<code>gh</code>, web→WebFetch/crawl2md, library→<code>ctx7</code>, dosya→<code>markitdown</code>) → çakışma kontrol → <b>kaynağın tamamını oku</b> → temizle → bölümlere ayır (overview/auth/endpoints/...) → <b>ana agent dosyaları kendisi yazar</b> (subagent devri yok).</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Çıktı <strong>proje-bağımsız global havuz</strong> — bir kez dokümante edilen Stripe API tüm projelerden erişilir. Library için Context7 zorunlu (bellekten yazmak yasak). Bounded extraction (&gt;50 dosya/&gt;500KB için sorar). <strong>Yazma devri yok</strong>: kaynağı okuyan agent dosyaları kendisi yazar — devirde içerik prompt'a serialize edilip teknik detay (parametre tipi, default, error code) kaybolur. Yorum/dolgu yasak, kaynağın teknik yapısı aktarılır. <strong>Provenance zorunlu</strong>: index.md'ye görünür "Kaynak ve Edinim" bölümü (kaynak + yöntem, ticket/mail referansı, credential wikilink, ✅/❌ doğrulama durumu) yazılır.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Çıktı <strong>proje-bağımsız global havuz</strong>: bir kez dokümante edilen Stripe API tüm projelerden erişilir. Library için Context7 zorunlu (bellekten yazmak yasak). Bounded extraction (&gt;50 dosya/&gt;500KB için sorar). <strong>Yazma devri yok</strong>: kaynağı okuyan agent dosyaları kendisi yazar, çünkü devirde içerik prompt'a serialize edilip teknik detay (parametre tipi, default, error code) kaybolur. Yorum/dolgu yasak, kaynağın teknik yapısı aktarılır. <strong>Provenance zorunlu</strong>: index.md'ye görünür "Kaynak ve Edinim" bölümü (kaynak + yöntem, ticket/mail referansı, credential wikilink, ✅/❌ doğrulama durumu) yazılır.</p></div>
       </div>
     </div>
 
@@ -519,7 +366,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
         <p><strong>Bir web sitesini recursive crawl eder, içeriği markdown'a çevirir, <code>web-scrape-cleaner</code> ile temizler.</strong> İki aşamalı, her aşamada onay alır.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"siteyi crawl et", "URL'i markdown yap", <code>/crawl2md &lt;url&gt; &lt;dir&gt; [--depth N] [--delay S]</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>uv</code> kontrol → parametre parse → crawl onayı → <code>uv run --script</code> (PEP 723 inline deps, ephemeral venv) → rapor → temizleme onayı → cleaner agent.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Same-host kilidi</strong> — sadece aynı hosttaki linkleri izler. Delay zorunlu (rate-limit). Cleaner aggressive modda yedek önerir.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Same-host kilidi</strong>: sadece aynı hosttaki linkleri izler. Delay zorunlu (rate-limit). Cleaner aggressive modda yedek önerir.</p></div>
       </div>
     </div>
 
@@ -529,95 +376,67 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
         <p><strong>Scope (dijiscope) tipi bir scoped VictoriaLogs erişim API'si üzerinden log arar, sayar ve teşhis eder.</strong> Kullanıcı projeyi seçer; skill LogsQL pipe'ı kurup <code>/api/logs/query/</code> ya da <code>/api/logs/count/</code> çağırır, sonucu özetler.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"&lt;proje&gt; loglarına bak", "son N dk/saat hata var mı", "şu hatayı VL'de ara", "log sorgula", "logsql", "hata sayısını zamanla göster", <code>/diji-logs</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Credential'ı <code>~/.config/diji-logs/env</code>'den oku (tekrar sormaz) → <code>projects/</code> ile erişilebilir projeleri listele → mod belirle (query / count / stats) → LogsQL pipe kur (<code>references/logsql.md</code>) → <code>scripts/query.sh</code> ile sorgula → ham JSON'u özetle.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Mimari sözleşme</strong>: kullanıcı asla ham stream-selector veremez; sunucu <code>(env, project)</code>'i scope'a göre doğrular, sen yalnız <code>|</code> sonrası narrowing pipe gönderirsin. Token scope'ludur (kapsam dışı proje → 403). DB/AppLog basket analizi DEĞİL — yalnız VictoriaLogs/LogsQL.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Mimari sözleşme</strong>: kullanıcı asla ham stream-selector veremez; sunucu <code>(env, project)</code>'i scope'a göre doğrular, sen yalnız <code>|</code> sonrası narrowing pipe gönderirsin. Token scope'ludur (kapsam dışı proje → 403). DB/AppLog basket analizi için değildir; yalnız VictoriaLogs/LogsQL üzerinden çalışır.</p></div>
       </div>
     </div>
 
     <!-- log-triage -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="list-checks"></i></div><div><div class="etitle">log-triage</div></div></div>
       <div class="ebody">
-        <p><strong>Bir diji-logs projesinin son N saatlik logunu zaman pencerelerine böler, her pencereyi çok açıdan paralel analiz eder, bulguları doğrular ve onayla Plane'e issue açar.</strong> Proje-bağımsız — değişen tek şey hedef proje ve Plane proje UUID'si.</p>
+        <p><strong>Bir diji-logs projesinin son N saatlik logunu zaman pencerelerine böler, her pencereyi çok açıdan paralel analiz eder, bulguları doğrular ve onayla Plane'e issue açar.</strong> Proje-bağımsızdır; değişen tek şey hedef proje ve Plane proje UUID'si.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"logları analiz et", "son N saatte sorun var mı", "log triage", "loglardan issue çıkar", <code>/log-triage &lt;proje&gt; &lt;süre&gt;</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>fetch_windows.sh</code> ile pencereleri stratified çek (ERROR/WARN ham + DEBUG/SQL aggregate) → tek <strong>Workflow</strong> ile pencere×açı paralel agent (sonnet) → dedup + canlı sorgu ile doğrula → 4 katmanlı tablo sun → <code>log-triage</code> label'ı ile Plane eşleştir → katman katman onay → sırayla issue aç.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>4 standart açı</strong> (hata / perf / akış / hijyen) her pencerede paralel taranır. Sahte ERROR (ErrRecordNotFound) ayıklanır, PII/credential sızıntısı işaretlenir. Her issue ≥1 ham log örneği + provenance taşır (sonraki oturum sıfırdan kazmasın). Issue açma workflow DEĞİL — HTML escape için Claude sırayla açar.</p></div>
-      </div>
-    </div>
-
-    <!-- worktree -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="git-branch"></i></div><div><div class="etitle">worktree</div></div></div>
-      <div class="ebody">
-        <p><strong>Git worktree yönetimi</strong> — Claude Code native <code>--worktree</code>/<code>EnterWorktree</code>'ye delege eden wrapper. İzolasyon, paralel subagent, <code>.worktreeinclude</code> kurulumu, merged temizlik, PR akışı.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"worktree aç", "paralel çalışalım", "izole branch'te çalış", "worktree'den PR aç", <code>/worktree</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Komutlar</div><ul>
-          <li><code>new/enter/exit</code> — worktree'ye gir/çık</li>
-          <li><code>list/status</code> — tablo (ahead/behind)</li>
-          <li><code>pr</code> — push + commit skill + <code>gh pr create</code></li>
-          <li><code>clean --merged</code> — merged'leri onaylı sil</li>
-          <li><code>setup</code> — <code>.worktreeinclude</code> kurulumu</li>
-          <li><code>parallel N görev</code> — N subagent izole kopyada</li>
-        </ul></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Native tool/flag üzerine ince koordinasyon. Dirty worktree asla otomatik silinmez. Commit mantığını DRY için commit skill'ine bırakır. <b>Büyük gitignore'lu asset dizinleri</b> (yüklenen logolar, medya, cache — yüzlerce/binlerce dosya) <code>.worktreeinclude</code> ile <em>kopyalanmaz</em>; worktree oluşunca ana repo'daki dizine <b>symlink</b> kurulur (tek kaynak, anında güncel, disk israfı yok).</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>fetch_windows.sh</code> ile pencereleri stratified çek (ERROR/WARN ham + DEBUG/SQL aggregate) → tek fazda pencere×açı paralel <strong>sub-agent</strong> → dedup + canlı sorgu ile doğrula → 4 katmanlı tablo sun → <code>log-triage</code> label'ı ile Plane eşleştir → katman katman onay → sırayla issue aç.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>4 standart açı</strong> (hata / perf / akış / hijyen) her pencerede paralel taranır. Sahte ERROR (ErrRecordNotFound) ayıklanır, PII/credential sızıntısı işaretlenir. Her issue ≥1 ham log örneği + provenance taşır (sonraki oturum sıfırdan kazmasın). Issue açma sub-agent'a devredilmez: HTML escape için Claude sırayla açar.</p></div>
       </div>
     </div>
 
     <!-- issue-workflow -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="circle-dot"></i></div><div><div class="etitle">issue-workflow</div></div></div>
       <div class="ebody">
-        <p><strong>Bir kaynağı (Plane issue / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → <strong>tek büyüyen lokal HTML analiz sayfası</strong> üzerinde 11 bölümlük (B1–B11) görsel-ağır analiz + sohbet kapıları → izole worktree + plan modu → çözüm + kanıt → <code>commit</code> skill. Agent <strong>uzman duruşundadır</strong>: kullanıcı istek bildirir, en doğru yolu agent belirler.</p>
+        <p><strong>Bir kaynağı (Plane issue / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → kök-neden analizi → izole worktree + plan → çözüm + kanıt → <code>commit</code> skill → sonuç raporu. <strong>Duraklamasız tek akış</strong>: adımlar arasında onay/kapı yok; yalnız gerçekten belirsiz bir karar veya sert durakta soru sorulur. Agent <strong>uzman duruşundadır</strong>: en doğru yolu kendisi belirler.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'i çöz", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/issue-workflow &lt;ref|metin&gt;</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
-          <li><code>1</code> — <code>CLAUDE.local.md</code> "## Issue Workflow" alanını oku (proje-özel komut/port/test/akış notu)</li>
-          <li><code>2</code> — kaynak toplama, tam detay (plane-cli / Read / markitdown / WebFetch / diji-logs)</li>
-          <li><code>3</code> — <strong>HTML B1–B3</strong> (şu anki durum / ne isteniyor / neden), <code>user-render</code> skill ile yazılır (kullanıcı PA Render dashboard'undan izler) → <strong>sohbet kapısı</strong>: kullanıcı "akışa devam et" diyene kadar düzenleme/istek alınır</li>
-          <li><code>4</code> — <strong>HTML B4–B7, ultrathink</strong> (ne hazır–ne yapılacak–nasıl / öneriler / açık konular / riskler-dürüst artı-eksiler); <strong>açık konuların tamamı kararlaştırılır</strong> → sohbet kapısı</li>
-          <li><code>4.5</code> — <strong>uygulama modu kapısı</strong>: <em>tek akış / yönetici modu</em>. Kullanıcı "yönetici modunda" veya "fazlandırarak yap" derse doğrudan açılır; agent 2+ sinyal görürse (2+ ayrık görev, sıralı bağlılık, tek oturumda bitmeyecek boyut) <code>AskUserQuestion</code> ile sorar → <code>references/yonetici-modu.md</code> yüklenir, Adım 7 yerine <strong>7Y</strong> koşar</li>
-          <li><code>5</code> — worktree aç (<code>worktree</code> skill; <code>SESSION_NAME</code> = worktree ismi) + <code>EnterPlanMode</code> → tam plan + loglama stratejisi → <code>ExitPlanMode</code> onayı <em>(yönetici modu → plan fazlanır: sıralı fazlar + görev başına yazılabilir dosya yolları)</em></li>
-          <li><code>6</code> — kaynak <strong>Plane issue ise işleme al — otomatik, plan onayı sonrası</strong>: <code>started</code> + assignee yoksa <strong>self ata</strong> + <code>start_date</code> boşsa bugün; <em>dolu/zaten started olana dokunma</em> (idempotent)</li>
-          <li><code>7</code> — uygula (dil izin veriyorsa <strong><code>[SESSION_NAME]</code> prefix'li detaylı loglar</strong>) → test ortamı → <strong>unique port + arka plan</strong> → kanıt (<strong>loglardan teşhis</strong>; görselde <strong>screenshot zorunlu</strong>) → uygulamayı <strong>durdur</strong> <em>(yönetici modu → <strong>7Y</strong>: tüm iş <strong>tek Workflow</strong>'da fazlanır — ilk faz <strong>sözleşme</strong> (imza/tip/şema iskeleti), sonra sıralı <code>phase()</code> blokları; ara commit/build/review YOK → doğrulama + fix + kanıt sonda, ana agentta)</em></li>
-          <li><code>8</code> — <strong>HTML B8–B11</strong> (açık konuların kapanışı / kanıtlar / ek kazançlar / son durum-yeni akış) → sohbet kapısı: "commit skill çalıştır" gelene kadar</li>
-          <li><code>8.5</code> — <strong><code>[SESSION_NAME]</code> log temizliği — bloklayıcı</strong>: gürültü/geçici debug logu <strong>silinir</strong>, kalıcı faydalı logdan <code>[SESSION_NAME]</code> etiketi çıkarılır; <code>grep</code> boş dönene kadar Adım 9'a geçilmez</li>
-          <li><code>9</code> — <code>commit</code> skill — <strong>akışın tek review noktası</strong> (büyük diff'te paralel oturumlara bölünür) + tek commit + <strong>tek PR</strong> + Plane kapama</li>
-          <li><code>10</code> — konu arşivlenir (<code>mv ~/.pa-render/active/&lt;isim&gt; ~/.pa-render/archive/</code>)</li>
+          <li><code>1</code> — <code>AGENTS.md</code> "## Issue Workflow" alanını oku (proje-özel komut/port/test/akış notu)</li>
+          <li><code>2</code> — kaynak toplama, tam detay (Plane, metin, görsel, doküman, log)</li>
+          <li><code>3</code> — <strong>analiz, ultrathink</strong>: şu anki durum / istek / neden / yapılacaklar / öneriler / açık konular (en iyisi seçilir, yalnız belirsizse sorulur) / riskler</li>
+          <li><code>4</code> — <strong>uygulama modu</strong> sormadan seçilir: kullanıcı söylediyse veya 2+ sinyal varsa (ayrık görevler, sıralı bağlılık, büyük boyut) <strong>yönetici modu</strong> (<code>references/yonetici-modu.md</code>, Adım 7 yerine <strong>7Y</strong>), değilse tek akış</li>
+          <li><code>5</code> — worktree aç (<code>EnterWorktree</code>; <code>SESSION_NAME</code> = worktree ismi) + plan context'te kurulur, onay beklenmeden uygulanır</li>
+          <li><code>6</code> — kaynak <strong>Plane issue ise işleme al (otomatik)</strong>: <code>started</code> + assignee yoksa <strong>self ata</strong> + <code>start_date</code> boşsa bugün; <em>dolu/zaten started olana dokunma</em></li>
+          <li><code>7</code> — uygula (<strong><code>[SESSION_NAME]</code> prefix'li loglar</strong>) → test ortamı → <strong>unique port + arka plan</strong> → kanıt <code>/tmp/issue-&lt;isim&gt;/</code> (görselde <strong>screenshot zorunlu</strong>) → uygulamayı <strong>durdur</strong> <em>(yönetici modu → <strong>7Y</strong>: sub-agent dalgaları, ilk dalga sözleşme, doğrulama + fix + kanıt sonda)</em></li>
+          <li><code>8</code> — <strong><code>[SESSION_NAME]</code> log temizliği (bloklayıcı)</strong></li>
+          <li><code>9</code> — <code>commit</code> skill: <strong>akışın tek review noktası</strong> + tek commit + <strong>tek PR</strong> + Plane kapama</li>
+          <li><code>10</code> — <code>user-report</code> ile HTML sonuç raporu (kararlar, gömülü kanıtlar, ek kazançlar, son durum, commit/PR/Plane), tarayıcıda açılır</li>
         </ul></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Temel ilke — kontrol sonda, tek seferde.</strong> Ara commit, ara build, ara review, aşamalı teslim yapılmaz; süreç içinde kırık noktalar normaldir, iş <em>sonda</em> düzgün olur. Tek PR açılır. <strong>Tek büyüyen lokal HTML</strong> (<code>~/.pa-render/active/&lt;isim&gt;/index.html</code>): analiz üç grupta aynı dosyaya eklenir, kullanıcı PA Render dashboard'undan izler — <strong>Artifact tool ile claude.ai'ye yüklenmez</strong>; görsel-ağır (akış diyagramı, önce/sonra, risk matrisi), kanıt görselleri göreli yolla. <strong>Üç sohbet kapısı</strong> (B1–B3, B4–B7, B8–B11 sonrası) — kullanıcı açık onay verene kadar adımda kalınır. <strong>Adım 2 (kaynak) ve Adım 4 (analiz) asla sub-agent'a verilmez</strong> — ana ajan kendi context'inde, <code>effort: max</code>. Worktree → <code>worktree</code>, teslimat + review → <code>commit</code>, log → <code>diji-logs</code>, sayfa → <code>user-render</code> (DRY). Plane işleme alma plan onayı sonrası; kanıt her zaman repo dışında.</p><p><strong>Yönetici modu</strong> (Adım 4.5, <code>references/yonetici-modu.md</code>) — orta ve büyük işler: <strong>tüm iş tek <code>Workflow</code> script'inde</strong> fazlanarak yazılır. <strong>İlk faz sözleşmedir</strong>: tek ajan yalnız iskeleti üretir — fonksiyon/metot imzaları, tip ve arayüz tanımları, endpoint şeması, boş gövdeli modüller. Sonraki fazların ajanları önce bu dosyaları okur, sonra kendi gövdesini doldurur; birbirlerini görmeden uyumlu kod yazmalarının sebebi budur. <em>Ara build'in ölçmeye çalıştığı bütünlüğü sözleşme fazı önceden sağlar.</em> <strong>Ajanlar yalnız kod yazar</strong>: test/build/lint/format/git/uygulama başlatma yasak, salt-okuma self-check serbest. <strong>Doğrulama sonda, ana agentta, tek sefer</strong>: <code>git diff</code> → build → test → lint, hepsi arka planda ve çıktı <code>$EVID/*.log</code>'a — ham log context'e alınmaz, fix ajanına <em>dosya yolu</em> verilir. Bu makinede <code>HEAVY_SLOTS=1</code> olduğu için doğrulamayı paralel ajanlara dağıtmak hız kazandırmaz (tek slotta sıraya girerler), o yüzden ana agentta kalır. Hata varsa <strong>fix workflow</strong>: bulgular dosya bazında gruplanıp dağıtılır, sonra doğrulama yeniden koşar; 3 tur sonunda hâlâ yeşil değilse durup kullanıcıya bildirilir. <strong>Kanıt ana agentta</strong> üretilir — <code>playwright-cli</code> tek tarayıcı örneği yönettiği için paralel ajanlar aynı oturumu bozar, ayrıca uygulamayı ayakta tutan/kapatan taraf tek olmalı (orphan port kalmasın). <strong>Tavan</strong>: bir <code>parallel()</code> bloğunda ≤6 ajan, workflow toplamında ≤15; aşan iş eşzamanlılık artırılarak değil <strong>daha çok <code>phase()</code> bloğu</strong> eklenerek çözülür. Her <code>agent()</code> çağrısında <strong>açık model ve effort</strong>: sözleşme <code>opus</code>/<code>high</code>, kod-fix <code>opus</code>/<code>medium</code>, mekanik ve salt-okunur iş <code>sonnet</code>/<code>low</code>; <code>haiku</code> yok, fable yasak. <strong>Ana agent iş bitene kadar durmaz</strong>: tur yalnız üç halde kapanır (iş bitti, sert durak, kullanıcı müdahalesi). Garantisi <strong>watchdog döngüsü</strong> — <code>Monitor</code> ile nabız izleyici kurulur, her turda <code>.heartbeat</code> tazelenir; 180 sn hareketsizlikte "uyandırma" satırı basılır ve bu bildirim yeni tur açar (üst üste uyarıda bekleme 60→300 sn, nabız dönünce 60). <code>.done</code> yazılınca döngü kapanır. <strong>Durum takibi</strong>: <code>TaskCreate</code>/<code>TaskUpdate</code> + <code>faz-durumu.html</code> (PA Render ek dosyası, dashboard'da canlı).</p></div>
-      </div>
-    </div>
-
-    <!-- user-render -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="monitor-play"></i></div><div><div class="etitle">user-render</div></div></div>
-      <div class="ebody">
-        <p><strong>Kullanıcıya gösterilecek her görsel HTML sayfasını üretir/günceller — Artifact tool'un lokal alternatifi.</strong> Sayfa <code>~/.pa-render/active/&lt;konu&gt;/index.html</code> olarak yazılır; hazır UI kit (<code>/lib/pa.css</code> design system + <code>pa-flow</code>/<code>pa-leg</code>/<code>pa-compare</code>/<code>pa-timeline</code>/<code>pa-kpi</code> web component'leri + Chart.js) sayesinde inline CSS yazılmaz — agent yalnız semantik markup üretir (~%60 daha az token). Kullanıcı <strong>PA Render dashboard</strong>'undan izler: Bun server (<code>scripts/render-server.ts</code>, solo process <code>render</code>) sol sidebar (aktif/arşiv) + iframe + SSE auto-reload + görülmemiş-değişiklik dot'u + sağda konu klasörünün ek dosyalarını gösteren Dosyalar paneli sunar; sayfa diskte değişince ekran kendini tazeler. İş bitince konu <code>archive/</code>'e taşınır (agent <code>mv</code> ile, unutulursa UI'dan).</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"analiz sayfası yaz", "görsel sun", "render et", <code>/user-render</code> — ayrıca <code>user-render</code> kuralı gereği Artifact ihtiyacı doğan her yerde ve <code>issue-workflow</code> analiz sayfalarında.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Agent server'ı bilmez/yönetmez</strong> — sadece dosya yazar; sunum tamamen kullanıcı tarafında. İnteraktif sayfa gerekirse <code>.jsx</code> yazılabilir (preact vendored, Bun on-the-fly transpile, build adımı yok).</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Temel ilke: kontrol sonda, tek seferde yapılır.</strong> Ara commit, ara build, ara review, aşamalı teslim yapılmaz; süreç içinde kırık noktalar normaldir. Tek PR açılır. Kanıt dosyaları repo dışında (<code>/tmp/issue-&lt;isim&gt;/</code>) tutulur.</p></div>
       </div>
     </div>
 
     <!-- deslop -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="eraser"></i></div><div><div class="etitle">deslop</div><div class="emeta">işçi ajanlar: opus · low</div></div></div>
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="eraser"></i></div><div><div class="etitle">deslop</div></div></div>
       <div class="ebody">
-        <p><strong>Metindeki AI yazım izlerini (slop) son kullanıcının gördüğü yüzeylerde temizler.</strong> Yönetici/işçi ayrımı üzerine kurulu: <code>/deslop</code> oturumu kuralları <b>okumaz ve bilmez</b>, <b>tek bir dosyanın bile içeriğine bakmaz</b> — <code>Grep</code>/<code>Glob</code> tool'ları verilmemiştir. Tek <code>find</code> / <code>git status</code> komutuyla düz yol listesi alır, dizin sınırından gruplara böler (<b>grup başına dosya limiti yok</b>), her grubu ayrı <code>claude -p</code> oturumuna verir, dönen raporları birleştirip <code>git diff</code> ile doğrular. Kural bilgisi, <b>kapsam analizi</b> ve düzenleme yetkisi yalnızca <code>do-deslop</code> oturumundadır; kural iskeleti + canlı kaynaklar + dosya içerikleri birlikte yüz binlerce karakterdir ve ana context'te tutulması sonraki işleri bozar.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"slop temizle", "AI izlerini temizle", "metni insanlaştır", <code>/deslop</code>, <code>/deslop ./*</code>, <code>/deslop README.md docs/index.html</code>. Argümansız çağrı <b>git değişikliklerini</b> tarar — repo geneli açık istek olmadan açılmaz. Ayrıca <code>commit</code> skill'i adım 3b'de <b>zorunlu</b> olarak çağırır (diff'te kullanıcı yüzeyi varsa), code review ile <b>aynı anda arka planda</b>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>repo kökü → tek komutla ham yol listesi (argüman → kabuk glob + <code>find</code>; argümansız → <code>git status</code>) → yalnız <b>mekanik</b> eleme (<code>node_modules</code>/<code>dist</code>/<code>.git</code>, lock/minified, &gt;1 MB, binary — <code>grep -Il ''</code>; boyut eşiği <code>-size -1024k</code>, BSD <code>find</code> <code>-1M</code>'i yukarı yuvarlayıp listeyi sessizce boşaltır) → &gt;40 dosyada hacim kapısı → dizin bazlı gruplar (dosya limiti yok), aynı anda ≤6 oturum, kalanlar dalgalar hâlinde → <code>cd &lt;repo&gt; &amp;&amp; claude --model opus --effort low -p '/personal-assistant:do-deslop &lt;paths&gt;'</code> (arka planda, <code>timeout 600000</code>) → <code>git diff</code> ile doğrula → birleşik rapor + bırak/geri al sorusu.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Model her zaman <code>opus</code>, effort her zaman <code>low</code></strong> — ana oturum modeli ne olursa olsun. <strong>Hiçbir grup, hiçbir dosya atlanmaz</strong>: grup sayısı taşarsa eşzamanlılık artırılmaz, dalga eklenir; grup içinde de örnekleme/kırpma yapılmaz, kesilen oturumun işlenmemiş dosyaları yeniden gönderilir. <strong>Kapsam kararı yöneticide değil</strong>: <code>CLAUDE.md</code>, <code>rules/</code>, test, config, <code>.py</code> — hepsi listede kalır ve gönderilir; kapsam dışı olduklarına <code>do-deslop</code> karar verip <code>SKIPPED</code> döner. <strong>Alt oturumun raporu kanıt değildir</strong> — <code>CHANGED</code> dosyaları diff'te doğrulanır, <code>CLEAN</code> dediğinde beklenmedik değişiklik varsa hunk geri alınır. <code>SOURCES: FAILED</code> dönen grup yapılmamış sayılır ve tekrar koşar. Commit bu skill'de yapılmaz — teslimat <code>commit</code> skill'inin işidir.</p></div>
+        <p><strong>Metindeki AI yazım izlerini (slop) son kullanıcının gördüğü yüzeylerde temizler.</strong> Yönetici/işçi ayrımı üzerine kurulu: <code>/deslop</code> oturumu kuralları <b>okumaz ve bilmez</b>, <b>tek bir dosyanın bile içeriğine bakmaz</b>; <code>Grep</code>/<code>Glob</code> tool'ları verilmemiştir. Tek <code>find</code> / <code>git status</code> komutuyla düz yol listesi alır, dizin sınırından gruplara böler (<b>grup başına dosya limiti yok</b>), her grubu ayrı <code>claude -p</code> oturumuna verir, dönen raporları birleştirip <code>git diff</code> ile doğrular. Kural bilgisi, <b>kapsam analizi</b> ve düzenleme yetkisi yalnızca <code>do-deslop</code> oturumundadır; kural iskeleti + canlı kaynaklar + dosya içerikleri birlikte yüz binlerce karakterdir ve ana context'te tutulması sonraki işleri bozar.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"slop temizle", "AI izlerini temizle", "metni insanlaştır", <code>/deslop</code>, <code>/deslop ./*</code>, <code>/deslop README.md docs/index.html</code>. Argümansız çağrı <b>git değişikliklerini</b> tarar; repo geneli açık istek olmadan açılmaz. Ayrıca <code>commit</code> skill'i adım 3b'de <b>zorunlu</b> olarak çağırır (diff'te kullanıcı yüzeyi varsa), code review ile <b>aynı anda arka planda</b>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>repo kökü → tek komutla ham yol listesi (argüman → kabuk glob + <code>find</code>; argümansız → <code>git status</code>) → yalnız <b>mekanik</b> eleme (<code>node_modules</code>/<code>dist</code>/<code>.git</code>, lock/minified, &gt;1 MB, binary tespiti <code>grep -Il ''</code> ile; boyut eşiği <code>-size -1024k</code>, BSD <code>find</code> <code>-1M</code>'i yukarı yuvarlayıp listeyi sessizce boşaltır) → &gt;40 dosyada hacim kapısı → dizin bazlı gruplar (dosya limiti yok), aynı anda ≤6 oturum, kalanlar dalgalar hâlinde → <code>cd &lt;repo&gt; &amp;&amp; claude -p '/personal-assistant:do-deslop &lt;paths&gt;'</code> (arka planda, <code>timeout 600000</code>) → <code>git diff</code> ile doğrula → birleşik rapor + bırak/geri al sorusu.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Hiçbir grup, hiçbir dosya atlanmaz</strong>: grup sayısı taşarsa eşzamanlılık artırılmaz, dalga eklenir; grup içinde de örnekleme/kırpma yapılmaz, kesilen oturumun işlenmemiş dosyaları yeniden gönderilir. <strong>Kapsam kararı do-deslop'ta</strong>: <code>AGENTS.md</code>, <code>rules/</code>, test, config, <code>.py</code> dahil her dosya listede kalır ve gönderilir; kapsam dışı olanlar için <code>do-deslop</code> <code>SKIPPED</code> döner. <strong>Alt oturumun raporu kanıt değildir</strong>: <code>CHANGED</code> dosyaları diff'te doğrulanır, <code>CLEAN</code> dediğinde beklenmedik değişiklik varsa hunk geri alınır. <code>SOURCES: FAILED</code> dönen grup yapılmamış sayılır ve tekrar koşar. Commit bu skill'de yapılmaz; teslimat <code>commit</code> skill'inin işidir.</p></div>
       </div>
     </div>
 
     <!-- do-deslop -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="scan-text"></i></div><div><div class="etitle">do-deslop</div><div class="emeta">deslop işçisi · elle çağrılmaz</div></div></div>
       <div class="ebody">
-        <p><strong>Verilen dosyalarda AI yazım izlerini canlı kaynaktan okuyup tek tek temizler.</strong> Kural iskeleti (<code>references/ai-writing-rules.md</code>) <b>kelime listesi tutmaz</b> — kelimeler, swap tabloları, dönem/model imzaları ve sayısal eşikler eskir, bu yüzden her koşuda upstream'den okunur: Wikipedia <em>Signs of AI writing</em> (kelime sınıflandırmasında kazanan otorite), <code>jooray/humanizer</code>, <code>haidrrrry/humanize-ai-writing</code> (ai-tells + rewrite-rules + checklist), <code>bharvey2026/humanise-skill</code>, <code>jalaalrd/anti-ai-slop-writing</code>. <code>scripts/deslop-sources.sh</code> bunları 24 saatlik TTL ile <code>~/.cache/deslop-sources/</code> altına atomik yazar; paralel oturumlar aynı önbelleği paylaşır. <b>Zorunlu bir kaynak çekilemezse iş yapılmaz</b> — kurallar hatırlanarak çalışmak yasaktır.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p><code>/do-deslop &lt;dosya|glob|dizin&gt;...</code> — yalnız <code>deslop</code> skill'inin açtığı ayrı <code>claude -p</code> oturumunda. Normal sohbette elle çağrılmaz (<code>disable-model-invocation</code>).</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Kapsam</div><p><b>Yalnız son kullanıcının gördüğü yüzey.</b> Tam dosya: README/docs <code>.md</code>, landing HTML, template (<code>jinja</code>/<code>twig</code>/<code>blade</code>/<code>erb</code>), <code>.po</code> (yalnız <code>msgstr</code>), i18n JSON/YAML <b>değerleri</b>, e-posta şablonu, store metni. Kısmi: kaynak koddaki UI string literal'ları (<code>t()</code>/<code>gettext()</code>, toast, form <code>label</code>/<code>placeholder</code>/<code>help_text</code>, Django <code>verbose_name</code>). <b>Asla</b>: kod mantığı, kod yorumu/docstring, test, config, <code>CLAUDE.md</code>/<code>SKILL.md</code>/<code>rules</code>, CHANGELOG, fenced code block, link hedefi, HTML attribute ve <code>&lt;script&gt;</code>, <code>msgid</code>, i18n anahtarları.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Toplu değiştirme yasak.</strong> <code>sed -i</code>/<code>awk</code>/<code>perl -pi</code> çalıştırılmaz, <code>Edit</code>'te <code>replace_all</code> kullanılmaz — aynı kelime bir cümlede iz, başka cümlede doğru kelimedir. <strong>Her dosya baştan sona okunur</strong> (grep ile ilgili yere atlama yok; bağlam tam metinden gelir, context kaygısı bu oturumda yoktur) ve her düzeltme <b>ayrı bir <code>Edit</code></b> çağrısıdır. Karar <strong>kümelenmeye</strong> dayanır — tek işaret tek başına düzeltme gerekçesi değildir; yanlış pozitif listesi (em dash, kıvrık tırnak, resmî kelime dağarcığı, kusursuz dilbilgisi) korunur. <strong>Olgu/isim/sayı/tarih/atıf eklenmez ve değişmez</strong>; <code>.po</code>'da format belirteçleri (<code>%s</code>, <code>{count}</code>) ve çoğul sırası birebir kalır. Rapor <b>birebir alıntı</b> ister, yüzde/olasılık skoru üretmez.</p></div>
+        <p><strong>Verilen dosyalarda AI yazım izlerini canlı kaynaktan okuyup tek tek temizler.</strong> Kural iskeleti (<code>references/ai-writing-rules.md</code>) <b>kelime listesi tutmaz</b>. Kelimeler, swap tabloları, dönem/model imzaları ve sayısal eşikler eskidiği için her koşuda upstream'den okunur: Wikipedia <em>Signs of AI writing</em> (kelime sınıflandırmasında kazanan otorite), <code>jooray/humanizer</code>, <code>haidrrrry/humanize-ai-writing</code> (ai-tells + rewrite-rules + checklist), <code>bharvey2026/humanise-skill</code>, <code>jalaalrd/anti-ai-slop-writing</code>. <code>scripts/deslop-sources.sh</code> bunları 24 saatlik TTL ile <code>~/.cache/deslop-sources/</code> altına atomik yazar; paralel oturumlar aynı önbelleği paylaşır. <b>Zorunlu bir kaynak çekilemezse iş yapılmaz</b>; kurallar hatırlanarak uygulanmaz.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p><code>/do-deslop &lt;dosya|glob|dizin&gt;...</code>: yalnız <code>deslop</code> skill'inin açtığı ayrı <code>claude -p</code> oturumunda. Normal sohbette elle çağrılmaz (<code>disable-model-invocation</code>).</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Kapsam</div><p><b>Yalnız son kullanıcının gördüğü yüzey.</b> Tam dosya: README/docs <code>.md</code>, landing HTML, template (<code>jinja</code>/<code>twig</code>/<code>blade</code>/<code>erb</code>), <code>.po</code> (yalnız <code>msgstr</code>), i18n JSON/YAML <b>değerleri</b>, e-posta şablonu, store metni. Kısmi: kaynak koddaki UI string literal'ları (<code>t()</code>/<code>gettext()</code>, toast, form <code>label</code>/<code>placeholder</code>/<code>help_text</code>, Django <code>verbose_name</code>). <b>Asla</b>: kod mantığı, kod yorumu/docstring, test, config, <code>AGENTS.md</code>/<code>SKILL.md</code>/<code>rules</code>, CHANGELOG, fenced code block, link hedefi, HTML attribute ve <code>&lt;script&gt;</code>, <code>msgid</code>, i18n anahtarları.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Toplu değiştirme yasak.</strong> <code>sed -i</code>/<code>awk</code>/<code>perl -pi</code> çalıştırılmaz, <code>Edit</code>'te <code>replace_all</code> kullanılmaz, çünkü aynı kelime bir cümlede iz, başka cümlede doğru kelimedir. <strong>Her dosya baştan sona okunur</strong> (grep ile ilgili yere atlama yok; bağlam tam metinden gelir, context kaygısı bu oturumda yoktur) ve her düzeltme <b>ayrı bir <code>Edit</code></b> çağrısıdır. Karar <strong>kümelenmeye</strong> dayanır, tek işaret tek başına düzeltme gerekçesi değildir; yanlış pozitif listesi (em dash, kıvrık tırnak, resmî kelime dağarcığı, kusursuz dilbilgisi) korunur. <strong>Olgu/isim/sayı/tarih/atıf eklenmez ve değişmez</strong>; <code>.po</code>'da format belirteçleri (<code>%s</code>, <code>{count}</code>) ve çoğul sırası birebir kalır. Rapor <b>birebir alıntı</b> ister, yüzde/olasılık skoru üretmez.</p></div>
       </div>
     </div>
 
-    <!-- design-brief -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="layout-template"></i></div><div><div class="etitle">design-brief</div></div></div>
+    <!-- user-report -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="presentation"></i></div><div><div class="etitle">user-report</div></div></div>
       <div class="ebody">
-        <p><strong>Bir uygulamanın bir veya birkaç ekranını/akışını görsel olarak yakalar ve her ekranın hangi bileşen/veri/etkileşime sahip olduğunu tarafsız belgeler.</strong> Çıktı: ekran görüntüleri + <code>BRIEF.md</code> — bir tasarım aracına (Claude Design vb.) girdi olarak verilir. Dil/framework/ortam bağımsızdır.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"design brief oluştur", "ekranların brief'ini çıkar", "Claude Design için hazırla", "UI dökümü çıkar", "şu akışı belgele", <code>/design-brief</code>.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Tasarım ÖNERMEZ — mevcut durumu belgeler.</strong> Kapsam (hedef/erişim, ekranlar, viewport, ton) <code>AskUserQuestion</code> ile netleştirilir; "şu kötü/şöyle olmalı" yorumu yalnızca kullanıcı açıkça isterse girer (varsayılan tarafsız).</p></div>
+        <p><strong>Yapılan işi veya bir konuyu tek dosyalık, görsel zengin HTML rapor olarak sunar.</strong> Saf ölçülmüş gerçek, tek bakışta özet: KPI kutuları, önce/sonra grafikleri, renkli değişim haritası, akış çipleri, diyagramlar.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"rapor hazırla", "görsel özet", "yaptıklarımızı özetle", "önce/sonra göster", <code>/user-report</code>.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Tek dosya <code>/tmp/&lt;konu&gt;.html</code>, CDN kütüphaneleri (Tailwind, Chart.js, Mermaid, Lucide); server gerekmez. Headless tarayıcıda render doğrulanır, sonra kullanıcının tarayıcısında açılır.</p></div>
       </div>
     </div>
 
@@ -634,10 +453,10 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- full-translation -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="languages"></i></div><div><div class="etitle">full-translation</div><div class="emeta">çeviri ajanları: sonnet</div></div></div>
       <div class="ebody">
-        <p><strong>Django projesinde tüm dillerin eksik/fuzzy çevirilerini uçtan uca tamamlar</strong> — makemessages → po-cli analyze → <b>entry yüküne göre çeviri</b> → apply → compilemessages → commit. <code>po-cli</code> skill tek <code>.po</code> dosyası için; bu skill <b>çok dil × çok domain</b> (django/djangojs/djangof7) matrisini orkestre eder.</p>
+        <p><strong>Django projesinde tüm dillerin eksik/fuzzy çevirilerini uçtan uca tamamlar</strong>: makemessages → po-cli analyze → <b>entry yüküne göre çeviri</b> → apply → compilemessages → commit. <code>po-cli</code> skill tek <code>.po</code> dosyası için; bu skill <b>çok dil × çok domain</b> (django/djangojs/djangof7) matrisini orkestre eder.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"tam çeviri akışı", "tüm dilleri çevir", "i18n sync", "translation workflow", <code>/full-translation</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış (7 adım)</div><p>Repo + <b>mobil pull (koşulsuz zorunlu — mobil HEAD=origin/main doğrulanmadan Adım 1'e geçilmez; atlanırsa F7 metinleri sahte "0 untranslated" verir)</b> → makemessages (3 domain) → <code>po-cli --json analyze</code> → <b>iş birimi = entry sayısı: toplam ≤200 ise inline (Workflow yok), >200 ise dil sınırında ~200'lük chunk'lara bölünüp chunk başına 1 paralel ajan</b> → dry-run validate + tek onay + apply + perl temizlik → <code>compilemessages</code> + re-analyze (yakınsama) → <code>commit</code> skill. <b>Çeviri yoksa bile derle &amp; gönder</b>: hiç untranslated/fuzzy çıkmasa dahi makemessages <code>.po</code>'yu yeniden formatladıysa (line-wrap/header/kaynak konum) compile + commit atlanmaz — <code>.mo</code> tracked ve runtime okunur, <code>.po</code> ile senkron kalmalı. Sadece <code>.po</code> diff'i tamamen boşsa akış temiz sonlanır.
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Fuzzy msgstr'ye güvenmez (msgid'den sıfırdan), placeholder/slug/marka kuralları ajan prompt'una gömülü, plural (nplurals) tablosu dile göre. <code>po-cli</code>'yi tekrar etmez, ona dayanır. <strong>Kapalı diller çevrilmez</strong>: <code>HIDDEN_LANGUAGES</code> (örn. <code>djangomain/app_options.py</code>) dinamik tespit edilir, analiz + çeviri + yakınsama matrisinden çıkarılır — kapalı dile token harcanmaz, "tüm diller temiz" kriteri hidden hariç değerlendirilir.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış (7 adım)</div><p>Repo + <b>mobil pull (koşulsuz zorunlu: mobil HEAD=origin/main doğrulanmadan Adım 1'e geçilmez; atlanırsa F7 metinleri sahte "0 untranslated" verir)</b> → makemessages (3 domain) → <code>po-cli --json analyze</code> → <b>iş birimi = entry sayısı: toplam ≤200 ise inline (sub-agent yok), >200 ise dil sınırında ~200'lük chunk'lara bölünüp chunk başına 1 paralel sub-agent</b> → dry-run validate + tek onay + apply + perl temizlik → <code>compilemessages</code> + re-analyze (yakınsama) → <code>commit</code> skill. <b>Çeviri yoksa bile derle &amp; gönder</b>: hiç untranslated/fuzzy çıkmasa dahi makemessages <code>.po</code>'yu yeniden formatladıysa (line-wrap/header/kaynak konum) compile + commit atlanmaz; <code>.mo</code> tracked ve runtime okunur, <code>.po</code> ile senkron kalmalı. Sadece <code>.po</code> diff'i tamamen boşsa akış temiz sonlanır.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Fuzzy msgstr'ye güvenmez (msgid'den sıfırdan), placeholder/slug/marka kuralları ajan prompt'una gömülü, plural (nplurals) tablosu dile göre. <code>po-cli</code>'yi tekrar etmez, ona dayanır. <strong>Kapalı diller çevrilmez</strong>: <code>HIDDEN_LANGUAGES</code> (örn. <code>djangomain/app_options.py</code>) dinamik tespit edilir, analiz + çeviri + yakınsama matrisinden çıkarılır. Kapalı dile token harcanmaz; "tüm diller temiz" kriteri hidden hariç değerlendirilir.</p></div>
       </div>
     </div>
 
@@ -656,7 +475,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- web-scrape-cleaner -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="eraser"></i></div><div><div class="etitle">web-scrape-cleaner</div><div class="emeta">model: haiku</div></div></div>
       <div class="ebody">
-        <p><strong>Ham scrape markdown'ındaki gürültüyü temizler</strong> (nav/footer/cookie banner/reklam, boş başlık, link gürültüsü). Maliyet-optimize <code>haiku</code> modelinde çalışır. Tools: Read/Edit/Write/Glob/Grep/Bash.</p>
+        <p><strong>Ham scrape markdown'ındaki gürültüyü temizler</strong> (nav/footer/cookie banner/reklam, boş başlık, link gürültüsü). Tools: Read/Edit/Write/Glob/Grep/Bash.</p>
         <div class="block howto"><div class="bt"><i data-lucide="settings-2"></i> Nasıl çalışır</div><p>Keşif (örnek dosyada gürültü tespit) → tüm dosyaları concat + <code>uniq -c</code> ile 5+ dosyada tekrar eden satırları sil → aggressive/conservative temizleme → fark &gt;%5 ise üstüne yaz (orijinal silinmez) → başlık hiyerarşisi + link sadeleştirme.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Asla scrape etmez (sadece mevcut .md düzenler), asla git commit yapmaz, KEEP listesine dokunmaz. İstenirse <code>.original/</code> yedeği bırakır.</p></div>
       </div>
@@ -671,7 +490,7 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="sec-head">
       <div class="kicker"><i data-lucide="blocks"></i> Bağımlılıklar · dış araçlar</div>
       <h2>Plugin neye dayanıyor?</h2>
-      <p>Plugin kendi başına çalışır. <code>setup.sh</code> hepsini tek komutla kurar; her araç opsiyoneldir — yoksa ilgili özellik sessizce devre dışı kalır.</p>
+      <p>Plugin kendi başına çalışır. <code>setup.sh</code> hepsini tek komutla kurar; her araç opsiyoneldir; araç yoksa ilgili özellik sessizce devre dışı kalır.</p>
     </div>
 
     <!-- setup -->
@@ -687,9 +506,9 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <!-- obsidian -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="network"></i></div><div><div class="etitle">Obsidian</div><div class="emeta">vault · bilgi tabanı</div></div></div>
       <div class="ebody">
-        <p><strong>Nedir:</strong> Markdown tabanlı yerel bilgi tabanı; dosyalar <code>[[wikilink]]</code> ile birbirine bağlanır. Vault düz dosya sistemidir — uygulama açık olmadan da okunur/yazılır. Resmi CLI (<code>obsidian</code> komutu) BM25 arama ekler, zorunlu değildir.</p>
+        <p><strong>Nedir:</strong> Markdown tabanlı yerel bilgi tabanı; dosyalar <code>[[wikilink]]</code> ile birbirine bağlanır. Vault düz dosya sistemidir, uygulama açık olmadan da okunur/yazılır. Resmi CLI (<code>obsidian</code> komutu) BM25 arama ekler, zorunlu değildir.</p>
         <p><strong>Ne işe yarar:</strong> Kalıcı teknik gerçeği (sistem davranışı, kalıcı karar, credential) oturumlar arası taşır. Genel alan klasörleri tüm projeleri besler; proje klasörü yalnız kendine özgü olanı tutar.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p>3 skill (<code>obsidian-search</code>/<code>obsidian-write</code>/<code>obsidian-doc-source</code>) doğrudan Obsidian üzerine kurulu — hepsi <b>ana agent context'inde</b> çalışır, subagent yoktur. <code>userprompt-obsidian-hint.sh</code> her non-trivial prompt'ta arama+yazma davranışını hatırlatır. Vault <code>~/Documents/ObsidianVault/</code> altında klasör hiyerarşisidir (genel alan + proje); MOC/index.md kullanılmaz. Erişim <code>Glob</code>/<code>Grep</code>/<code>Read</code> ile, Obsidian CLI opsiyonel.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p>3 skill (<code>obsidian-search</code>/<code>obsidian-write</code>/<code>obsidian-doc-source</code>) doğrudan Obsidian üzerine kurulu; hepsi <b>ana agent context'inde</b> çalışır, subagent yoktur. Vault <code>~/Documents/ObsidianVault/</code> altında klasör hiyerarşisidir (genel alan + proje); MOC/index.md kullanılmaz. Erişim <code>Glob</code>/<code>Grep</code>/<code>Read</code> ile, Obsidian CLI opsiyonel.</p></div>
       </div>
     </div>
 
@@ -697,10 +516,10 @@ playwright-cli fill e20 "kullanici" --submit</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="list-checks"></i></div><div><div class="etitle">Plane</div><div class="emeta">plane-cli · proje/issue yönetimi</div></div></div>
       <div class="ebody">
         <p><strong>Nedir:</strong> Açık kaynak, self-hosted bir proje/issue yönetim aracı (Jira/Linear alternatifi). Plugin <code>plane-cli</code> binary'si üzerinden REST API'sine bağlanır.</p>
-        <p><strong>Ne işe yarar:</strong> Issue/project/cycle/module listeleme, oluşturma, state güncelleme, atama ve yorum — terminalden çıkmadan iş takibi.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><strong>Opsiyonel</strong> — <code>CLAUDE.local.md</code>'de Plane proje UUID tanımlıysa: <code>init.md</code> kuralı sorun bildirilince ilgili issue'yu arar; <code>commit</code> skill'i değişiklikle uyuşan issue'yu completed state'e çekebilir. Tanımlı değilse Claude native <code>TaskCreate</code> ile takip yeterli.</p></div>
+        <p><strong>Ne işe yarar:</strong> Issue/project/cycle/module listeleme, oluşturma, state güncelleme, atama ve yorum. İş takibi terminalden çıkmadan yapılır.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><strong>Opsiyonel</strong>: <code>AGENTS.md</code>'de Plane proje UUID tanımlıysa <code>commit</code> skill'i değişiklikle uyuşan issue'yu completed state'e çekebilir. Tanımlı değilse Claude native <code>TaskCreate</code> ile takip yeterli.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yapılandırma</div><pre><code>~/.zshrc → PLANE_URL + PLANE_API_KEY + PLANE_WORKSPACE_SLUG
-CLAUDE.local.md → Plane proje UUID (opsiyonel)</code></pre></div>
+AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
       </div>
     </div>
 
@@ -709,17 +528,7 @@ CLAUDE.local.md → Plane proje UUID (opsiyonel)</code></pre></div>
       <div class="ebody">
         <p><strong>Nedir:</strong> Geliştirme process'lerini (backend, frontend, worker vb.) yöneten bir araç; <code>solo.yml</code> ile tanımlanan komutları başlatır, durdurur, yeniden başlatır ve çıktılarını takip eder. <code>solo</code> CLI binary'si Solo app'in HTTP control plane'ine bağlanır (<code>solo doctor</code> ile doğrulanır).</p>
         <p><strong>Ne işe yarar:</strong> Tekrar eden shell komutlarını (build + run) tek yerde toplayıp Claude'un bunları başlatıp loglarını okumasını sağlar.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>soloterm.md</code> kuralı: tekrar eden komutlar için mutlaka <code>solo.yml</code> oluşturulur ve komutlar Solo üzerinden çalıştırılır. Process başlatma/durdurma/restart <code>solo processes</code> / <code>solo commands</code> CLI komutlarıyla yapılır; process çıktısı/logu <strong>artık <code>solo processes output</code> ile CLI'den okunur</strong> (v0.8+; <code>--lines</code>/<code>--raw</code> destekli) — eski GUI/log-dosyası workaround'ı ve geçici Solo MCP yara bandı kaldırıldı. (Bu plugin repo'sunda tek process var: <code>render</code> — PA Render server.)</p></div>
-      </div>
-    </div>
-
-    <!-- pa-render -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="monitor-play"></i></div><div><div class="etitle">PA Render</div><div class="emeta">Bun server · canlı analiz dashboard'u</div></div></div>
-      <div class="ebody">
-        <p><strong>Nedir:</strong> <code>scripts/render-server.ts</code> — Bun ile yazılmış sıfır-bağımlılık HTTP server (<code>127.0.0.1:4787</code>). <code>~/.pa-render/active|archive/&lt;konu&gt;/index.html</code> sayfalarını tek ekranlı dashboard'da sunar: sol sidebar (aktif + katlanabilir arşiv listesi, görülmemiş-değişiklik dot'u), ortada iframe, SSE ile auto-reload — agent dosyayı <code>Edit</code>'leyince ekran kendini tazeler. Sayfa üstündeki topbar'da <strong>arşivle/geri al</strong> butonu ve <strong>ekler (N)</strong> anahtarı; sağda <strong>Dosyalar paneli</strong> konu klasöründeki tüm ek dosyaları (ekran görüntüsü, JSON, diff, log) listeler — tıklayınca dosya aynı ekranda açılır, Cmd/Ctrl+tık yeni sekmede (<code>/api/files</code>).</p>
-        <p><strong>Kanıt viewer'ı</strong> (<code>/view/…</code>): görsel/HTML dışındaki dosyalar ham metin yerine biçimli açılır — <strong>JSON</strong> katlanabilir renkli ağaç, <strong>log</strong> seviye renkleri (error/warn/info/debug) + seviye çipleri + satır filtresi, <strong>diff/patch</strong> +/− ve hunk renklendirmesi (içerikten otomatik algılanır), <strong>düz metin</strong> satır numaralı. Her modda satır no, wrap anahtarı, panoya kopyala ve ham dosya bağlantısı var; 20.000 satır üstü kesilir.</p>
-        <p><strong>UI kit:</strong> <code>render/lib/</code> — <code>pa.css</code> design system (çift tema, B-section kartları, badge/callout/tablo/oq/risk) + <code>pa.js</code> web component'leri (<code>pa-flow</code>, <code>pa-step</code>, <code>pa-leg</code>, <code>pa-compare</code>, <code>pa-kpi</code>, <code>pa-timeline</code>) + vendored Chart.js ve preact/htm. Sayfalar <code>/lib/*</code>'ı link'ler — inline CSS yok. <code>.jsx</code> dosyaları istekte anında transpile edilir.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-render</code> skill'inin sunum katmanı. Solo process <code>render</code> ile başlatılır (<code>solo.yml</code>); arşivle/geri-al hem UI butonlarıyla hem <code>/api/archive</code> endpoint'iyle yapılır. Agent server'ı hiç bilmez — yalnız dosya yazar.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p>Tekrar eden komutlar <code>solo.yml</code>'a toplanıp Solo üzerinden çalıştırılabilir. Process başlatma/durdurma/restart <code>solo processes</code> / <code>solo commands</code> CLI komutlarıyla yapılır; process çıktısı/logu <code>solo processes output</code> ile CLI'den okunur.</p></div>
       </div>
     </div>
 
@@ -727,7 +536,7 @@ CLAUDE.local.md → Plane proje UUID (opsiyonel)</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-circle"></i></div><div><div class="etitle">WhatsApp</div><div class="emeta">whatsapp-mcp · mesaj kanalı</div></div></div>
       <div class="ebody">
         <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır.</p>
-        <p><strong>Ne işe yarar:</strong> Sohbetleri listeleme, mesaj arama, kişi bulma ve mesaj/dosya/ses gönderme — Claude'dan doğrudan WhatsApp iletişimi.</p>
+        <p><strong>Ne işe yarar:</strong> Sohbetleri listeleme, mesaj arama, kişi bulma ve mesaj/dosya/ses gönderme; Claude doğrudan WhatsApp üzerinden iletişim kurar.</p>
         <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin çıktı kanallarından biri. Skill müşteri/acenta mesajını kanal-agnostik üretir; WhatsApp seçilirse <code>mcp__whatsapp__*</code> araçlarıyla gönderilir (skill mesajı üretir, gönderimi entegrasyon yapar).</p></div>
       </div>
     </div>
@@ -735,9 +544,9 @@ CLAUDE.local.md → Plane proje UUID (opsiyonel)</code></pre></div>
     <!-- google -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="mail"></i></div><div><div class="etitle">Google Workspace</div><div class="emeta">Gmail · Calendar · Drive (claude.ai MCP)</div></div></div>
       <div class="ebody">
-        <p><strong>Nedir:</strong> claude.ai üzerinden sağlanan resmi Google MCP server'ları — <strong>Gmail</strong> (e-posta), <strong>Google Calendar</strong> (takvim) ve <strong>Google Drive</strong> (dosya). HTTP MCP olarak bağlanır, OAuth ile yetkilendirilir.</p>
-        <p><strong>Ne işe yarar:</strong> E-postaları okuma/arama/gönderme, takvim etkinliklerini görüntüleme/oluşturma ve Drive dosyalarına erişim — Claude'dan doğrudan Google hesabıyla çalışma.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin e-posta kanalı Gmail ile gönderilebilir; takvim/dosya entegrasyonu genel asistan akışlarını besler. Üç servis de claude.ai üzerinden gelir — ayrı binary kurulumu gerekmez.</p></div>
+        <p><strong>Nedir:</strong> claude.ai üzerinden sağlanan resmi Google MCP server'ları: <strong>Gmail</strong> (e-posta), <strong>Google Calendar</strong> (takvim) ve <strong>Google Drive</strong> (dosya). HTTP MCP olarak bağlanır, OAuth ile yetkilendirilir.</p>
+        <p><strong>Ne işe yarar:</strong> E-postaları okuma/arama/gönderme, takvim etkinliklerini görüntüleme/oluşturma ve Drive dosyalarına erişim. Claude doğrudan Google hesabıyla çalışır.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin e-posta kanalı Gmail ile gönderilebilir; takvim/dosya entegrasyonu genel asistan akışlarını besler. Üç servis de claude.ai üzerinden gelir, ayrı binary kurulumu gerekmez.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yetkilendirme</div><pre><code>Claude Code → /mcp → claude.ai servisi seç → Authenticate
 # Gmail / Google Calendar / Google Drive ayrı ayrı OAuth</code></pre></div>
       </div>
@@ -748,8 +557,8 @@ CLAUDE.local.md → Plane proje UUID (opsiyonel)</code></pre></div>
       <div class="ebody">
         <p>Plugin ayrıca şu araçlarla entegre olur (hepsi opsiyonel, <code>setup.sh</code> kurar):</p>
         <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Destekleyici stack</div><ul>
-          <li><strong>uv</strong> — Python paket/script yöneticisi; <code>setup.py</code>, <code>crawl2md</code> ve tüm Python akışlarının temeli (pip yasak, kural gereği).</li>
-          <li><strong>Playwright CLI</strong> — tarayıcı otomasyonu ve frontend testi (<code>browser-testing</code> kuralı; MCP yerine CLI).</li>
+          <li><strong>uv</strong> — Python paket/script yöneticisi; <code>setup.py</code>, <code>crawl2md</code> ve tüm Python akışlarının temeli.</li>
+          <li><strong>Playwright CLI</strong> — tarayıcı otomasyonu ve frontend testi (<code>playwright-cli</code> skill'i; MCP yerine CLI).</li>
           <li><strong>playwright-best-practices</strong> — <code>@playwright/test</code> ile E2E/component/API/visual spec yazımı için harici skill (currents.dev, MIT); <code>~/.claude/skills/</code> altına klonlanır. <code>playwright-cli</code> skill'i tarafından zorunlu eşlikçi olarak çağrılır.</li>
           <li><strong>Context7 (ctx7)</strong> — kütüphane/framework dökümanını canlı çeker; <code>obsidian-doc-source</code> library modunda zorunlu.</li>
           <li><strong>Plane (plane-cli)</strong> — proje/issue yönetimi; <code>user-message</code> ile issue yanıtı üretimi.</li>
@@ -775,6 +584,8 @@ CLAUDE.local.md → Plane proje UUID (opsiyonel)</code></pre></div>
         <li>Plugin'i kur:<pre><code>/plugin install personal-assistant</code></pre></li>
         <li>Yeniden yükle ve yeni oturum aç:<pre><code>/reload-plugins</code></pre></li>
       </ol>
+      <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler ve hook'lar omp karşılıklarına çevrilir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
+      <pre><code>python3 scripts/build-omp.py --link</code></pre>
     </div>
   </div>
 </section>
@@ -782,7 +593,7 @@ CLAUDE.local.md → Plane proje UUID (opsiyonel)</code></pre></div>
 <footer>
   <div class="wrap">
     <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub'da Görüntüle</a>
-    <p class="made">personal-assistant · v1.80.0 · MIT · Ömer Faruk Yığın</p>
+    <p class="made">personal-assistant · v1.82.0 · MIT · Ömer Faruk Yığın</p>
     <p class="made"><i data-lucide="bot"></i> Claude Code ile geliştirildi</p>
   </div>
 </footer>

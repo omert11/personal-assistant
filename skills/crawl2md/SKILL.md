@@ -9,49 +9,39 @@ allowed-tools: Bash, Read, Glob, Grep, Task
 
 # Crawl2md
 
-Web sitesini recursive olarak crawl'lar, HTML/PDF/Office içeriği markdown'a çevirir, sonra `web-scrape-cleaner` agent ile temizler.
-
 ## Girdi
 
-`$ARGUMENTS` → `<URL> <OUT_DIR> [crawl2md flagleri]`
-
-- `$0` → URL
-- `$1` → OUT_DIR
-- `$2+` → flags
-
-Örnekler:
-- `/crawl2md https://docs.example.com ./scraped`
-- `/crawl2md https://example.com ./out --depth 2 --delay 1.0`
-- `/crawl2md https://example.com ./out --include-binary`
-
-`$0` veya `$1` boşsa: `AskUserQuestion` ile URL ve OUT_DIR sor.
+`$ARGUMENTS` → `$0` URL, `$1` OUT_DIR, `$2+` flags (`--depth N`, `--delay S`, `--include-binary`).
+`$0` veya `$1` boşsa soru aracıyla sor.
 
 ## Akış
 
 ### 1. Ön Kontrol
 
-Script skill bundle içinde — `${CLAUDE_SKILL_DIR}/scripts/crawl2md.py`. Çalıştırma için `uv` yeterli (PEP 723 inline deps), `markitdown` ek kurulum gerekmez (script kendisi ephemeral venv'e çeker).
+Script: `${CLAUDE_SKILL_DIR}/scripts/crawl2md.py` (shebang `uv run --script`, PEP 723; `markitdown[all]` ephemeral venv'e otomatik gelir — global `markitdown` kurma). Tek dep `uv`; yoksa `brew install uv` öner.
 
 ```bash
 which uv || echo "uv kurulu degil — brew install uv"
 ls "${CLAUDE_SKILL_DIR}/scripts/crawl2md.py" || echo "script bulunamadi"
 ```
 
-`uv` yoksa `brew install uv` öner. Başka dep yok.
-
 ### 2. Crawl Parametreleri
 
-`$ARGUMENTS` parse et. Eksik/belirsizse `AskUserQuestion`:
+Eksik/belirsizse soru aracıyla sor:
 - header: "Crawl params"
 - question: "Depth, delay, binary?"
 - options: ["Default (depth=3, delay=0.5)", "Deep (depth=5)", "Hızlı (depth=2, delay=0)", "Custom"]
 
+`--delay 0` seçilirse rate-limit riski için uyar.
+
 ### 3. Onay
 
-`AskUserQuestion`:
+Soru aracıyla sor:
 - header: "Crawl başlat"
 - question: "$0 → $1 crawl edilecek. Başla?"
 - options: ["Başla", "Önce boyut tahmini", "İptal"]
+
+>500 dosya tahmin ediliyorsa ayrıca onay al, depth azaltmayı öner.
 
 ### 4. Crawl Çalıştır
 
@@ -59,20 +49,17 @@ ls "${CLAUDE_SKILL_DIR}/scripts/crawl2md.py" || echo "script bulunamadi"
 "${CLAUDE_SKILL_DIR}/scripts/crawl2md.py" $ARGUMENTS
 ```
 
-Script shebang `uv run --script` — uv otomatik ephemeral venv'de `markitdown[all]` resolve eder (ilk çalıştırmada indirir, sonra cache). Ayrıca global `markitdown` kurulumu gerekmez.
-
-Çıktıdan yazılan dosya sayısını topla.
+Script yalnız aynı host'taki linkleri izler.
 
 ### 5. Rapor
 
-Crawl bitince:
-- Yazılan dosya sayısı
+- Yazılan dosya sayısı (script çıktısından)
 - Toplam boyut (`du -sh $OUT_DIR`)
 - Örnek 3 dosya yolu
 
 ### 6. Temizleme Onayı
 
-`AskUserQuestion`:
+Soru aracıyla sor:
 - header: "Temizleme"
 - question: "$1'deki N dosya `web-scrape-cleaner` agent ile temizlensin mi?"
 - options:
@@ -80,9 +67,11 @@ Crawl bitince:
   - "Evet, conservative" — Sadece boş satır + script kalıntısı
   - "Hayır, ham bırak"
 
-### 7. Cleaner Agent Çağır
+Cleaner dosyaların üstüne yazar; kullanıcı yedek isterse önce `cp -r $1 $1.original/`.
 
-Evet seçildiyse `Task` ile `web-scrape-cleaner` agent'ını başlat:
+### 7. Cleaner Agent
+
+Evet seçildiyse `web-scrape-cleaner` agent'ını (`agents/web-scrape-cleaner.md`) sub-agent olarak başlat:
 
 ```
 TARGET: $1
@@ -90,23 +79,6 @@ MODE: aggressive | conservative
 KEEP: (kullanıcı istisna verirse)
 ```
 
-Agent raporunu kullanıcıya özetle sun.
-
 ### 8. Son Durum
 
-- Ham dosya: $1 (temizlenmedi seçildiyse)
-- Temizlenmiş dosya: $1 (üstüne yazıldı)
-- Raporda: toplam silinen satır, düzenlenen dosya sayısı
-
-## Kritik Kurallar
-
-- **Same-host kilidi**: crawl2md.py zaten sadece aynı hosttaki link'leri izler (başka siteye sızmaz)
-- **Delay zorunlu**: Default 0.5s, agresif kullanıcı `--delay 0` yazabilir ama rate-limit riski var — uyar
-- **Büyük siteler**: >500 dosya tahmin ediliyorsa `AskUserQuestion` ile onay al (depth azaltma öner)
-- **Cleaner yedek**: web-scrape-cleaner aggressive modda orijinali üstüne yazar. Kullanıcı istiyorsa önce `cp -r $1 $1.original/` yap
-
-## İlgili Dosyalar
-
-- `${CLAUDE_SKILL_DIR}/scripts/crawl2md.py` — crawl + markitdown script (uv PEP 723, skill bundle içinde)
-- `agents/web-scrape-cleaner.md` — temizleme agent'ı (plugin root'unda, Task tool ile çağrılır)
-- `rules/cli-tools.md` — markitdown komutları (referans)
+Agent raporunu özetle: dosyalar $1'de (ham veya temizlenmiş, üstüne yazılmış), toplam silinen satır, düzenlenen dosya sayısı.

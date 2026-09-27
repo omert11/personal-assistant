@@ -1,15 +1,12 @@
 # AI Yazım İzleri — Kural İskeleti + Kaynak Okuma Alanları
 
-Bu belge **kelime listesi tutmaz**. Kelime, ifade, oran, dönem ve model bilgisi eskir; bunlar
-her koşuda BÖLÜM 0'daki URL'lerden okunur. Belgede yalnız eskimeyen **desen ve süreç kuralları**
-vardır.
+Belgede yalnız desen ve süreç kuralları var. Kelime, ifade, oran, dönem, model bilgisi her koşuda BÖLÜM 0 URL'lerinden okunur.
 
 ---
 
 # BÖLÜM 0 — KAYNAK OKUMA ALANLARI (ZORUNLU)
 
-Aşağıdaki her alan, işe başlamadan **canlı okunur**. Okunmadan kural uygulanmaz.
-Okuma yöntemi: `WebFetch` veya `curl -sL <url>`.
+İşe başlamadan canlı oku. Okunmadan kural uygulanmaz.
 
 ## S1 — Wikipedia: Signs of AI writing (ana otorite)
 
@@ -17,21 +14,17 @@ Okuma yöntemi: `WebFetch` veya `curl -sL <url>`.
 https://en.wikipedia.org/w/index.php?title=Wikipedia:Signs_of_AI_writing&action=raw
 ```
 
-Buradan okunacaklar:
+Oku:
 - Her bölümün `Words to watch` kutuları (tam liste)
-- `High density of "AI vocabulary" words` bölümündeki dönem kırılımları (hangi kelime hangi model
-  döneminde)
-- `Internal formatting and reference markup bugs` altındaki araç bazlı imzalar (ChatGPT / Gemini /
-  Grok / DeepSeek / Perplexity / sınıflandırılmamış)
-- `utm_source=` bölümündeki parametre listesi
-- `Differences between LLMs` bölümündeki model karşılaştırması
-- `Ineffective indicators` ve `Signs of human writing` bölümlerinin güncel hâli
-- `Caveats` altındaki dedektör ve insan yargısı ölçümleri
+- `High density of "AI vocabulary" words`: kelime → model dönemi kırılımı
+- `Internal formatting and reference markup bugs`: araç bazlı imzalar (ChatGPT / Gemini / Grok / DeepSeek / Perplexity / sınıflandırılmamış)
+- `utm_source=` parametre listesi
+- `Differences between LLMs`
+- `Ineffective indicators`, `Signs of human writing`
+- `Caveats`: dedektör ve insan yargısı ölçümleri
 
-Notlar:
-- `Wikipedia:WikiProject AI Cleanup/AI catchphrases` bu sayfaya `#REDIRECT`'tir; ayrıca okunmaz.
-- Sayfa sürekli düzenlenir; kısayol kodları (`WP:AIVOCAB`, `WP:AIDASH` vb.) bölüm adı değişse bile
-  hedefe götürür.
+- `Wikipedia:WikiProject AI Cleanup/AI catchphrases` bu sayfaya redirect; ayrıca okunmaz.
+- Bölüm adı değişmişse kısayol kodlarıyla bul (`WP:AIVOCAB`, `WP:AIDASH` vb.).
 
 ## S2 — jooray/humanizer (numaralı desen kataloğu + süreç)
 
@@ -39,16 +32,14 @@ Notlar:
 https://raw.githubusercontent.com/jooray/humanizer/main/SKILL.md
 ```
 
-Buradan okunacaklar:
-- Numaralı desen bölümlerinin tamamı (her birinde `Words to watch` + before/after)
-- `Voice Calibration`, `PERSONALITY AND SOUL`, `Invocation Modes`, `Detect Mode`,
-  `Process and Output` bölümleri
-- `DETECTION GUIDANCE` altındaki false-positive listesi ve insan yazımı işaretleri
-- Em dash bölümünün o sürümdeki katılık seviyesi ve istisnası
-- Frontmatter'daki `metadata.version`
+Oku:
+- Numaralı desen bölümlerinin tamamı (`Words to watch` + before/after)
+- `Voice Calibration`, `PERSONALITY AND SOUL`, `Invocation Modes`, `Detect Mode`, `Process and Output`
+- `DETECTION GUIDANCE`: false-positive listesi, insan yazımı işaretleri
+- Em dash bölümünün katılık seviyesi ve istisnası
+- Frontmatter `metadata.version`
 
-Not: `https://raw.githubusercontent.com/blader/humanizer/main/SKILL.md` aynı skill'in geri kalmış
-kopyasıdır. Sürüm numaraları karşılaştırılır; büyük olan okunur, diğeri atlanır.
+Mirror: `https://raw.githubusercontent.com/blader/humanizer/main/SKILL.md`. Sürümleri karşılaştır; büyük olanı oku, diğerini atla.
 
 ## S3 — jalaalrd/anti-ai-slop-writing (üretim direktifi + yasak listeler)
 
@@ -57,13 +48,12 @@ https://raw.githubusercontent.com/jalaalrd/anti-ai-slop-writing/main/skills/anti
 https://raw.githubusercontent.com/jalaalrd/anti-ai-slop-writing/main/skills/anti-ai-slop-writing/references/banned-words.md
 ```
 
-Buradan okunacaklar:
+Oku:
 - `Banned Vocabulary`, `Banned Phrases`, `Banned Sentence/Paragraph Openers` (tam liste)
-- `Model-Specific First-Word Tells` (model başına ilk kelime listeleri)
-- `Era-Specific AI Vocabulary` (dönem kırılımı)
-- `Structural Rules` ve `Punctuation Rules` altındaki **sayısal eşikler** (em dash, ünlem, ellipsis
-  sıklığı; ardışık aynı uzunlukta cümle sınırı)
-- `Self-Check Before Every Output` maddelerinin güncel sırası ve sayısı
+- `Model-Specific First-Word Tells`
+- `Era-Specific AI Vocabulary`
+- `Structural Rules`, `Punctuation Rules`: sayısal eşikler (em dash, ünlem, ellipsis sıklığı; ardışık aynı uzunlukta cümle sınırı)
+- `Self-Check Before Every Output`: güncel sıra ve sayı
 
 ## S4 — bharvey2026/humanise-skill (swap tabloları + editör akışı)
 
@@ -71,12 +61,11 @@ Buradan okunacaklar:
 https://raw.githubusercontent.com/bharvey2026/humanise-skill/main/SKILL.md
 ```
 
-Buradan okunacaklar:
-- Üç swap tablosu (AI Word / AI Adjective / AI Noun → karşılıkları)
-- `Sentence Structure Fixes`, `Tone Fixes`, `Opening & Closing Fixes`, `Transition Fixes`
-  altındaki kalıp listeleri
-- `Workflow` adımları ve em dash oranı
-- Frontmatter'daki `model` / `effort` değerleri
+Oku:
+- Üç swap tablosu (AI Word / AI Adjective / AI Noun)
+- `Sentence Structure Fixes`, `Tone Fixes`, `Opening & Closing Fixes`, `Transition Fixes` kalıp listeleri
+- `Workflow` adımları, em dash oranı
+- Frontmatter `model` / `effort`
 
 ## S5 — haidrrrry/humanize-ai-writing (tells kataloğu + checklist + prompt)
 
@@ -88,14 +77,13 @@ https://raw.githubusercontent.com/haidrrrry/humanize-ai-writing/main/humanize-ai
 https://raw.githubusercontent.com/haidrrrry/humanize-ai-writing/main/PROMPT.md
 ```
 
-Buradan okunacaklar:
-- `ai-tells.md`: tell kataloğu, model-eğilimli kelime kümeleri, markup artifact listesi,
-  "not reliable on their own" maddeleri, composite signal tanımı
-- `rewrite-rules.md`: her tell için before/after düzeltme kalıbı ve swap çiftleri
-- `checklist.md`: teslim öncesi madde listesi (madde sayısı ve içeriği sürümle değişir)
-- `PROMPT.md`: chatbot'a doğrudan yapıştırılabilir sistem promptu; yasak kelime ve kalıp blokları
+Oku:
+- `ai-tells.md`: tell kataloğu, model-eğilimli kelime kümeleri, markup artifact listesi, "not reliable on their own" maddeleri, composite signal tanımı
+- `rewrite-rules.md`: tell başına before/after kalıbı, swap çiftleri
+- `checklist.md`: teslim öncesi liste (sürümle değişir)
+- `PROMPT.md`: yapıştırılabilir sistem promptu; yasak kelime ve kalıp blokları
 
-## S6 — Genişletme kaynakları (isteğe bağlı, konu gerektirdiğinde)
+## S6 — Genişletme kaynakları (opsiyonel, konu gerektirirse)
 
 ```
 https://en.wikipedia.org/w/index.php?title=Wikipedia:Signs_of_AI-generated_comments&action=raw
@@ -103,271 +91,199 @@ https://en.wikipedia.org/w/index.php?title=Wikipedia:WikiProject_AI_Cleanup/Guid
 https://en.wikipedia.org/w/index.php?title=Wikipedia:Identifying_LLM_unblock_requests&action=raw
 ```
 
-Sırasıyla: yorum/tartışma metni işaretleri, temizlik prosedürü, uzun savunma metinlerindeki kalıplar.
+Sırasıyla: yorum/tartışma metni işaretleri, temizlik prosedürü, uzun savunma metni kalıpları.
 
 ## S7 — Okuma protokolü
 
-1. Görev **tespit** ise: S1 zorunlu, S5/`ai-tells.md` zorunlu. Diğerleri opsiyonel.
-2. Görev **yeniden yazma / temizleme** ise: S2 zorunlu, S5/`rewrite-rules.md` + `checklist.md`
-   zorunlu, S4 swap tabloları opsiyonel.
-3. Görev **sıfırdan üretim** ise: S3 zorunlu, S5/`PROMPT.md` zorunlu.
-4. Aynı kelime iki kaynakta farklı sınıflandırılmışsa **S1 kazanır** (tek akademik referanslı
-   kaynak odur).
-5. Sayısal eşik iki kaynakta farklıysa (em dash oranı gibi) hangi kaynağın uygulandığı çıktıda
-   belirtilir; ikisi ortalanmaz.
-6. Bir URL 404 verirse repo ağacı okunur:
-   `https://api.github.com/repos/<owner>/<repo>/git/trees/HEAD?recursive=1` — dosya taşınmış olabilir.
-7. Okuma başarısızsa iş **kurallar hatırlanarak yapılmaz**; eksik kaynak açıkça bildirilir.
+1. **Tespit**: S1 + S5/`ai-tells.md` zorunlu; diğerleri opsiyonel.
+2. **Yeniden yazma / temizleme**: S2 + S5/`rewrite-rules.md` + `checklist.md` zorunlu; S4 swap tabloları opsiyonel.
+3. **Sıfırdan üretim**: S3 + S5/`PROMPT.md` zorunlu.
+4. URL 404 → repo ağacını oku: `https://api.github.com/repos/<owner>/<repo>/git/trees/HEAD?recursive=1`.
+5. Okuma başarısız → kurallar hatırlanarak uygulanmaz; eksik kaynak açıkça bildirilir.
+
+Kaynaklar arası çelişki: BÖLÜM 6.
 
 ---
 
-# BÖLÜM 1 — BURADA TUTULMAYAN (her koşuda kaynaktan okunur)
+# BÖLÜM 1 — BURADA TUTULMAYAN
 
-Aşağıdakiler bu belgeye **kopyalanmaz**; kopyalanmışsa silinir:
+Bu belgeye kopyalanmaz; kopyalanmışsa silinir:
 
-- Yasak kelime, ifade ve cümle başlangıcı listeleri
+- Yasak kelime, ifade, cümle başlangıcı listeleri
 - Kelime → karşılık swap tabloları
-- Dönem bazlı kelime kırılımları (hangi kelime hangi model kuşağında)
-- Model bazlı imzalar: ilk kelime eğilimleri, markup artifact string'leri, UTM parametreleri
+- Dönem bazlı kelime kırılımları
+- Model imzaları: ilk kelime eğilimleri, markup artifact string'leri, UTM parametreleri
 - Sayısal eşikler: em dash / ünlem / ellipsis oranları, ardışık cümle sınırları
 - Çalışma sonuçları, yüzdeler, ölçümler, tarihler
-- Skill sürüm numaraları ve frontmatter değerleri
+- Skill sürüm numaraları, frontmatter değerleri
 - Hangi modelin şu an neyi az/çok kullandığı
-
-Gerekçe: bunların hepsi kaynakta güncellenir. Kopyası tutulursa belge sessizce yanlışa döner.
 
 ---
 
-# BÖLÜM 2 — DESEN KURALLARI (eskimeyen)
+# BÖLÜM 2 — DESEN KURALLARI
 
-Her desen için: ne olduğu, neden işaret sayıldığı, düzeltmenin yönü. Somut kelime/ifade örneği
-için ilgili kaynak okunur.
+Somut kelime/ifade ilgili kaynaktan okunur.
 
 ## 2.1 Anlam şişirme
 
-- **Significance / legacy / broader-trend padding** — Konunun rastgele bir yönünün daha geniş bir
-  olguyu temsil ettiğini veya ona katkı sunduğunu söyleyen cümleler. Düzeltme: şeyin ne olduğunu ve
-  ne yaptığını yaz, önem yorumunu at. → Kelime kutusu: S1 ilgili bölüm, S2 ilgili desen.
-- **Notability / media-coverage padding** — Kaynak listeleme, kaynak türü sayma, dijital varlık
-  beyanı. Düzeltme: bağlamı olan tek somut olguyu tut, listeyi at. Bağlam **uydurulmaz**.
-- **Superficial analysis (present-participle padding)** — Cümle sonuna eklenen, kanıtsız önem
-  iddia eden "-ing" cümlecikleri. Düzeltme: kes, veya kaynakta varsa gerçek olguya çevir.
-- **Promotional / press-release tone** — Ansiklopedik ton istense bile reklam veya seyahat rehberi
-  diline kayma. Düzeltme: akran sesi; ölçülebilir davranış cümlesi.
+- **Significance / legacy / broader-trend padding** — Konunun rastgele bir yönünü daha geniş bir olgunun temsili/katkısı gibi sunmak. Düzeltme: ne olduğunu ve ne yaptığını yaz, önem yorumunu at. Kelime kutusu: S1 ve S2 ilgili bölüm.
+- **Notability / media-coverage padding** — Kaynak listeleme, kaynak türü sayma, dijital varlık beyanı. Düzeltme: bağlamı olan tek somut olguyu tut, listeyi at. Bağlam uydurulmaz.
+- **Superficial analysis (present-participle padding)** — Cümle sonuna eklenen, kanıtsız önem iddia eden "-ing" cümlecikleri. Düzeltme: kes, ya da kaynakta varsa gerçek olguya çevir.
+- **Promotional / press-release tone** — Ansiklopedik ton istenirken reklam/seyahat rehberi diline kayma. Düzeltme: akran sesi, ölçülebilir davranış cümlesi.
 - **Cultural-heritage over-emphasis** — Kültür/miras konularında önemin sürekli hatırlatılması.
 
 ## 2.2 Kaynak ve doğruluk
 
-- **Weasel attribution** — Görüşün belirsiz otoriteye atfı. Düzeltme: kaynağı isimlendir; kaynak
-  yoksa cümleyi kes. Kaynak **asla uydurulmaz**.
-- **Exaggerated source quantity** — Bir-iki kaynağı yaygın görüş gibi sunma; tek kişi atıfta
-  bulunulurken çoğul kullanma; örnek listesini eksik/örnekleyici gösterme.
-- **Knowledge-cutoff disclaimer** — Bilginin belirli bir tarihe kadar geçerli olduğunu söyleyen
-  metnin içerikte kalması.
-- **Speculative gap-filling** — Kaynak bulunamayınca bulunamadığına dair paragraf + boşluğu kapatan
-  makul uydurma. Kişisel yaşam bilgisinde kalıplaşmış "düşük profil" ifadeleri. Düzeltme:
-  bilinmeyeni bilinmeyen olarak yaz veya cümleyi kes.
-- **Hallucinated apparatus** — Var olmayan kategori, şablon, parametre; çözülemeyen DOI, geçersiz
-  ISBN checksum'ı, sayfa numarasız kitap atfı, metni doğrulamayan sayfa numarası, gövdede
-  kullanılmayan named ref, kırık dış bağlantı kümesi.
+- **Weasel attribution** — Görüşü belirsiz otoriteye atfetmek. Düzeltme: metin başkasınınsa atıf korunur, kullanıcıya işaretlenir; bu koşuda üretiliyorsa kaynak isimlendirilir, kaynak yoksa cümle kesilir/yazılmaz. Kaynak asla uydurulmaz.
+- **Exaggerated source quantity** — Bir-iki kaynağı yaygın görüş gibi sunmak; tek kişiye çoğul atıf; eksik örnek listesini kapsayıcı göstermek.
+- **Knowledge-cutoff disclaimer** — "Bilgi şu tarihe kadar geçerli" ifadesinin içerikte kalması.
+- **Speculative gap-filling** — Kaynak bulunamadığına dair paragraf + boşluğu kapatan makul uydurma; kişisel yaşamda kalıp "düşük profil" ifadeleri. Düzeltme: bilinmeyeni bilinmeyen olarak yaz veya cümleyi kes.
+- **Hallucinated apparatus** — Var olmayan kategori/şablon/parametre; çözülemeyen DOI; geçersiz ISBN checksum'ı; sayfa numarasız kitap atfı; metni doğrulamayan sayfa numarası; gövdede kullanılmayan named ref; kırık dış bağlantı kümesi.
 
 ## 2.3 Cümle ve sözdizimi
 
-- **Copula avoidance** — "is/are/has" yerine ayrıntılı yapı. Düzeltme: düz kopula.
-- **Negative parallelism** — Üç biçimi: "not only X but also Y", "not X, it's Y", ters biçim
-  "X rather than Y". Ayrıca cümle sonuna eklenen kırpık negasyon parçaları. Düzeltme: olumlu
-  iddiayı doğrudan kur.
-- **Rule of three** — Anlam gerektirmediği hâlde üçlü gruplama. Düzeltme: gerçek sayıyı kullan.
-- **Elegant variation (synonym cycling)** — Aynı şeye her seferinde başka ad. Düzeltme: terimi
-  tekrarlat.
-- **False ranges** — Anlamlı bir ölçek üzerinde olmayan "X'ten Y'ye" yapıları.
-- **Passive voice / subjectless fragments** — Failin gizlenmesi veya öznenin düşürülmesi.
-- **Parataxis** — Arka arkaya bağlaçsız kısa deklaratif cümleler. Düzeltme: yan cümle, bağlaç,
-  noktalı virgül ile ilişkiyi göster. (Eşik değeri S3'ten okunur.)
-- **Staccato contrast / manufactured punchline** — Her cümlenin kapanış replikası gibi inmesi;
-  kısa parçaların dram üretmek için yığılması.
+- **Copula avoidance** — "is/are/has" yerine dolambaçlı yapı. Düzeltme: düz kopula.
+- **Negative parallelism** — "not only X but also Y", "not X, it's Y", "X rather than Y"; cümle sonuna eklenen kırpık negasyon. Düzeltme: olumlu iddiayı doğrudan kur.
+- **Rule of three** — Anlam gerektirmeyen üçlü gruplama. Düzeltme: gerçek sayı.
+- **Elegant variation (synonym cycling)** — Aynı şeye her seferinde başka ad. Düzeltme: terimi tekrarla.
+- **False ranges** — Anlamlı ölçek üzerinde olmayan "X'ten Y'ye".
+- **Passive voice / subjectless fragments** — Failin gizlenmesi, öznenin düşürülmesi.
+- **Parataxis** — Bağlaçsız art arda kısa deklaratif cümleler. Düzeltme: yan cümle, bağlaç, noktalı virgülle ilişkiyi göster. Eşik: S3.
+- **Staccato contrast / manufactured punchline** — Her cümlenin kapanış repliği gibi inmesi; dram için kısa parça yığmak.
 - **Colon-reveal** — İsim öbeği + iki nokta + sahnelenmiş ödül.
-- **Aphorism formula** — Sıradan iddianın yeniden kullanılabilir özdeyişe çevrilmesi. Kapanış
-  özdeyişi cilalanmaz, silinir.
-- **Uniform sentence length** — Ritim tekdüzeliği. (Eşik S3'ten okunur.)
+- **Aphorism formula** — Sıradan iddiayı özdeyişe çevirmek. Kapanış özdeyişi cilalanmaz, silinir.
+- **Uniform sentence length** — Ritim tekdüzeliği. Eşik: S3.
 
 ## 2.4 Ton ve söylem
 
-- **Signposting** — Yapılacak şeyin yapılmadan önce duyurulması.
+- **Signposting** — Yapılacak şeyi yapmadan önce duyurmak.
 - **Fragmented header** — Başlığı tekrar eden tek satırlık ısınma cümlesi.
-- **Persuasive authority trope** — "Asıl mesele şu" tarzı derinlik iddiasıyla sıradan bir noktanın
-  sunulması.
-- **Conversational rhetorical opener** — Sahte samimi hook, teatral duraklama, kendi kendine
-  cevaplanan soru.
+- **Persuasive authority trope** — Sıradan noktayı "asıl mesele şu" tarzı derinlik iddiasıyla sunmak.
+- **Conversational rhetorical opener** — Sahte samimi hook, teatral duraklama, kendi cevapladığı soru.
 - **Sycophancy** — Aşırı olumlu, hoşnut etmeye çalışan dil.
 - **Excessive hedging** — Aynı cümlede yığılan niteleyiciler.
-- **False balance** — Gerçek karşı argüman değil, denge görüntüsü için konmuş niteleme.
-- **Performative empathy** — Kalıplaşmış anlayış gösterisi.
-- **Teacher voice** — Okurun bildiğinin açıklanması, bariz terim tanımı.
-- **Generic positive conclusion / hollow conclusion** — Belirsiz iyimser kapanış, metni tekrarlayan
-  özet paragraf, "zorluklar → gelecek görünümü" kalıbı.
-- **Collaborative communication artifact** — Sohbet yazışmasına ait cümlelerin içerik içinde
-  kalması.
+- **False balance** — Gerçek karşı argüman değil, denge görüntüsü için konan niteleme.
+- **Performative empathy** — Kalıp anlayış gösterisi.
+- **Teacher voice** — Okurun bildiğini açıklamak, bariz terim tanımı.
+- **Generic positive / hollow conclusion** — Belirsiz iyimser kapanış, metni tekrarlayan özet paragraf, "zorluklar → gelecek görünümü" kalıbı.
+- **Collaborative communication artifact** — Sohbet yazışması cümlelerinin içerikte kalması.
 
 ## 2.5 Biçim ve tipografi
 
-- **Em dash / en dash aşırı kullanımı** — İnsanın virgül, parantez, iki nokta koyacağı yerde tire;
-  genelde boşlukla çevrili. Düzeltme sırası: nokta → virgül → iki nokta → parantez → cümleyi
-  yeniden kur. (Katılık seviyesi ve sayısal oran kaynağa göre değişir; S2/S3/S4'ten okunur.)
-- **Title Case başlıklar** — sentence case'e çevrilir.
-- **Mekanik boldface** — Seçilen ifadenin her geçişinin kalınlaştırılması.
-- **Inline-header vertical list** — "**Terim**: açıklama" biçimli madde listeleri.
-- **Emoji as formatting** — Başlık veya madde imi önünde emoji.
-- **Curly quotes / apostrophes** — Düz karşılıklarına çevrilir. Tek başına kanıt değildir.
-- **Skipped heading levels**, **her bölüm arasına yatay çizgi**.
-- **Markdown sızıntısı** — Markdown'ın desteklenmediği bağlama (wikitext, e-posta, DM, SMS, düz
-  metin) yıldız, hash, fenced code block taşınması.
-- **Gereksiz küçük tablolar** — Düzyazı veya infobox ile daha iyi ifade edilecek tablolar.
-- **Copy-paste artifact** — Model iç biçimlendirme kodlarının metinde kalması. (String listesi
-  S1/S5'ten okunur.)
-- **Placeholder** — Doldurulmamış şablon alanları, placeholder tarihler, "eklenirse" yorumları.
+- **Em dash / en dash aşırı kullanımı** — Virgül, parantez, iki nokta yerine tire; genelde boşlukla çevrili. Düzeltme sırası: nokta → virgül → iki nokta → parantez → cümleyi yeniden kur. Katılık ve oran: S2/S3/S4.
+- **Title Case başlık** → sentence case.
+- **Mekanik boldface** — Seçilen ifadenin her geçişini kalınlaştırmak.
+- **Inline-header vertical list** — "**Terim**: açıklama" maddeleri.
+- **Emoji as formatting** — Başlık/madde imi önünde emoji.
+- **Curly quotes / apostrophes** → düz karşılığı.
+- **Skipped heading levels**; **her bölüm arasında yatay çizgi**.
+- **Markdown sızıntısı** — Markdown desteklemeyen bağlama (wikitext, e-posta, DM, SMS, düz metin) yıldız, hash, fenced code block taşımak.
+- **Gereksiz küçük tablo** — Düzyazı/infobox ile daha iyi ifade edilecek tablo.
+- **Copy-paste artifact** — Model iç biçimlendirme kodlarının metinde kalması. String listesi: S1/S5.
+- **Placeholder** — Doldurulmamış şablon alanı, placeholder tarih, "eklenirse" yorumu.
 
 ## 2.6 Yapısal kalıplar
 
 - **Rigid outline** — Her konuya uyan sabit bölüm iskeleti.
-- **Formula section** — "Zorluklar" + "gelecek görünümü" bölüm çifti; "X and Y" biçimli kalıp
-  başlıklar.
-- **Five-paragraph essay** — intro-body-body-body-conclusion tam kalıbı.
-- **Identical paragraph structure** — Her paragrafın topic sentence → açıklama → örnek → geçiş
-  kalıbını izlemesi.
+- **Formula section** — "Zorluklar" + "gelecek görünümü" çifti; "X and Y" kalıp başlıklar.
+- **Five-paragraph essay** — intro-body-body-body-conclusion.
+- **Identical paragraph structure** — Her paragraf topic sentence → açıklama → örnek → geçiş.
 - **Section summary** — Az önce söyleneni tekrarlayan bölüm sonu özeti.
-- **Lead treating a title as a proper noun** — Özel ad olmayan başlığın gerçek bir varlık gibi
-  tanımlanması.
+- **Lead treating a title as a proper noun** — Özel ad olmayan başlığı gerçek varlık gibi tanımlamak.
 
 ## 2.7 Bağlam işaretleri (metnin dışı)
 
-- Düzenleme özetlerinin resmî, birinci tekil, kısaltmasız paragraflar olması; politika metnini
-  yankılaması; "ensured/avoided" beyanları.
-- Yorumlarda: uydurma politika kısayolu, gereksiz şablon transclude, uzun yorumun başlıklı
-  bölümlere ayrılması, AI kullanımının emek beyanıyla küçümsenmesi, kaynağa dair eleştirinin
-  "spekülasyon" diye reddi.
+- Düzenleme özeti: resmî, birinci tekil, kısaltmasız paragraf; politika metnini yankılar; "ensured/avoided" beyanı.
+- Yorumlarda: uydurma politika kısayolu, gereksiz şablon transclude, uzun yorumu başlıklı bölümlere ayırma, AI kullanımını emek beyanıyla küçümseme, kaynağa dair eleştiriyi "spekülasyon" diye reddetme.
 - Üslupta ani sıçrama; kullanıcı konumu ile İngilizce varyantının uyuşmaması.
-- Kullanıcı sayfası ve tanıtım metinlerinde kalıplaşmış bölüm başlıkları.
+- Kullanıcı sayfası ve tanıtım metninde kalıp bölüm başlıkları.
 - Hızlı, çok sayıda, birbiriyle alakasız içerik üretimi.
 
 ---
 
-# BÖLÜM 3 — EPİSTEMİK KURALLAR (eskimeyen)
+# BÖLÜM 3 — EPİSTEMİK KURALLAR
 
-1. **Tek işaret kanıt değildir.** Karar kümelenmeye (cluster) dayanır: aynı kısa pasajda birbirinden
-   bağımsız birkaç desenin birlikte düşmesi.
-2. **Liste betimleyicidir, buyurucu değil.** İşaretler sorunun kendisi değil, sorunun göstergesidir.
-   Yalnız işareti silmek, asıl sorunu (kaynaksız iddia, uydurma atıf, tarafsızlık ihlali) gizler.
-3. **Dedektör araçları tek başına yeterli değildir.** Hata oranları önemsiz değil; paraphrase ve
-   biçim değişiminden etkilenirler. Skor tek başına gerekçe olmaz.
-4. **İnsan yargısı da zayıftır.** Ölçümler S1'den okunur; ölçüm ne olursa olsun "bana AI gibi geldi"
-   tek başına gerekçe değildir.
-5. **Yüzde/olasılık skoru üretilmez.** Çıktı, kullanıcının metinle karşılaştırabileceği desen
-   listesi olur.
-6. **Her flag alıntı ister.** Rahatsız eden ifade birebir alıntılanır ve eşleştiği desen adlandırılır;
-   "genel ton" gerekçe değildir.
-7. **İnsan dili LLM'den etkileniyor.** İşaretlerin ayırt ediciliği zamanla düşer; kelime listeleri
-   yakalandıkça kullanımdan düşer. Bu yüzden liste ezberlenmez, okunur.
-8. **Kaynak yaşı bir eleme kriteridir.** ChatGPT'nin herkese açıldığı tarihten önceki metinde AI
-   elenir. (Tarih S1'den okunur.)
-9. **Aşırı düzeltme kendi izini bırakır.** Tek bir işaretli kelimeyi temizlemek için cümle bozulmaz,
-   bilgi silinmez.
-10. **Sterillik de bir izdir.** Sesi olmayan, tekdüze, kusursuz organize metin en az slop kadar
-    bellidir.
+1. Tek işaret kanıt değildir. Karar kümelenmeye dayanır: aynı kısa pasajda birbirinden bağımsız birkaç desen.
+2. İşaret sorunun göstergesidir. Yalnız işareti silme; asıl sorunu (kaynaksız iddia, uydurma atıf, tarafsızlık ihlali) düzelt.
+3. Dedektör skoru tek başına gerekçe değildir.
+4. "Bana AI gibi geldi" tek başına gerekçe değildir.
+5. Yüzde/olasılık skoru üretilmez; çıktı, metinle karşılaştırılabilir desen listesidir.
+6. Her flag, ifadenin birebir alıntısını ve eşleştiği desen adını ister; "genel ton" gerekçe değildir.
+7. ChatGPT'nin herkese açılma tarihinden önceki metinde AI elenir (tarih S1'den).
+8. Tek işaretli kelimeyi temizlemek için cümle bozulmaz, bilgi silinmez.
+9. Sesi olmayan, tekdüze, kusursuz organize metin de izdir.
 
 ---
 
-# BÖLÜM 4 — YANLIŞ POZİTİF KURALLARI (eskimeyen)
+# BÖLÜM 4 — YANLIŞ POZİTİFLER
 
-Tek başına işaret sayılmayanlar:
+Tek başına işaret değil:
 
-- Kusursuz dilbilgisi ve tutarlı biçem — profesyonel yazar veya editörden geçmiş metin.
-- Gündelik ve resmî kaydın karışması — teknik alan, yaş, oyunbazlık, nörodiverjans, çok yazarlılık.
-- "Düz" veya "robotik" düzyazı — belirli desenler yoksa yalnızca kuru yazıdır.
-- Resmî/akademik/süslü kelime dağarcığı — model *belirli* kelimeleri sever, tüm resmî dili değil.
+- Kusursuz dilbilgisi, tutarlı biçem.
+- Gündelik ve resmî kaydın karışması.
+- Kuru/"robotik" düzyazı — belirli desen yoksa.
+- Resmî/akademik/süslü dağarcık — yalnız kaynaktaki belirli kelimeler işarettir.
 - Mektup biçimli açılış/kapanış.
-- İzole geçiş kelimeleri — yığılmadıkça işaret değil.
-- Kıvrık tırnaklar — işletim sistemi, kelime işlemci ve CMS varsayılanları bunu üretir.
-- Em dash tek başına — birçok editör ve gazeteci sık kullanır.
+- İzole geçiş kelimesi — yığılmadıkça.
+- Kıvrık tırnak.
+- Em dash.
 - Tek kısa vurgu cümlesi.
-- Kaynaksız iddia — web'in çoğu kaynaksızdır.
-- Doğru ve karmaşık biçimlendirme — görsel editör ve şablonlar temiz çıktı verir.
-- İkincil metin — alıntı, başlık, özel ad veya tartışılan (kullanılmayan) ifade içindeki kalıplar
-  yeniden yazılmaz.
+- Kaynaksız iddia.
+- Doğru ve karmaşık biçimlendirme.
+- İkincil metin: alıntı, başlık, özel ad veya bahsi geçen (kullanılmayan) ifadedeki kalıplar yeniden yazılmaz.
 
-Karşı taraf — insan yazımının korunacak işaretleri:
+İnsan yazımı işaretleri — korunur:
 
 - Spesifik, olağandışı, uydurulması zor detay.
-- Karışık duygular, çözülmemiş gerilim.
-- Döneme ve alt kültüre bağlı referanslar.
-- Yazarın savunabildiği editoryal kararlar.
+- Karışık duygu, çözülmemiş gerilim.
+- Döneme/alt kültüre bağlı referans.
+- Yazarın savunabildiği editoryal karar.
 - Cümle ve paragraf uzunluğunda gerçek çeşitlilik.
-- Gerçek yan cümleler, parantezler, kendini düzeltmeler.
+- Gerçek yan cümle, parantez, kendini düzeltme.
 
 ---
 
-# BÖLÜM 5 — SÜREÇ KURALLARI (eskimeyen)
+# BÖLÜM 5 — SÜREÇ KURALLARI
 
 ## 5.1 Bilgi bütünlüğü
 
-1. Kaynakta olmayan hiçbir olgu, isim, sayı, tarih, alıntı veya atıf rewrite'a girmez.
-2. Belirsiz iddia spesifikle değiştirilebilir; spesifik ancak kaynaktan veya kullanıcıdan gelir.
-3. Kaynaksız iddia süslenmez: ya isimlendirilir ya kesilir.
-4. Olgular, sayılar, isimler ve yazarın pozisyonu değişmez.
-5. Uzunluk tutturmak için doldurma yapılmaz.
-6. Bir yasaklı kelime başka bir yasaklı kelimeyle değiştirilmez.
-7. Kod blokları, frontmatter, veri, link hedefleri ve alıntılar elle sürülmez.
+1. Kaynakta olmayan olgu, isim, sayı, tarih, alıntı, atıf eklenmez; mevcut olgu, sayı, isim ve yazarın pozisyonu değişmez.
+2. Belirsiz iddia spesifikle değiştirilebilir; spesifik yalnız kaynaktan veya kullanıcıdan gelir.
+3. Kaynaksız iddia süslenmez: isimlendirilir veya kesilir.
+4. Uzunluk için doldurma yapılmaz.
+5. Yasaklı kelime başka yasaklı kelimeyle değiştirilmez.
+6. Kod blokları, frontmatter, veri, link hedefleri, alıntılar elle sürülmez.
 
 ## 5.2 Ses
 
-1. Kullanıcı kendi yazısından örnek verirse örnek analiz edilir ve taklit edilir; **örnek, stil
-   kurallarının üstündedir** (em dash kuralı dâhil).
-2. Örnek yoksa hedef ton içeriğe göre seçilir: ansiklopedik/teknik/hukuki metinde nötr ve düz olan
-   doğru insan sesidir; oraya görüş veya birinci şahıs enjekte edilmez.
-3. Blog/deneme/görüş metninde kişilik gösterilir: duruş, kararsızlık, mizah, düzensiz ritim. Bu
-   kişilik **olgu eklenerek** yaratılmaz.
-4. "İnsan gibi durmak" için argo, sahte gündelikleşme veya uydurma anekdot eklenmez — kendi izidir.
-5. Belirli bir kişi adına yazılıyorsa o kişinin alışkanlıkları esas alınır: uzunluk, mizah türü,
-   asla söylemeyeceği şeyler, platform farkı.
+1. Kullanıcı kendi yazısından örnek verirse analiz edilir, taklit edilir; örnek stil kurallarının üstündedir (em dash dâhil).
+2. Örnek yoksa ton içeriğe göre seçilir: ansiklopedik/teknik/hukuki metinde nötr ve düz; görüş veya birinci şahıs eklenmez.
+3. Blog/deneme/görüş metninde veya ses örneği verildiyse kişilik gösterilir (duruş, kararsızlık, mizah, düzensiz ritim); başka durumda eklenmez. Kişilik olgu eklenerek yaratılmaz.
+4. Argo, sahte gündelikleşme, uydurma anekdot eklenmez.
+5. Belirli kişi adına yazılıyorsa onun alışkanlıkları esas: uzunluk, mizah türü, asla söylemeyeceği şeyler, platform farkı.
 
 ## 5.3 Akış
 
-1. Girdi tamamen okunur.
-2. Bu metindeki en belirgin desenler tespit edilir; efor oraya verilir.
-3. Taslak yazılır; sesli okunduğunda akıp akmadığı, cümle uzunluğunun değişip değişmediği, basit
-   yapıların tercih edilip edilmediği kontrol edilir.
-4. İki soru sorulur: metni bariz biçimde AI yapan ne kaldı; rewrite kaynakta olmayan bir şey
-   söylüyor mu.
-5. Düzeltmeler tek geçişte uygulanır ve **çeşitlendirilir** — her kural her örneğe mekanik
-   uygulanmaz; aşırı düzenleme kendi uncanny valley'sini üretir.
-6. Teslim öncesi checklist koşulur (madde listesi S5'ten okunur).
+1. Girdiyi tamamen oku.
+2. Bu metindeki en belirgin desenleri tespit et; eforu oraya ver.
+3. Taslak yaz; sesli okunuşta akıyor mu, cümle uzunluğu değişiyor mu, basit yapı tercih edilmiş mi kontrol et.
+4. Sor: bariz AI yapan ne kaldı; rewrite kaynakta olmayan bir şey söylüyor mu.
+5. Düzeltmeleri tek geçişte uygula ve çeşitlendir; her kuralı her örneğe mekanik uygulama.
+6. Teslim öncesi checklist'i koş (S5).
 7. Kurallar sessizce uygulanır; çıktıda kural adı anılmaz, süreç anlatılmaz.
 
 ## 5.4 Teslim biçimi
 
 - **Yapıştırılmış metin**: taslak + kalan izlerin kısa listesi + nihai metin.
-- **Dosya**: döngü içeride koşar, dosya yerinde nihai metinle yazılır, konuşmaya kısa değişiklik
-  özeti gider.
-- **Gömülü (başka bir görevin adımı)**: yalnız nihai metin. Taslak yok, denetim listesi yok, özet
-  yok.
-- **Tespit modu**: yeniden yazma yok; alıntı + desen adı listesi. İstenirse teşhis ve rewrite ayrı
-  ayrı verilir.
+- **Dosya**: döngü içeride koşar, dosya yerinde nihai metinle yazılır, konuşmaya kısa değişiklik özeti.
+- **Gömülü (başka görevin adımı)**: yalnız nihai metin.
+- **Tespit modu**: rewrite yok; alıntı + desen adı listesi. İstenirse teşhis ve rewrite ayrı verilir.
 
 ---
 
-# BÖLÜM 6 — ÇATIŞMA ÇÖZÜMÜ (eskimeyen)
-
-Kaynaklar aynı konuda farklı katılık dayatır. Karar kuralları:
+# BÖLÜM 6 — ÇATIŞMA ÇÖZÜMÜ
 
 1. **Kelime sınıflandırması**: S1 kazanır.
-2. **Sayısal eşik** (em dash oranı, ardışık cümle sınırı): görev tipine bağlı kaynak uygulanır —
-   üretimde S3, yeniden yazmada S2/S4. Uygulanan kaynak çıktıda belirtilir; iki oran ortalanmaz.
-3. **İçerik silme yetkisi**: yeniden yazma görevinde varsayılan "hiçbir argüman/veri silinmez"dir.
-   Kaynaksız iddianın kesilmesi bunun tek istisnasıdır ve kullanıcıya bildirilir.
-4. **Kişilik ekleme**: varsayılan ekleme yok. Ekleme yalnız kullanıcı ses örneği verdiyse veya metin
-   türü (blog/deneme/görüş) gerektiriyorsa yapılır.
-5. **Muğlak atıf**: metin başkasının ise atıf **korunur** ve kullanıcıya işaretlenir; metin bu
-   koşuda üretiliyorsa isimlendirilir veya yazılmaz.
-6. Bir kaynak kendi içinde çelişirse (skill güncellenmiş, bölüm numaraları kaymış) o kaynağın en
-   güncel sürümü esas alınır; eski kopya (mirror repo) atlanır.
-</content>
+2. **Sayısal eşik** (em dash oranı, ardışık cümle sınırı): üretimde S3, yeniden yazmada S2/S4. Uygulanan kaynak çıktıda belirtilir; oranlar ortalanmaz.
+3. **İçerik silme**: yeniden yazmada hiçbir argüman/veri silinmez. Tek istisna kaynaksız iddianın kesilmesi; kullanıcıya bildirilir.
+4. Kaynak kendi içinde çelişirse (güncellenmiş, bölüm numaraları kaymış) en güncel sürümü esas al; eski kopya (mirror repo) atlanır.

@@ -1,7 +1,7 @@
 {
   "name": "personal-assistant",
-  "version": "1.81.0",
-  "description": "Kisisel asistan plugin'i \u2014 init kontrolleri, oturum yonetimi, extension builder, commit, project-init, worktree, obsidian docs, user-message, diji-logs, log-triage, design-brief, deslop, heavy-build guard, global rules",
+  "version": "1.82.0",
+  "description": "Kisisel asistan plugin'i \u2014 oturum yonetimi, commit, django, obsidian docs, user-message, user-report, diji-logs, log-triage, deslop, heavy-build guard, global rules",
   "author": {
     "name": "Omer Faruk Yigin"
   },
@@ -9,17 +9,13 @@
   "keywords": [
     "personal",
     "assistant",
-    "init",
     "hooks",
-    "extension-builder",
     "commit",
     "obsidian",
     "obsidian-write",
     "obsidian-search",
     "obsidian-doc-source",
     "knowledge-base",
-    "worktree",
-    "git-worktree",
     "issue-workflow",
     "ticket-resolution",
     "workflow-orchestration",
@@ -35,9 +31,6 @@
     "incident-triage",
     "plane",
     "project-management",
-    "design-brief",
-    "ui-capture",
-    "screenshot",
     "heavy-build",
     "build-lock",
     "lockf",

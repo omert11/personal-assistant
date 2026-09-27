@@ -1,38 +1,30 @@
 # Issue Template (zorunlu bağlam yapısı)
 
-Açılan her issue, **sonraki oturumlara doğru context taşımalı** — kişi/AI issue'ya bakınca
-sıfırdan log kazmadan sorunu anlamalı. Bu yüzden her issue **aşağıdaki tüm bölümleri** içerir
-ve **en az 1 ham log örneği** taşır.
-
-> Eksik bağlamlı issue (sadece "X hatası var") yasak. Her bölüm doldurulmalı; veri yoksa
-> "tespit edilemedi" yaz, atlanmaz.
+Her issue aşağıdaki tüm bölümleri içerir ve en az 1 ham log örneği taşır. Eksik bağlamlı issue (sadece "X hatası var") yasak; veri yoksa "tespit edilemedi" yaz, bölüm atlanmaz.
 
 ## Zorunlu bölümler (HTML, sırayla)
 
-| Bölüm | İçerik | Neden |
-|---|---|---|
-| `<h2>Sorun</h2>` | 1-2 cümle: ne oluyor, neden problem | Hızlı kavrama |
-| `<h3>Kapsam</h3>` | tenant / agency / provider / booking ref / etkilenen endpoint | Tekrarlamak/lokalize etmek için |
-| `<h3>Kanıt — log örneği</h3>` | **EN AZ 1 ham log satırı** (maskeli), `_time`, `_msg`, ilgili alanlar | Sonraki oturum doğrulayabilsin |
-| `<h3>Sayım / Sıklık</h3>` | kaç olay / hangi pencere / X saatte toplam (canlı doğrulanmış) | Önceliklendirme + sistemik mi anlamak |
-| `<h3>Örnek trace_id</h3>` | ≥1 trace_id (varsa) — drill-down için | Geçmişe gidip trace izlemek |
-| `<h3>Kök Neden Hipotezi</h3>` | en olası neden + (varsa) ilgili kod/tablo/constraint adı | Çözüme başlangıç |
-| `<h3>Öneri</h3>` | somut düzeltme yönü | Aksiyon |
-| `<h3>Tespit Bağlamı</h3>` | "log-triage skill, <proje>, <tarih-aralığı>, pencere <P>" | Provenance — ne zaman/nasıl bulundu |
+| Bölüm | İçerik |
+|---|---|
+| `<h2>Sorun</h2>` | 1-2 cümle: ne oluyor, neden problem |
+| `<h3>Kapsam</h3>` | tenant / agency / provider / booking ref / etkilenen endpoint |
+| `<h3>Kanıt — log örneği</h3>` | EN AZ 1 ham log satırı (maskeli), `_time`, `_msg`, ilgili alanlar |
+| `<h3>Sayım / Sıklık</h3>` | kaç olay / hangi pencere / X saatte toplam (canlı doğrulanmış) |
+| `<h3>Örnek trace_id</h3>` | ≥1 trace_id (varsa) |
+| `<h3>Kök Neden Hipotezi</h3>` | en olası neden + (varsa) ilgili kod/tablo/constraint adı |
+| `<h3>Öneri</h3>` | somut düzeltme yönü |
+| `<h3>Tespit Bağlamı</h3>` | "log-triage skill, <proje>, <tarih-aralığı>, pencere <P>" |
 
-## Log örneği kuralı (KRİTİK)
+## Log örneği kuralı
 
-- **PII MASKELE**: email → `***@***`, telefon → `+90**********`, token → `<token-prefix>...`.
-  Ham PII'yı issue'ya **yazma** (issue'nun kendisi PII sızıntısı olmasın).
-- Log satırını `<pre><code>...</code></pre>` içine koy.
-- Sayı/UUID dolu uzun satırları kısalt ama `_msg` + ayırt edici alanları (`error.Code`,
-  `error.ConstraintName`, `provider`, `sql` özeti) koru.
-- Örnek 1 satır yetmiyorsa (zincirleme hata) 2-3 satır ver, fazlası gürültü.
+- PII maskele, ham PII yazma: email → `***@***`, telefon → `+90**********`, token → `<token-prefix>...`.
+- Log satırı `<pre><code>...</code></pre>` içinde.
+- Uzun satırları kısalt; `_msg` + ayırt edici alanları (`error.Code`, `error.ConstraintName`, `provider`, `sql` özeti) koru.
+- 1 satır yetmezse (zincirleme hata) 2-3 satır; fazlası yok.
 
-## HTML üretimi (html.escape zorunlu)
+## HTML üretimi
 
-İçerik `<`, `"`, `()` içerdiği için inline plane-cli create bozulur → her zaman Python
-`html.escape` ile escape edip **dosyaya yaz**, `create_issue.sh` ile dosyadan oluştur.
+Her zaman Python `html.escape` ile escape edip dosyaya yaz, `create_issue.sh` ile dosyadan oluştur (inline create `<`, `"`, `()` ile bozulur).
 
 ```python
 import html, os
@@ -76,6 +68,3 @@ terminal state'e al.</p>
 <h3>Tespit Bağlamı</h3>
 <p>log-triage skill · b2b.b2btravel.pro · 2026-06-30 06:52–07:52 UTC · pencere P1-P4</p>
 ```
-
-> Bu yapı, issue'yu 3 ay sonra açan birinin (veya AI'ın) tekrar log kazmadan sorunu anlamasını,
-> trace'i izlemesini ve doğrulamasını sağlar.

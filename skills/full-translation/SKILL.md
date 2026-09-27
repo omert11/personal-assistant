@@ -1,253 +1,174 @@
 ---
 name: full-translation
-description: Django projesinde tüm dillerin eksik/fuzzy çevirilerini uçtan uca tamamlar (makemessages → po-cli → entry yüküne göre çeviri → compile → commit).
-when_to_use: Trigger — "tam çeviri akışı", "tüm dilleri çevir", "eksik çevirileri tamamla (tüm diller)", "translation workflow", "i18n sync", "/full-translation". Tek .po dosyası için po-cli skill yeterli; bu skill ÇOK DİL + ÇOK DOMAIN uçtan uca akış içindir (makemessages + paralel Workflow ajanları + compilemessages + commit).
-allowed-tools: Bash, Read, Write, Edit, Glob, Task, Workflow, AskUserQuestion
+description: Django projesinde tüm dillerin eksik/fuzzy çevirilerini makemessages'tan commit'e tamamlar.
+when_to_use: Trigger — "tam çeviri akışı", "tüm dilleri çevir", "eksik çevirileri tamamla (tüm diller)", "translation workflow", "i18n sync", "/full-translation". Tek .po dosyası için po-cli skill yeterli; bu skill ÇOK DİL + ÇOK DOMAIN uçtan uca akış içindir (makemessages + paralel çeviri sub-agent'ları + compilemessages + commit).
+allowed-tools: Bash, Read, Write, Edit, Glob, Task, AskUserQuestion
 ---
 
-# Full Translation Workflow
+# Full Translation
 
-Django gettext projesinde **tüm dillerin** eksik (untranslated) ve fuzzy çevirilerini **tek seferde**, paralel ajanlarla uçtan uca tamamlar. Diji B2C projeleri (voyante-web/Zenrota gibi) için 3 domain (`django`, `djangojs`, `djangof7`) + N dil matrisini kapsar.
-
-> **po-cli skill'inden farkı**: po-cli **tek bir `.po` dosyasını** analiz edip çevirir. Bu skill **tüm dil × domain matrisini** orkestre eder: makemessages ile metin çıkarma, **iş yüküne göre** çeviri (≤200 entry inline, fazlası ~200'lük chunk'lara bölünüp paralel Workflow ajanlarıyla), compile ve commit dahil. İçeride po-cli'nin `analyze`/`update` komutlarını kullanır — onu tekrar etmez, ona dayanır.
+Domain'ler: `django`, `djangojs`, `djangof7` (F7 projesi ise) × tüm diller. Tek `.po` analiz/update için `po-cli` skill'ine dayanır.
 
 ## Önkoşullar
 
-- `po-cli` binary kurulu (`po-cli --version`). Yoksa po-cli skill'indeki kurulumu uygula.
+- `po-cli` kurulu (`po-cli --version`); yoksa po-cli skill'indeki kurulumu uygula.
 - `gettext` (`xgettext`, `msgfmt`) kurulu.
-- venv aktif (`~/.claude/rules/python.md`: `source .venv/bin/activate`, `uv run` kullanma).
-- Diji F7 projesi ise `makemessagesf7` custom command'ı mevcut (`common/management/commands/makemessagesf7.py`).
+- venv: `.venv` yoksa `uv venv && uv pip install -r requirements.txt`; sonra `source .venv/bin/activate` ve düz `python ...`. `uv run` kullanma.
+- F7 projesi ise `makemessagesf7` command'ı mevcut (`common/management/commands/makemessagesf7.py`).
 
-## Akış (7 adım)
+## Akış
 
-### Adım 0 — Repoları güncelle  ⛔ ATLANAMAZ, AKIŞIN İLK İŞİ
+### Adım 0 — Repoları güncelle (ATLANAMAZ, ilk iş)
 
-> **MOBİL PULL = ÇEVİRİNİN BİR NUMARALI ÖN KOŞULU. Atlanırsa çeviri SESSİZCE EKSİK kalır ve bunu fark etmezsin.**
->
-> `makemessagesf7` mobil dizinini (`F7_ROOT`, varsayılan `"mobile"`) **çalıştığı anki haliyle** tarar. Mobil repo geride ise yeni F7 metinleri `djangof7.pot`'a **hiç girmez** → o dilde "0 untranslated/0 fuzzy" çıkar → bunu yanlışlıkla **"F7 temiz"** sanırsın. **0, "çevrildi" değil "metin hiç çıkarılmadı" demek olabilir.** Bu sahte-temiz, eksik bir release'e (yanlış tag'e) yol açar.
->
-> **Somut kanıt (2026-06-09, v5.6.12):** mobil pull atlandı → `djangof7` her dilde `0u/0f` göründü, "temiz" sanıldı, v5.6.12 tag'i atıldı. Tag SONRASI mobil pull edilince makemessagesf7 **208 yeni msgid + her dilde 1 fuzzy** çıkardı — yani release eksik çıkmıştı, tag re-point gerekti. (Detay: [[full-translation-workflow]])
-
-**KESİN SIRA — başka hiçbir şeyden ÖNCE:**
+`makemessagesf7` mobil dizini (`F7_ROOT`, varsayılan `"mobile"`) o anki haliyle tarar; mobil repo gerideyse yeni F7 metinleri `djangof7.pot`'a girmez ve "0 untranslated/0 fuzzy" sahte-temiz görünür. 0 = "metin çıkarılmadı" olabilir.
 
 ```bash
 # 1) Base branch
 git checkout <base> && git pull --ff-only origin <base>     # çakışma → DUR, kullanıcıya bildir
-# 2) MOBİL — ZORUNLU, koşulsuz. Proje mobil repo içeriyorsa (mobile/<app>/.git varsa) ASLA atlama.
+# 2) MOBİL — mobile/<app>/.git varsa koşulsuz ZORUNLU
 git -C mobile/<app> checkout main && git -C mobile/<app> pull --ff-only origin main
-```
-
-**Doğrulama (pull'un gerçekten yeni commit getirip getirmediğini GÖR, körlemesine geçme):**
-
-```bash
+# Doğrulama
 git -C mobile/<app> log --oneline -1            # HEAD ilerledi mi
 git -C mobile/<app> status -sb                  # "behind" KALMAMALI
 ```
 
-`makemessagesf7`'yi çalıştırmadan önce mobil HEAD'in `origin/main` ile **eşit** olduğunu teyit et. Eşit değilse **DUR** — Adım 1'e geçme.
+- Mobil HEAD `origin/main`'e eşit değilse DUR, Adım 1'e geçme.
+- `mobile/<app>` dizini yoksa mobil pull'u atla; varsa hiçbir gerekçeyle ("zaten güncel", "az önce baktım", "küçük değişiklik") atlama.
+- Uncommitted `.po` pull'u engellerse → `commit` skill ile commit'le, gerekirse `git rebase origin/<base>` (çakışma → kullanıcıya sor).
+- Self-check: "Mobil repo var mı? Varsa pull ettim ve HEAD=origin/main mı?" Değilse Adım 0 bitmedi.
 
-- Mobil repo **yoksa** (`mobile/<app>` dizini hiç yoksa) bu adımı atla; ama dizin **varsa** pull **koşulsuz zorunludur** ("zaten günceldir", "az önce baktım", "küçük değişiklik" gerekçeleri geçersiz).
-- Uncommitted `.po` değişikliği varsa pull engellenir → önce `commit` skill ile commit'le, gerekirse `git rebase origin/<base>` (çakışma çıkarsa kullanıcıya sor).
-- **Self-check (Adım 1'e geçmeden):** "Mobil repo var mı? Varsa pull ettim ve HEAD=origin/main mı?" İkisi de evet değilse Adım 0 bitmemiştir.
-
-### Adım 1 — makemessages (tüm diller, 3 domain)
+### Adım 1 — makemessages
 
 ```bash
 source .venv/bin/activate
 python manage.py makemessages -d django --all
 python manage.py makemessages -d djangojs --all
-python manage.py makemessagesf7 -d djangof7 --all        # F7 projesi ise; mobil dizini tarar
+python manage.py makemessagesf7 -d djangof7 --all        # F7 projesi ise
 ```
 
-> Devasa diff normaldir: çoğu `#: app/file.py:123` **kaynak konum yorumu**. Gerçek iş = eklenen/çıkan `msgid` sayısı (`git diff | grep -c '^+msgid'`).
+Diff'in çoğu `#: app/file.py:123` konum yorumudur; gerçek iş = `git diff | grep -c '^+msgid'`.
 
-### Adım 2-3 — po-cli analyze → /tmp json çıktılar
+### Adım 2-3 — po-cli analyze
 
-> **⛔ Kapalı (hidden) diller ÇEVRİLMEZ.** Proje dil gizleme kullanıyorsa
-> (`djangomain/app_options.py` içinde `HIDDEN_LANGUAGES`, örn. voyante-web'de
-> Ticket#61613 ile es/uz/kk/tk/tg/zh-hans/ja/hi kapatıldı), bu diller analiz ve
-> çeviri matrisinden **tamamen çıkarılır** — kullanıcıya kapalı dile çeviri
-> eforu/token harcanmaz. `.po` dosyaları silinmez, makemessages'ın onlara
-> dokunması sorun değil; sadece analyze + translate + yakınsama dışında tutulur.
->
-> ```bash
-> # Kapalı dilleri dinamik tespit et (yoksa boş döner):
-> python -c "
-> import importlib
-> try:
->     opts = importlib.import_module('djangomain.app_options')
->     print(' '.join(sorted(getattr(opts, 'HIDDEN_LANGUAGES', set()))))
-> except ModuleNotFoundError:
->     pass"
-> ```
->
-> Dil array'ini kurarken: `LANGS = tüm locale dilleri − en − HIDDEN_LANGUAGES`.
+Kapalı (hidden) diller analiz, çeviri ve yakınsama dışında tutulur (`.po`'ları silinmez; makemessages dokunabilir). Tespit (yoksa boş döner):
 
-`en` (kaynak dil) ve **HIDDEN_LANGUAGES** hariç her `locale/<lang>/LC_MESSAGES/<domain>.po` için:
+```bash
+python -c "
+import importlib
+try:
+    opts = importlib.import_module('djangomain.app_options')
+    print(' '.join(sorted(getattr(opts, 'HIDDEN_LANGUAGES', set()))))
+except ModuleNotFoundError:
+    pass"
+```
+
+`LANGS = tüm locale dilleri − en − HIDDEN_LANGUAGES`. zsh'de array ver (`LANGS=(ar de ...)`), string word-splitting'e güvenme. Her `locale/<lang>/LC_MESSAGES/<domain>.po` için:
 
 ```bash
 mkdir -p /tmp/<proj>-i18n
 po-cli --json analyze <po> > /tmp/<proj>-i18n/<lang>.<domain>.analysis.json
 ```
 
-> ⚠️ `--json` **GLOBAL flag** — `po-cli --json analyze ...` doğru. Alt komuttan sonra (`po-cli analyze ... --json`) çalışmaz.
+`--json` global flag'tir: alt komuttan önce yaz (`po-cli analyze ... --json` çalışmaz).
 
-İstatistik özeti çıkar (`statistics.untranslated` + `statistics.fuzzy`). Tümü 0 ise çeviri adımlarını (4–5) atla ama **DURMA** — **Adım 6 (compile) + Adım 7 (commit) yine de çalışır** (aşağıdaki "Çeviri Yoksa Bile Derle & Gönder" kuralı). zsh'de dil listesini **array** olarak ver (`LANGS=(ar de ...)`), düz string word-splitting'e güvenme.
+### Adım 4 — Çeviri (iş birimi = entry sayısı, dil değil)
 
-### Adım 4 — Çeviri: iş **entry sayısına** göre paylaştırılır (dil başına DEĞİL)
+**4a** — Tüm dil × domain için `statistics.untranslated + statistics.fuzzy` topla → `TOTAL`.
 
-> **İş birimi = çevrilecek entry sayısı, dil değil.** Bir dilde 2 entry, diğerinde 0 olabilir — "dil başına 1 ajan" hem dengesizdir hem de toplam iş azken Workflow'u boş yere kurar. Önce toplam yükü hesapla, sonra böl.
+**4b** — Eşik:
+- `TOTAL == 0` → Adım 4–5'i atla, Adım 6 + 7 yine çalışır.
+- `TOTAL ≤ 200` → sub-agent spawn etme. Analiz json'larını oku, kendin çevir, her `<lang>.<domain>.translations.json`'ı kendin yaz.
+- `TOTAL > 200` → chunk başına 1 sub-agent (hepsi paralel).
 
-**4a — Toplam çevrilecek entry'yi hesapla.** Adım 2-3'teki analiz json'larından (HIDDEN_LANGUAGES + `en` hariç) tüm dil × domain için `statistics.untranslated + statistics.fuzzy` topla → `TOTAL`.
+**4c** — Chunk'lama (`TOTAL > 200`): dilleri count'a göre sırala, ~200'ü aşana kadar chunk'a dil dil ekle. Bir dili iki ajana bölme; tek istisna dilin kendisi >200 ise (o dil kendi chunk'ı olur, ajan 200'erli işler; prompt'a o dilin mevcut slug örneklerini göm). Algoritma: aşağıdaki `packChunks`.
 
-**4b — Eşik kararı:**
+Her çeviri sub-agent'ı chunk'ındaki dillerin analiz json'larını okur, her dil × domain için `<lang>.<domain>.translations.json` yazar (po-cli `update` formatı: `[{msgid, msgstr, context}]`), aşağıdaki çıktı şemasıyla `{langs:[...], notes}` döner.
 
-- **`TOTAL == 0`** → çeviri YOK ama **DURMA**. Adım 4–5'i atla, doğrudan **Adım 6 (compile) → Adım 7 (commit)**'e geç. makemessages `.po` dosyalarını çeviri içeriği değişmese bile yeniden formatlayabilir (line-wrap, header, kaynak konum yorumları); bunlar derlenip `.po`+`.mo` birlikte commit edilir. Gerekçe: dağıtılan `.mo` dosyaları `.po` ile **senkron** kalmalı — derleme atlanırsa runtime'da eski `.mo` kullanılır. (Detaylı kural: aşağıdaki "Çeviri Yoksa Bile Derle & Gönder".)
-- **`TOTAL ≤ 200`** → **Workflow KURMA.** Tek ajanlık iştir; orchestrator (sen) ilgili analiz json'larını **Read** edip entry'leri aşağıdaki kurallarla **kendin** çevirir ve her `<lang>.<domain>.translations.json` dosyasını **kendin** yazarsın. Paralel ajan/Workflow gereksiz overhead'dir.
-- **`TOTAL > 200`** → `Workflow` tool ile **chunk başına 1 ajan**. Chunk'lama **dil sınırında kesilir** (aşağıdaki 4c).
+**Çeviri kuralları (inline'da uygula, ajan prompt'una göm):**
 
-**4c — Chunk'lama (sadece `TOTAL > 200`): dil sınırında bin-packing.**
+1. Her entry tek tek, bağlamıyla çevrilir. `sed`/`replace_all`/toplu string-replace YASAK.
+2. Fuzzy msgstr'ye güvenme (yanlış otomatik eşleşme, örn. "Yacht"→"araç"); yok say, `msgid`'den sıfırdan çevir.
+3. Placeholder birebir: `%(name)s`, `%s`, `%d`, `%%` (literal yüzde), `{var}`, `{0}`, `{{ var }}`, `{% tag %}`. HTML tag, URL, JS kod parçası birebir.
+4. URL slug'ları (i18n_patterns route'ları, örn. `yachts/`, `ports/<int:page>/`) lokalize edilir; hedef dilin mevcut slug konvansiyonuna uy — referans: aynı dosyada `airports/`/`cities/` (tr: `tum-havalimanlari/`, de: `flughaefen/`, ar: `المطارات/`). Mevcut slug'ları Latin olan diller (genelde hi/ja/kk/ru/tk/uz/zh_Hans) yenisini de Latin bırakır.
+5. Marka/fare adları çevrilmez: "Economy Flex", "SunFlex 7", "Business", "Transporter", "Vito".
+6. nplurals (po-cli validate yakalamaz, `compilemessages`'ta patlar):
+   - `ja, zh_Hans, uz` = 1 (sadece `msgstr[0]`; `msgstr[1]` OLMAMALI)
+   - `ru` = 4 (one/few/many/other), `ar` = 6 (zero/one/two/few/many/other)
+   - `tr, de, es, hi, kk, tk, tg` = 2
+7. msgstr boş bırakılmaz.
 
-Dilleri entry sayısıyla sırala; bir chunk'a dil dil ekle, ~200'ü aşacaksan yeni chunk aç. **Bir dili iki ajana bölme** — böylece o dilin slug konvansiyonu/terim birliği tek ajanda kalır. Tek istisna: **bir dilin kendisi >200 ise** o dil zorunlu olarak entry sırasına göre 200'lük parçalara bölünür (bu durumda prompt'a o dilin mevcut slug örneklerini de göm).
+Sub-agent planı (sadece `TOTAL > 200`):
 
-```js
-// her L = { code, name, pluralNote, count }  (count = o dilin tüm domainlerdeki untranslated+fuzzy)
-function packChunks(langs, target = 200) {
-  const chunks = []
-  let cur = [], curSum = 0
-  for (const L of langs.sort((a, b) => b.count - a.count)) {
-    if (L.count > target) {            // tek dil hedefi aşıyor → kendi başına chunk(lar)
-      if (cur.length) { chunks.push(cur); cur = []; curSum = 0 }
-      chunks.push([L])                 // ajan kendi içinde 200'erli işler; prompt'a slug örneği göm
-      continue
-    }
-    if (curSum + L.count > target && cur.length) { chunks.push(cur); cur = []; curSum = 0 }
-    cur.push(L); curSum += L.count
-  }
-  if (cur.length) chunks.push(cur)
-  return chunks                        // her chunk = 1 ajan; chunk içinde 1+ tam dil
-}
-```
+1. Girdiler (ana agent doldurur):
+   - `OUT = /tmp/<proj>-i18n`
+   - `DOMAINS` — iş olan domainler (örn. `django`, `djangof7`; `djangojs` genelde 0).
+   - `LANGS` — `{code, name, pluralNote, count}` listesi; `count` = o dilin tüm domainlerdeki untranslated+fuzzy toplamı. HIDDEN_LANGUAGES'taki dilleri EKLEME. Örnek pluralNote: `ar` → "nplurals=6: zero/one/two/few/many/other.", `ja` → "nplurals=1: TEK form; plural string varsa msgstr[1] OLMAMALI.", `ru` → "nplurals=4: one/few/many/other." (tr/de/es/hi/kk/tk/tg=2, uz/zh_Hans=1).
+2. Ana agent chunk'ları hesaplar: `CHUNKS = packChunks(LANGS.filter(L => L.count > 0))`
 
-> **Model + effort**: Çeviri ajanları `model: 'sonnet'`, `effort: 'medium'` ile çalışır (opts'ta sabit; effort boş bırakılırsa oturumunki devralınır — `token-efficiency`). Belirtilmezse Workflow ajanı ana oturum modelini devralır — pahalı session modelinde paralel çeviri gereksiz maliyet. Sonnet çok dilli lokalizasyon için yeterli kalitede.
+   ```js
+   // dil sınırında ~200'lük chunk'lar (bir dili bölme; tek dil >200 ise kendi chunk'ı)
+   function packChunks(langs, target = 200) {
+     const chunks = []; let cur = [], curSum = 0
+     for (const L of [...langs].sort((a, b) => b.count - a.count)) {
+       if (L.count > target) { if (cur.length) { chunks.push(cur); cur = []; curSum = 0 } chunks.push([L]); continue }
+       if (curSum + L.count > target && cur.length) { chunks.push(cur); cur = []; curSum = 0 }
+       cur.push(L); curSum += L.count
+     }
+     if (cur.length) chunks.push(cur)
+     return chunks
+   }
+   ```
+3. Tek faz (Translate): her chunk için 1 sub-agent, hepsi aynı anda paralel spawn edilir. Etiket: `translate:chunk<i>(<kodlar>)`. Model/effort `core` kuralındaki tablodan.
+4. Brief şablonu (`<langBlock>` = chunk'taki her dil için bir satır: `- <name> (<code>) — OKU: <OUT>/<code>.<domain>.analysis.json, ... (her DOMAIN) | plural: <pluralNote>`):
 
-Her ajan **chunk'ındaki dillerin** analiz json'larını **Read** eder, entry'leri çevirir, her dil için `<lang>.<domain>.translations.json` yazar (po-cli `update` formatı: `[{msgid, msgstr, context}]`).
+   ```text
+   Profesyonel lokalizasyon uzmanısın. Bu chunk'taki HER dil için çeviri yap:
+   <langBlock>
+   Her dilin untranslated_entries + fuzzy_entries'ini ÇEVİR.
+   KURALLAR: (1) her entry TEK TEK, toplu replace YASAK. (2) fuzzy msgstr'ye GÜVENME, msgid'den sıfırdan.
+   (3) placeholder/%%/HTML/URL/JS birebir koru. (4) URL slug'ı o dilin mevcut konvansiyonuna uydur.
+   (5) marka adları İngilizce. (6) plural'da yukarıdaki dil-bazlı nplurals notunu uygula. (7) msgstr boş bırakma.
+   Her dil×domain için <OUT>/<lang>.<domain>.translations.json YAZ (dizi: {msgid,msgstr,context}).
+   ```
+5. Zorunlu çıktı şeması:
 
-**Çeviri kuralları (hem inline ≤200 hem de ajan prompt'una MUTLAKA gömülür):**
+   ```json
+   { "type": "object", "required": ["langs"], "properties": { "langs": { "type": "array", "items": { "type": "string" } }, "notes": { "type": "string" } } }
+   ```
+6. Sonuçları topla; her sonucu chunk'ın dil kodlarıyla eşleştir. Hata/boş dönen ya da `langs`'ı chunk'la uyuşmayan sub-agent'ı aynı brief'le yeniden spawn et.
 
-1. **Her entry TEK TEK, bağlamını anlayarak çevrilir.** `sed`/`replace_all`/toplu string-replace **YASAK** — her `msgid` ayrı, anlamına göre.
-2. **FUZZY msgstr'ye GÜVENME** — makemessages'ın yanlış otomatik eşleşmesidir (örn. yeni özellik eklenince "Yacht"→"araç", "Brand Localization"→"Hata Mesajı Yerelleştirme"). msgstr'yi YOK SAY, `msgid`'den sıfırdan çevir.
-3. **Placeholder birebir korunur**: `%(name)s`, `%s`, `%d`, `%%` (literal yüzde — değiştirme), `{var}`, `{0}`, `{{ var }}`, `{% tag %}`. HTML tag, URL, JS kod parçası birebir.
-4. **URL slug'ları lokalize edilir** (i18n_patterns route'ları, örn. `yachts/`, `ports/<int:page>/`). Hedef dilin **mevcut slug konvansiyonuna** uydur — referans: aynı dosyada `airports/`/`cities/` slug'ı nasıl çevrilmiş (tr: `tum-havalimanlari/`, de: `flughaefen/`, ar: `المطارات/`). Mevcut slug'ları Latin bırakan diller (genelde hi/ja/kk/ru/tk/uz/zh_Hans) yeni slug'ı da Latin bırakır — tutarlılık esas.
-5. **Marka/fare adları çevrilmez**: "Economy Flex", "SunFlex 7", "Business", "Transporter", "Vito" İngilizce kalır.
-6. **Plural form (nplurals)** — po-cli validate YAKALAMAZ, `compilemessages`'ta patlar:
-   - `ja, zh_Hans, uz` = **1** (sadece `msgstr[0]`; plural string'de `msgstr[1]` OLMAMALI)
-   - `ru` = **4** (one/few/many/other), `ar` = **6** (zero/one/two/few/many/other)
-   - `tr, de, es, hi, kk, tk, tg` = **2** (tekil/çoğul)
-7. msgstr asla boş bırakılmaz.
+### Adım 5 — Apply
 
-Ajan StructuredOutput ile `{langs:[...], notes}` döndürür (chunk birden çok dil içerebilir).
-
-Workflow script iskeleti (sadece `TOTAL > 200` ise — `≤200` inline çevrilir, Workflow kurulmaz):
-
-```js
-export const meta = {
-  name: '<proj>-i18n-translate',
-  description: 'Chunk başına 1 ajan (dil sınırında bin-packed): eksik/fuzzy entryleri tek tek çevirip translations.json yazar',
-  phases: [{ title: 'Translate' }],
-}
-const OUT = '/tmp/<proj>-i18n'
-const DOMAINS = ['django', 'djangof7']   // iş olan domainler (djangojs genelde 0)
-// LANGS'a HIDDEN_LANGUAGES'taki dilleri EKLEME (Adım 2-3'teki tespit komutu).
-// count = o dilin tüm domainlerdeki untranslated+fuzzy toplamı (Adım 2-3 analizinden).
-const LANGS = [
-  { code: 'ar', name: 'Arapça',  pluralNote: 'nplurals=6: zero/one/two/few/many/other.', count: 0 },
-  { code: 'ja', name: 'Japonca', pluralNote: 'nplurals=1: TEK form; plural string varsa msgstr[1] OLMAMALI.', count: 0 },
-  { code: 'ru', name: 'Rusça',   pluralNote: 'nplurals=4: one/few/many/other.', count: 0 },
-  // ... diğer diller (tr/de/es/hi/kk/tk/tg=2, uz/zh_Hans=1) — her birine count ekle
-]
-// 4c: dil sınırında ~200'lük chunk'lar (bir dili bölme; tek dil >200 ise zorunlu böl)
-function packChunks(langs, target = 200) {
-  const chunks = []; let cur = [], curSum = 0
-  for (const L of [...langs].sort((a, b) => b.count - a.count)) {
-    if (L.count > target) { if (cur.length) { chunks.push(cur); cur = []; curSum = 0 } chunks.push([L]); continue }
-    if (curSum + L.count > target && cur.length) { chunks.push(cur); cur = []; curSum = 0 }
-    cur.push(L); curSum += L.count
-  }
-  if (cur.length) chunks.push(cur)
-  return chunks
-}
-const CHUNKS = packChunks(LANGS.filter(L => L.count > 0))
-phase('Translate')
-const results = await parallel(CHUNKS.map((chunk, i) => () => {
-  const langBlock = chunk.map(L =>
-    `- ${L.name} (${L.code}) — OKU: ${DOMAINS.map(d => `${OUT}/${L.code}.${d}.analysis.json`).join(', ')} | plural: ${L.pluralNote}`
-  ).join('\n')
-  return agent(
-`Profesyonel lokalizasyon uzmanısın. Bu chunk'taki HER dil için çeviri yap:
-${langBlock}
-Her dilin untranslated_entries + fuzzy_entries'ini ÇEVİR.
-KURALLAR: (1) her entry TEK TEK, toplu replace YASAK. (2) fuzzy msgstr'ye GÜVENME, msgid'den sıfırdan.
-(3) placeholder/%%/HTML/URL/JS birebir koru. (4) URL slug'ı o dilin mevcut konvansiyonuna uydur.
-(5) marka adları İngilizce. (6) plural'da yukarıdaki dil-bazlı nplurals notunu uygula. (7) msgstr boş bırakma.
-Her dil×domain için ${OUT}/<lang>.<domain>.translations.json YAZ (dizi: {msgid,msgstr,context}).`,
-    { label: `translate:chunk${i}(${chunk.map(c => c.code).join(',')})`, phase: 'Translate', model: 'sonnet', effort: 'medium',
-      schema: { type:'object', required:['langs'], properties:{ langs:{type:'array',items:{type:'string'}}, notes:{type:'string'} } } }
-  ).then((r) => ({ ...r, codes: chunk.map(c => c.code) }))
-}))
-return results
-```
-
-### Adım 5 — Apply (TEK toplu onay) + perl temizlik
-
-Tüm `translations.json`'lar hazır olunca (inline çeviri bittiyse veya tüm ajanlar döndüyse) **önce dry-run validate**, sonra **TEK `AskUserQuestion` onayı**, sonra apply. Her dosya için:
+Tüm `translations.json`'lar hazır olunca: önce her dosyada dry-run validate, sonra soru aracıyla TEK onay, sonra apply:
 
 ```bash
 po-cli --json update <po> -t <translations.json> --dry-run    # validation.valid kontrol
 po-cli --json update <po> -t <translations.json>              # apply
-perl -0777 -i -pe 's/\n#, fuzzy\nmsgid ""\nmsgstr ""\n+/\n/g' <po>   # ZORUNLU temizlik
+perl -0777 -i -pe 's/\n#, fuzzy\nmsgid ""\nmsgstr ""\n+/\n/g' <po>   # her apply'dan sonra ZORUNLU
 ```
 
-> ⚠️ **perl temizliği her apply'da ZORUNLU**: `po-cli update` her çağrıda dosya sonuna `#, fuzzy` + boş `msgid ""`/`msgstr ""` bloğu bırakır → 2. `msgid ""` = `compilemessages` "duplicate message definition" FATAL. Obsolete `#~` bloklarına dokunmaz.
+- perl: `po-cli update` dosya sonuna `#, fuzzy` + boş `msgid ""`/`msgstr ""` bırakır → `compilemessages` "duplicate message definition" FATAL. Obsolete `#~` bloklarına dokunmaz.
+- `validation.invalids` doluysa (Missing variables / HTML tags / URL changed) entry'yi düzelt, translations.json'ı güncelle, dry-run tekrar. `--no-strict`/`--force` kullanma.
 
-`validation.invalids` doluysa o entry'leri düzelt (Missing variables / HTML tags / URL changed), translations.json güncelle, dry-run tekrar. **`--no-strict`/`--force` kullanma.**
+### Adım 6 — compile + re-analyze
 
-### Adım 6 — compile + re-analyze (yakınsama döngüsü)
-
-> **⛔ Çeviri Yoksa Bile Derle & Gönder — ZORUNLU.** `TOTAL == 0` (hiç untranslated/fuzzy yok) çıksa bile
-> **compile + commit ATLANMAZ.** Adım 1 (makemessages) `.po` dosyalarını çeviri içeriği değişmese dahi
-> yeniden formatlar: gettext **line-wrap** noktalarını kaydırır, `POT-Creation-Date`/header'ı tazeler, kaynak
-> konum yorumlarını (`#: app/file.py:123`) ve obsolete (`#~`) bloklarını yeniden sıralar. Bu değişen `.po`
-> derlenip **`.po` + `.mo` birlikte** gönderilmelidir.
->
-> **Gerekçe:** Diji projelerinde `.mo` **tracked** ve runtime gettext **`.mo`'yu okur** (`.po`'yu değil). `.po`
-> commit edilip `.mo` derlenmeden gönderilirse — ya da hiç commit edilmezse — dağıtılan `.mo` `.po` ile
-> **desenkron** kalır; sunucu eski derlemeyi kullanır. Bu yüzden "çeviri değişmedi" gerekçesiyle compile/commit
-> atlamak **yasak** — `python manage.py compilemessages` her akışta koşulsuz çalışır, çıktısı commit'lenir.
-> (Kullanıcı talebi, 2026-06-22: "çeviri olmasa bile derle yolla".)
->
-> **Tek istisna — gerçekten SIFIR diff:** `git status --porcelain -- 'locale/**/*.po'` **boşsa** (makemessages
-> hiçbir `.po`'ya dokunmadıysa) commit edilecek bir şey yoktur; bu durumda akış temiz sonlanır. `.po` diff'i
-> **varsa** (kozmetik olsa bile) → compile + commit **zorunlu**.
+Çeviri olmasa bile (`TOTAL == 0`) compile + commit ZORUNLU: makemessages `.po`'yu yeniden formatlar (line-wrap, `POT-Creation-Date`/header, konum yorumları, `#~` sırası); runtime `.mo`'yu okur, `.mo` tracked'dir → `.po` + `.mo` senkron gönderilmeli. Tek istisna: `git status --porcelain -- 'locale/**/*.po'` boşsa akış temiz biter.
 
 ```bash
-# Önce hızlı fatal taraması (dosya bazlı hata gösterir):
-msgfmt --check <po> -o /dev/null 2>&1 | grep -v "warning:"     # boşsa OK
+msgfmt --check <po> -o /dev/null 2>&1 | grep -v "warning:"     # boşsa OK (dosya bazlı fatal taraması)
 python manage.py compilemessages                               # .po → .mo
-# Re-analyze: en hariç tüm dil × domain po-cli --json analyze
+# Re-analyze: LANGS × domain po-cli --json analyze
 ```
 
-- `compilemessages` plural/duplicate FATAL verirse → ilgili dosyayı düzelt (plural tablosu / perl) → tekrar.
-- Re-analyze'da hâlâ untranslated/fuzzy varsa → **Adım 3'e dön** (kalan entry'ler için). Kaynak kod sabitse genelde **tek tur** yakınsar.
-- "Tüm diller temiz" kriteri **HIDDEN_LANGUAGES hariç** değerlendirilir — kapalı dilde untranslated kalması normaldir ve akışı bloklamaz.
+- `compilemessages` plural/duplicate FATAL → dosyayı düzelt (nplurals tablosu / perl) → tekrar.
+- Re-analyze'da untranslated/fuzzy kaldıysa → Adım 3'e dön (kalan entry'ler için).
+- "Tüm diller temiz" HIDDEN_LANGUAGES hariç değerlendirilir.
+- Duplicate'i `grep '^msgid ""$'` ile sayma (uzun msgid wrapping'i de eşleşir); test `msgfmt --check`.
+- `update_translation_fields` bu akışta çağrılmaz.
 
-> ⚠️ `grep '^msgid ""$'` ile duplicate sayma — **yanıltıcı**: gettext uzun msgid'leri `msgid ""` + alt satırda devam ettirir (string wrapping), bu duplicate header değil. Gerçek test: `msgfmt --check`.
+### Adım 7 — commit
 
-> NOT: `update_translation_fields` Diji projelerinde SDK import bug'ı (`b2b_python_sdk...yacht_rental`) ile patlayabilir — **compile/po-cli'yi ETKİLEMEZ**, bu akışta çağrılmaz.
-
-### Adım 7 — commit skill
-
-`.po` diff'i varsa (çeviri yapıldıysa **VEYA** sadece makemessages yeniden formatladıysa — Adım 6'daki "Çeviri Yoksa Bile Derle & Gönder" kuralı) `commit` skill tetikle. `.mo` dosyaları Diji projelerinde **tracked** (gitignore'da değil) → `.po` + `.mo` birlikte commit'lenir. `.po`/`.mo` non-kod olduğu için commit skill code-review'i atlar. Sadece `git status` `.po` için **tamamen boşsa** commit atlanır (commit edilecek değişiklik yok).
+`.po` diff'i varsa (çeviri veya sadece yeniden format) `commit` skill'i tetikle; `.po` + `.mo` birlikte commit'lenir. `.po` git status'ta boşsa commit atla.
 
 ## Komut Referansı (po-cli)
 
@@ -258,10 +179,9 @@ po-cli --json update <po> -t <json>              # apply
 # Çıktı: {validation:{valid,invalids[],total}, update:{success,updated_entries,errors[]}}
 ```
 
-## İlişkili Kaynaklar
+## İlişkili
 
-- `po-cli` skill — tek `.po` dosyası analiz/çeviri/validate (bu skill onu kullanır)
-- `commit` skill — Adım 7 teslimat
-- `~/.claude/rules/django.md` — F7 çeviri sistemi, makemessagesf7, elastic reindex
-- `~/.claude/rules/python.md` — venv/uv kuralları
-- Obsidian: çeviri/i18n tuzakları için `obsidian-search` ile vault'a bak (`i18n`, `po-cli`, `çeviri` terimleri)
+- `po-cli` skill — tek `.po` analiz/çeviri/validate
+- `commit` skill — Adım 7
+- `django` skill — F7 çeviri domain'i, `makemessagesf7`
+- `obsidian-search` — vault'ta çeviri tuzakları (`i18n`, `po-cli`, `çeviri`)

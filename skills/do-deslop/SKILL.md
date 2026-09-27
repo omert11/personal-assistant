@@ -10,8 +10,7 @@ allowed-tools: Read, Edit, Grep, Glob, Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/d
 
 Girdi: `$ARGUMENTS` — dosya yolu, glob veya dizin listesi.
 
-Bu oturumun tek işi budur. Başka görev, başka öneri yok. `deslop` çağrılmaz, yeni `claude -p`
-oturumu açılmaz.
+Başka görev/öneri yok. `deslop` çağrılmaz, yeni `claude -p` oturumu açılmaz.
 
 ## 1. Kaynaklar
 
@@ -19,8 +18,7 @@ oturumu açılmaz.
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/deslop-sources.sh
 ```
 
-Zorunlu kaynak `MISSING` ise (exit 1) iş yapılmaz: `SOURCES: FAILED <key>` yaz ve dur. Kurallar
-hatırlanarak çalışmak yasaktır. `stale` kabul edilir, rapora yazılır.
+Zorunlu kaynak `MISSING` ise (exit 1): `SOURCES: FAILED <key>` yaz ve dur; hafızadan kuralla çalışma. `stale` kabul edilir, rapora yazılır.
 
 ## 2. Oku
 
@@ -39,18 +37,17 @@ Sonra `~/.cache/deslop-sources/` altından:
 Opsiyonel: `s4-humanise.md` (swap tabloları), `s3-banned-words.md` (üretim tarafı; sayısal
 eşikleri bu görevde uygulanmaz).
 
-- `s1` ~200 KB: `Grep` ile `Words to watch`, `Ineffective indicators`, `Signs of human writing`,
-  `Internal formatting` başlıklarını bul, o bölümleri `offset`/`limit` ile oku.
+- `s1` ~200 KB: içerikte arayarak `Words to watch`, `Ineffective indicators`, `Signs of human writing`,
+  `Internal formatting` başlıklarını bul, yalnız o bölümleri oku.
 - `s2-humanizer.md` ile `s2-humanizer-mirror.md` arasında `metadata.version` büyük olan okunur.
 - Kelime kararı okunan metinden verilir, hatırlanandan değil.
 
 ## 3. Hedefler
 
-Glob `Glob` ile genişletilir, dizine inilir. Elenenler: `node_modules/`, `vendor/`, `dist/`,
+Glob kalıpları genişletilir, dizine inilir. Elenenler: `node_modules/`, `vendor/`, `dist/`,
 `build/`, `.venv/`, `.git/`, `*.min.*`, `*.lock`, binary, 1 MB üstü.
 
-Dosya sayısı tavanı yok. Örnekleme, "ilk N", "en önemlileri" yasak. Filtreden düşen dosya rapora
-`SKIPPED` yazılır.
+Dosya sayısı tavanı yok; örnekleme, "ilk N", "en önemlileri" yasak. Filtreden düşen dosya rapora `SKIPPED`.
 
 ## 4. Kapsam
 
@@ -74,7 +71,7 @@ Dosya sayısı tavanı yok. Örnekleme, "ilk N", "en önemlileri" yasak. Filtred
 
 ### Dışarıda
 
-Kod mantığı; kod yorumu ve docstring; test, fixture, snapshot; config; `CLAUDE.md`, `AGENTS.md`,
+Kod mantığı; kod yorumu ve docstring; test, fixture, snapshot; config; `AGENTS.md`,
 `.cursorrules`, `.claude/**`, `rules/**`, `skills/**`; CHANGELOG; fenced code block; frontmatter;
 link hedefi ve URL; HTML `<script>`/`<style>`, attribute, `class`, `id`; `.po` `msgid` ve `#:`
 satırları; i18n anahtarları; alıntı, başlık, özel ad, bahsi geçen (kullanılmayan) ifade.
@@ -85,17 +82,14 @@ satırları; i18n anahtarları; alıntı, başlık, özel ad, bahsi geçen (kull
 
 ### Toplu değiştirme yasak
 
-`sed -i`, `awk`, `perl -pi`, `tr`, script ile replace çalıştırılmaz. `Edit`'te `replace_all`
-kullanılmaz. "Bu kelimenin her geçtiği yeri değiştir" mantığı yasaktır.
+`sed -i`, `awk`, `perl -pi`, `tr`, script ile replace ve tümünü-değiştir (`replace_all`) yasak; her geçişi toplu değiştirme yok.
 
 ### Dosya başına
 
-1. Dosyayı baştan sona oku. Büyükse parça parça, ama tamamı. Grep ile ilgili yere atlama yok.
-   Context kaygısı yok.
+1. Dosyayı baştan sona oku (büyükse parça parça, ama tamamı); içerikte arayıp atlama yok.
 2. Metinde gerçekten bulunan desenleri çıkar.
-3. Her aday için tek tek karar ver: iz mi, yanlış pozitif mi. Karar kümelenmeye dayanır — tek
-   işaret düzeltme gerekçesi değildir.
-4. Her düzeltme ayrı bir `Edit` çağrısıdır.
+3. Her adayı tek tek karara bağla: iz mi, yanlış pozitif mi. Karar kümelenmeye dayanır; tek işaret yetmez.
+4. Her düzeltme ayrı bir düzenlemedir.
 5. Düzeltmeleri çeşitlendir; aynı kuralı her örneğe mekanik uygulama.
 6. Bitince sor: bariz AI kalan ne var, kaynakta olmayan bir şey yazdım mı.
 
@@ -123,7 +117,7 @@ Hedef listesiyle karşılaştır — atlanan var mı.
 
 ## 7. Rapor
 
-Çıktı yalnız bu bloktur. Kural adı anlatımı, süreç anlatımı, giriş cümlesi yok.
+Çıktı yalnız bu blok; anlatım/giriş cümlesi yok.
 
 ```
 SOURCES: ok | stale <key>... | FAILED <key>
@@ -146,5 +140,4 @@ NOTES:
 <kullanıcı kararı gerektiren şey; yoksa none>
 ```
 
-Her flag birebir alıntı ister. Yüzde veya olasılık skoru üretilmez. Hiç düzeltme yoksa da rapor
-tam formatta verilir.
+Her flag birebir alıntı ister. Yüzde/olasılık skoru yok. Düzeltme yoksa da rapor tam formatta.

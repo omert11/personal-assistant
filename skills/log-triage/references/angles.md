@@ -1,12 +1,8 @@
 # Açı Promptları
 
-Her açı, **tek pencere dosyasını** (`P*.json`) **tek açıdan** analiz eden bir subagent
-yönergesidir. Dosya yapısı: `error_warn` (ham ERROR/WARN), `error_msg_agg`, `warn_msg_agg`,
-`debug_msg_agg`, `sql_agg`, `slow_query`.
+Her açı = tek pencere dosyasını (`P*.json`) tek açıdan analiz eden subagent yönergesi. Dosya alanları: `error_warn` (ham ERROR/WARN), `error_msg_agg`, `warn_msg_agg`, `debug_msg_agg`, `sql_agg`, `slow_query`.
 
-`<PROJECT>` (hedef proje), `<STACK>` (örn "Go/Fiber + GORM/Postgres multi-tenant"), `<w>`
-(pencere), `<t>` (zaman etiketi), `<file>` (dosya yolu) yer tutucularını doldur. Stack/provider
-ipuçları projeye göre değişir — hedef projenin CLAUDE.md'sinden uyarlayabilirsin.
+Yer tutucular: `<PROJECT>` (hedef proje), `<STACK>` (örn "Go/Fiber + GORM/Postgres multi-tenant"), `<w>` (pencere), `<t>` (zaman etiketi), `<file>` (dosya yolu). Stack/provider ipuçlarını hedef projenin AGENTS.md'sinden uyarla.
 
 ---
 
@@ -24,7 +20,7 @@ trace_id, kök neden hipotezi. 3) "gorm query error" rows:0+boş error = ErrReco
 (SAHTE) ayrı işaretle. 4) Zincirleme (aynı trace_id çoklu fail) belirt. 5) Kritiklik:
 CRITICAL/HIGH/MEDIUM/NOISE.
 ÇIKTI (markdown): "## <w> — Hata Analizi" + tablo |Hata|Adet|Kritiklik|Kapsam|trace_id|Kök Neden|
-+ "### Zincirleme" + "### Sahte Hata Notu". Kanıta dayalı, kısa. Dosyayı Read ile oku.
++ "### Zincirleme" + "### Sahte Hata Notu". Kanıta dayalı, kısa. Dosyayı oku.
 ```
 
 ## PERF (performans & sorgu)
@@ -41,7 +37,7 @@ ANOMALİ). 2) Aynı tabloya art arda sorgu = N+1, grupla. 3) slow_query >200ms t
 (request/Redis cache, index, batch, cadence, log sampling).
 ÇIKTI (markdown): "## <w> — Performans & Sorgu Analizi" + "### Tekrarlayan/N+1" tablo
 |Sorgu|Adet|Sorun|Öneri| + "### Yavaş Sorgular" + "### Gereksiz İş/Log Yükü". Kanıta dayalı,
-kısa. Dosyayı Read ile oku.
+kısa. Dosyayı oku.
 ```
 
 ## AKIS (iş akışı & tutarlılık)
@@ -58,7 +54,7 @@ canlı; status override). 4) Sync worker, markup/komisyon fallback. 5) Her bulgu
 ref + trace_id, iş etkisi (yanlış fiyat/çift kayıt/gelir kaybı), aksiyon.
 ÇIKTI (markdown): "## <w> — İş Akışı & Tutarlılık Analizi" + tablo |Bulgu|Adet|Kritiklik|
 Kapsam|İş Etkisi|Aksiyon| + "### Öne Çıkan Tutarsızlıklar" (fiyat mismatch: ref|provider|stored|
-delta|currency|trace_id). Kanıta dayalı, kısa. Dosyayı Read ile oku.
+delta|currency|trace_id). Kanıta dayalı, kısa. Dosyayı oku.
 ```
 
 ## HIJYEN (log hijyeni & güvenlik)
@@ -78,17 +74,16 @@ pattern, anormal IP/agency).
 ÇIKTI (markdown): "## <w> — Log Hijyeni & Güvenlik Analizi" + "### Yanlış Log Seviyesi" +
 "### Log Spam" + "### Güvenlik/PII/Credential" tablo |Bulgu|Risk|Kanıt(alan)|Öneri| +
 "### Auth Anomalisi". PII/credential iddiasını ancak dosyada GÖRÜRSEN yaz. Kanıta dayalı, kısa.
-Dosyayı Read ile oku.
+Dosyayı oku.
 ```
 
 ---
 
 ## Projeye özel ek açılar (opsiyonel)
 
-Hedef projenin domain'ine göre 5. açı eklenebilir, örnekler:
+Domain'e göre 5. açı, örn:
 - **odeme** — payment gateway fail/success oranı, 3DS takılma, refund tutarsızlık.
 - **es-sync** — Elasticsearch reindex/sync hataları, stale index.
 - **notification** — mail/sms/push gönderim fail, NoneType, provider eksikliği.
 
-Yeni açı eklerken aynı kalıbı izle: tek açı + katı çıktı formatı + "diğer alanlar seni
-ilgilendirmez" sınırı (açılar örtüşmesin, dedup kolaylaşsın).
+Kalıp: tek açı + katı çıktı formatı + "diğer alanlar seni ilgilendirmez" sınırı (açılar örtüşmesin).

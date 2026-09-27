@@ -16,11 +16,11 @@ Girdi: `$ARGUMENTS` — dosya yolu, glob veya dizin listesi. Boş bırakılabili
 - Kapsam kararı vermek ("bu user-facing mi", "burada UI string var mı") — `do-deslop`'a aittir.
 - Metin düzeltmek, kural okumak, `~/.cache/deslop-sources/` veya `ai-writing-rules.md` okumak.
 
-İzin: alt oturum rapor dosyasını `Read`, `git diff`, `git status`, `find`.
+İzin: alt oturum rapor dosyasını okumak, `git diff`, `git status`, `find`.
 
 ## 1. Kök
 
-`git rev-parse --show-toplevel` → `<repo>`. Git deposu değilse ve argüman yoksa `AskUserQuestion`.
+`git rev-parse --show-toplevel` → `<repo>`. Git deposu değilse ve argüman yoksa soru aracıyla sor.
 
 ## 2. Yol listesi
 
@@ -45,33 +45,28 @@ Argümansız:
   | tr '\n' '\0' | xargs -0 grep -Il '' 2>/dev/null
 ```
 
-`git status --porcelain | cut -c4-` **kullanılmaz**: rename satırı (`R old -> new`) tek yol sanılır
-ve silinen yollar listeye girer. `--diff-filter=d` silinenleri düşürür, `--name-only` rename'in
-yeni adını verir.
+- `git status --porcelain | cut -c4-` kullanılmaz (rename/silinen yolları bozar).
+- Boyut eşiği `-size -1024k`; `-1M` kullanılmaz (BSD `find` listeyi boşaltır).
+- Eleme yalnız mekaniktir. `AGENTS.md`, `rules/`, `skills/`, test, config, `.py` listede kalır.
 
-`-size -1024k`, `-1M` değil — BSD `find` `M`'i yukarı yuvarlar, liste sessizce boşalır.
-
-Eleme yalnız mekaniktir. `CLAUDE.md`, `rules/`, `skills/`, test, config, `.py` listede kalır.
-
-Değişiklik yoksa `AskUserQuestion`: repo geneli mi, dosya mı.
+Değişiklik yoksa soru aracıyla sor: repo geneli mi, dosya mı.
 
 ## 3. Hacim kapısı
 
-Liste > 40 ise `AskUserQuestion` — header `Hacim`, options `["Devam et", "Daralt", "İptal"]`.
+Liste > 40 ise soru aracıyla sor — header `Hacim`, options `["Devam et", "Daralt", "İptal"]`.
 
 ## 4. Dağıt
 
-Gruplama ölçütü **dizin**. Grup başına dosya limiti yok.
+Dizin bazlı grupla; grup başına dosya limiti yok. Grup başına:
 
 ```bash
-cd <repo> && claude --model opus --effort low -p '/personal-assistant:do-deslop <paths>'
+cd <repo> && claude -p '/personal-assistant:do-deslop <paths>'
 ```
 
-- Model `opus`, effort `low` — sabit.
 - `run_in_background: true`, `timeout: 600000`.
 - Yollar `<repo>`'ya göreli, boşluklu yol tırnaklı.
 - Eşzamanlı en fazla 6 oturum; fazlası dalgalar hâlinde. Hiçbir grup atlanmaz.
-- Grup başına `TaskCreate`, biten `TaskUpdate`.
+- Grup başına görev listesine madde ekle, biteni tamamlandı işaretle.
 
 ## 5. Doğrula
 
@@ -85,8 +80,7 @@ cd <repo> && claude --model opus --effort low -p '/personal-assistant:do-deslop 
 
 ## 6. Rapor
 
-Alt oturum çıktısında `SOURCES:` ile başlayan blok ayıklanır, hook gürültüsü atılır. Gruplar
-birleştirilir, tekrarlar ayıklanır.
+Alt oturum çıktılarından `SOURCES:` bloklarını al, hook gürültüsünü at, grupları birleştir, tekrarları ayıkla.
 
 ```
 deslop — <N> dosya, <M> dosyada <T> düzeltme
@@ -100,9 +94,6 @@ Kesilen iddia: <path>:<satır> — "<alıntı>"
 Doğrulama: <sonuç>
 ```
 
-Sonra `AskUserQuestion`: `["Değişiklikleri bırak", "Geri al", "Belirli dosyaları geri al"]`.
+Sonra soru aracıyla sor: `["Değişiklikleri bırak", "Geri al", "Belirli dosyaları geri al"]`. Başka bir skill'den çağrıldıysa (ör. `commit` 3b) bu soru sorulmaz; rapor çağırana döner.
 
-Commit yapılmaz — teslimat `commit` skill'inin işidir.
-
-Başka bir skill'den çağrıldıysa (ör. `commit` 3b) kapanış sorusu sorulmaz; rapor çağırana döner,
-kararı o verir.
+Commit yapılmaz (`commit` skill'inin işi).

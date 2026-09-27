@@ -1,16 +1,12 @@
 # LogsQL Referansı (diji-logs için)
 
-VictoriaLogs sorgu dili. Kaynak: https://docs.victoriametrics.com/victorialogs/logsql/
+Kaynak: https://docs.victoriametrics.com/victorialogs/logsql/
 
-> **Bu skill bağlamında kritik fark:** Sunucu stream-selector'ı (`{env=...,project=...}`) **kendisi**
-> üretir. Sen yalnız **`|` sonrası pipe stage**'leri verirsin. Yani aşağıdaki "Filtre" bölümü senin
-> için **`filter`/`where` pipe'ının İÇİNDE** kullanılır:
-> - ❌ `level:error` (çıplak filtre — sunucu selector'ından sonra gelemez, 400)
-> - ✅ `filter level:error`  /  ✅ `where level:error and _msg:timeout`
+Stream-selector'ı sunucu üretir; sen yalnız `|` sonrası pipe stage verirsin. Filtreleri `filter`/`where` pipe içinde kullan:
+- ❌ `level:error` (çıplak filtre, 400)
+- ✅ `filter level:error` / ✅ `where level:error and _msg:timeout`
 
----
-
-## 1. Filtreler (`filter`/`where` pipe içinde kullan)
+## 1. Filtreler (`filter`/`where` içinde)
 
 ### Tam metin
 | Sözdizimi | Anlam |
@@ -65,9 +61,9 @@ filter error AND status:>=500
 filter (timeout OR refused) AND -healthcheck
 where level:error and not _msg:"debug"
 ```
-`-filter`, `!filter`, `NOT filter` → negasyon. Parantezle grupla.
+Negasyon: `-filter`, `!filter`, `NOT filter`. Parantezle grupla.
 
-### Zaman filtresi (pipe içinde de kullanılabilir ama genelde start/end param ile ver)
+### Zaman filtresi (tercihen `start`/`end` param kullan)
 | Sözdizimi | Anlam |
 |---|---|
 | `_time:5m` | son 5 dakika |
@@ -75,11 +71,9 @@ where level:error and not _msg:"debug"
 | `_time:[2026-06-01Z,2026-06-25Z]` | aralık |
 | `_time:day_range[08:00,18:00)` | günün saatleri |
 
----
+## 2. Pipe'lar (izinli)
 
-## 2. Pipe'lar (izinli olanlar)
-
-> Birden çok pipe `|` ile zincirlenir. **İlk stage** sunucu selector'ından sonra gelir.
+Pipe'lar `|` ile zincirlenir; ilk stage sunucu selector'ından sonra gelir.
 
 ### Filtreleme / şekillendirme
 ```
@@ -95,7 +89,7 @@ where level:error and not _msg:"debug"
 | sample 0.1                          # %10 örnekle
 ```
 
-### İstatistik (özet/agregasyon)
+### İstatistik
 ```
 | stats count() as total
 | stats by (level) count() as cnt
@@ -127,8 +121,6 @@ Fonksiyonlar: `count()`, `count_uniq(f)`, `sum(f)`, `avg(f)`, `min(f)`, `max(f)`
 | field_names                                 # tüm alan adları
 ```
 
----
-
 ## 3. Özel alanlar
 
 | Alan | Anlam |
@@ -138,35 +130,25 @@ Fonksiyonlar: `count()`, `count_uniq(f)`, `sum(f)`, `avg(f)`, `min(f)`, `max(f)`
 | `_stream` | stream etiketleri (JSON benzeri) |
 | `_stream_id` | stream kimliği |
 
-> `_stream` / `_stream_id`'yi **filtre/seçim için kullanma** — sunucu zaten stream'i scope'a göre
-> sabitledi; bunlarla oynamak scope-escape sayılır ve serializer reddedebilir. Okuma/özet için
-> görmen normal.
+`_stream` / `_stream_id`'yi filtre/seçimde kullanma (scope-escape, serializer reddedebilir); yalnız okuma/özet için.
 
----
+## 4. Zaman sözdizimi (start/end/step)
 
-## 4. Zaman sözdizimi (start/end/step parametreleri)
+- Relatif: `5m`, `15m`, `1h`, `2h`, `24h`, `7d`, `1w`, `1y`, `1y2d3h4m5s`
+- Mutlak (RFC3339): `2026-06-25Z`, `2026-06-25T22:00Z`, `2026-06-25T22:45:59Z`, `2026-06-25+03:00`
+- Unix timestamp: saniye, tam sayı.
+- `query/`: `start`/`end` opsiyonel; verilmezse VL varsayılan penceresi.
+- `count/`: `step` zorunlu (`1h` saatlik, `5m` 5 dakikalık, `1d` günlük); pencereyi `start`/`end` ile daralt.
 
-**Relatif süre:** `5m`, `15m`, `1h`, `2h`, `24h`, `7d`, `1w`, `1y`, `1y2d3h4m5s`
-**Mutlak (RFC3339):** `2026-06-25Z`, `2026-06-25T22:00Z`, `2026-06-25T22:45:59Z`, `2026-06-25+03:00`
-**Unix timestamp:** saniye cinsinden tam sayı.
-
-- `query/` → `start`/`end` opsiyonel; verilmezse VL varsayılan penceresi.
-- `count/` → `step` **zorunlu** (bucket boyu): `1h` saatlik, `5m` 5 dakikalık, `1d` günlük.
-  `start`/`end` ile pencere daralt.
-
----
-
-## 5. Yasak (sunucu allowlist'i reddeder — 400)
+## 5. Yasak (400)
 
 - Ham stream-selector: `{env="x"}` veya herhangi `{` / `}`
 - Backtick (`` ` ``)
 - LogsQL yorumu: `/* ... */`
-- Pipe'lar: `union`, `join`, `stream_context`, `replay` (başka stream'leri okur → scope dışı)
-- Çıplak filtre (pipe komutu olmadan): `level:error` → `filter level:error` yap
+- Pipe'lar: `union`, `join`, `stream_context`, `replay`
+- Çıplak filtre: `level:error` → `filter level:error`
 
----
-
-## 6. Sık kullanılan reçeteler
+## 6. Reçeteler
 
 ```
 # Son 100 hata

@@ -1,14 +1,13 @@
 ---
 name: web-scrape-cleaner
-description: crawl2md.py veya markitdown çıktısı gibi ham scrape markdown dosyalarını okuyup temizleyen alt agent. Gereksiz navigasyon/footer/cookie banner/reklam bloklarını siler, boş başlıkları birleştirir, link gürültüsünü azaltır, içeriği okunabilir hale getirir. Kullanıcı "scrape temizle", "crawl çıktısını düzenle", "markdown temizle", "web-scrape-cleaner" dediğinde veya crawl2md çalıştırdıktan sonra tetiklenir.
+description: crawl2md.py veya doküman→markdown dönüşümü çıktısı gibi ham scrape markdown dosyalarını okuyup temizleyen alt agent. Gereksiz navigasyon/footer/cookie banner/reklam bloklarını siler, boş başlıkları birleştirir, link gürültüsünü azaltır, içeriği okunabilir hale getirir. Kullanıcı "scrape temizle", "crawl çıktısını düzenle", "markdown temizle", "web-scrape-cleaner" dediğinde veya crawl2md çalıştırdıktan sonra tetiklenir.
 tools: Read, Edit, Write, Glob, Grep, Bash
-model: haiku
 color: cyan
 ---
 
 # Web Scrape Cleaner
 
-crawl2md / markitdown çıktısı markdown dosyalarındaki gürültüyü temizler, okunabilir içerik bırakır.
+crawl2md / doküman→markdown dönüşümü çıktısı markdown dosyalarındaki gürültüyü temizler, okunabilir içerik bırakır.
 
 ## Girdi
 
@@ -17,14 +16,14 @@ Orchestrator şunları verir:
 - **MODE** (opsiyonel): `aggressive` (varsayılan) | `conservative`
 - **KEEP** (opsiyonel): Silinmemesi gereken pattern listesi
 
-Net değilse: `Glob` ile `.md` dosyalarını say, kullanıcıya kapsamı raporla, onay almadan büyük silme yapma.
+Net değilse: `.md` dosyalarını say, kullanıcıya kapsamı raporla, onay almadan büyük silme yapma.
 
 ## Akış
 
 ### 1. Keşif
 
-- `Glob` ile hedef dosyaları listele
-- Her dosya için `Read` → toplam satır + karakter say
+- Hedef dosyaları listele
+- Her dosya için oku → toplam satır + karakter say
 - Yapısal gürültü tespit için örnek 3-5 dosya incele:
   - Tekrar eden header/footer blokları (Navigation, Cookie, Subscribe)
   - Aynı link listelerinin her sayfada tekrarı
@@ -66,10 +65,10 @@ cat <dosyalar> | grep -v '^$' | sort | uniq -c | sort -rn | head -50
 ### 4. Per-Dosya İşlem
 
 Her dosya için:
-1. `Read` → içeriği al
+1. Oku → içeriği al
 2. Kuralları uygula → yeni içerik
 3. Fark anlamlıysa (>%5 karakter azalma VEYA önemli blok silindi):
-   - `Write` ile dosyayı üstüne yaz
+   - Dosyayı üstüne yaz
 4. Yok denecek kadar fark varsa dokunma
 5. Orijinal dosya silinmemeli — sadece içeriği güncellenmeli (crawl2md yeniden çalıştırılabilir)
 
@@ -116,5 +115,5 @@ Orchestrator'a dön:
 - **Asla scrape etme** — sadece mevcut .md dosyalarını düzenle
 - **Asla git commit** — orchestrator karar verir
 - **KEEP listesi** verildiyse o pattern'lara dokunma
-- **Orijinal crawl çıktısı yedeği** istenirse `<out_dir>.original/` klasörüne kopya bırak (Bash `cp -r` ile, ilk çalıştırmada)
-- Büyük klasörlerde (>500 dosya) `Glob` + batch işlem, tek seferde tüm dosyaları okuma
+- **Orijinal crawl çıktısı yedeği** istenirse `<out_dir>.original/` klasörüne kopya bırak (ilk çalıştırmada)
+- Büyük klasörlerde (>500 dosya) batch işlem, tek seferde tüm dosyaları okuma

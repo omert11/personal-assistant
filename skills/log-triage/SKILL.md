@@ -1,62 +1,39 @@
 ---
 name: log-triage
 description: Logları pencere×açı paralel analiz edip doğruladığı sorunları Plane'e issue açar.
-when_to_use: Trigger — "logları analiz et", "son N saatte sorun var mı", "log triage", "loglardan issue çıkar", "/log-triage <proje> <süre>". Bir diji-logs projesinin son N saatlik logunu kapsamlı (hata + performans + iş akışı + log hijyeni) tarayıp tespit edilen sorunları doğrulayarak Plane'e taşımak gerektiğinde. Tek değişken hedef projedir — akış tüm projelere uyarlanır.
+when_to_use: Trigger — "logları analiz et", "son N saatte sorun var mı", "log triage", "loglardan issue çıkar", "/log-triage <proje> <süre>". Bir diji-logs projesinin son N saatlik logu (hata + performans + iş akışı + log hijyeni) taranıp doğrulanan sorunlar Plane'e taşınacaksa. Tüm projelere uyar; değişen yalnız hedef proje ve Plane proje UUID'si.
 disable-model-invocation: true
-allowed-tools: Bash, Read, Write, Edit, Workflow, AskUserQuestion, Skill, Task, TaskCreate, TaskUpdate
+allowed-tools: Bash, Read, Write, Edit, AskUserQuestion, Skill, Task, TaskCreate, TaskUpdate
 ---
 
 # Log Triage — Pencere × Açı Paralel Log Analizi → Plane Issue
 
-Bir **diji-logs (VictoriaLogs)** projesinin son N saatlik logunu **zaman pencerelerine
-böler**, her pencereyi **birden çok açıdan paralel** analiz eder (tek Workflow), bulguları
-**dedup + canlı sorgu ile doğrular**, **tablo halinde sunar**, ve kullanıcı onayıyla **Plane'e
-issue açar**.
-
-> **Proje-bağımsız.** Değişen tek şey **hedef proje** (`diji-logs` `projects/` listesinden) ve
-> Plane proje UUID'si. Akış aynen tüm projelere uyarlanır.
-
-## Mimari (özet)
-
 ```
-Hazırlık (Claude)     : log çek → N saat → 15dk × M pencere → /tmp (stratified)
-WORKFLOW (tek)        : her pencere × her açı = paralel agent (M×A agent, sonnet)
-Claude orchestration  : dedup + canlı doğrulama → 3 katmanlı rapor
+Hazırlık (Claude)     : log çek → N saat → M pencere → /tmp (stratified)
+SUB-AGENT (tek faz)   : her pencere × her açı = paralel sub-agent (M×A sub-agent)
+Claude orchestration  : dedup + canlı doğrulama → katmanlı rapor
                         → BULGULARI TABLO HALİNDE SUN (onaydan ÖNCE — zorunlu)
                         → Plane eşleştirme → katman katman onay → sıralı issue create
 ```
 
-> **Issue açma workflow DEĞİL** — Claude sırayla açar (her create ayrı plane-cli komutu,
-> HTML escape gerektiği için). Tek workflow vardır: analiz fan-out'u.
+- Tek sub-agent fan-out'u = analiz. Issue açma sub-agent'a DEVREDİLMEZ: Claude sırayla, her create ayrı plane-cli komutu.
+- Başta görev listesi aç (çek / sub-agent analiz / dedup+doğrula / tablo+onay / issue create); ilerledikçe güncelle.
 
----
+## Adım 0 — Argümanlar
 
-## Adım 0 — Argümanları çöz
+`$1`=proje, `$2`=süre (örn `1h`, `3h`), `$3`=pencere sayısı.
 
-Skill `$1`=proje, `$2`=süre (örn `1h`, `3h`), `$3`=pencere sayısı (varsayılan 4) alabilir.
-
-1. **Proje hedefi** (argüman + fallback):
-   - `$1` verildiyse onu kullan.
-   - Yoksa `CLAUDE.local.md`'de tanımlı bir diji-logs proje varsa onu varsay.
-   - Hiçbiri yoksa `diji-logs` `projects/` listesini çek, `AskUserQuestion` ile seçtir.
+1. Proje: `$1` → yoksa `AGENTS.md`'deki diji-logs projesi → yoksa listeyi çek, soru aracıyla seçtir:
    ```bash
    "$HOME/Desktop/Git/personal-assistant/skills/diji-logs/scripts/query.sh" projects
    ```
-2. **Süre** (`$2`): verilmezse `AskUserQuestion` ile sor (önerilen `1h`). Dakikaya çevir
-   (`1h`→60, `3h`→180).
-3. **Pencere sayısı** (`$3`): varsayılan **4**. Her pencere = `süre / pencere_sayısı` dakika.
-4. **env**: genelde `prod`; `projects/` çıktısında aynı proje hem prod hem dev varsa sor.
+2. Süre: yoksa soru aracıyla sor (önerilen `1h`). Dakikaya çevir (`1h`→60, `3h`→180).
+3. Pencere sayısı: varsayılan 4. Pencere = `süre / pencere_sayısı` dk.
+4. env: varsayılan `prod`; `projects` çıktısında proje hem prod hem dev ise sor.
 
-> diji-logs token/erişimi `~/.config/diji-logs/env`'de — `query.sh` otomatik okur, sorma.
-> Detay için `diji-logs` skill'inin SKILL.md'sine bak.
+Token/erişim `~/.config/diji-logs/env`'de, `query.sh` otomatik okur — sorma. Detay: `diji-logs` skill.
 
----
-
-## Adım 1 — Pencereleri çek (Hazırlık)
-
-`scripts/fetch_windows.sh` zaman aralığını M eşit pencereye böler ve her pencere için
-**stratified** bir JSON dosyası yazar (ERROR/WARN ham + DEBUG/SQL aggregate + slow query).
-Bu şekil, tek dosyayı 4 farklı açının ortak okumasını sağlar.
+## Adım 1 — Pencereleri çek
 
 ```bash
 SCR="<scratchpad>/logwin"   # oturum scratchpad'i altında
@@ -64,155 +41,73 @@ SCR="<scratchpad>/logwin"   # oturum scratchpad'i altında
   "<proje>" "<env>" <toplam_dk> <pencere_sayısı> "$SCR"
 ```
 
-- Çıktı: `$SCR/P1.json ... PM.json`. Her dosya başına satır sayımları stdout'a basılır.
-- **Uzun sürebilir** → `run_in_background: true` ile çalıştır, `task-notification` bekle.
-- Pencere zamanlaması **relative offset** ile yapılır (P1 = en yeni 15dk, son pencere = en eski).
+- M eşit pencere, relative offset (P1 = en yeni, son pencere = en eski). Çıktı `$SCR/P1.json ... PM.json`, stratified: ERROR/WARN ham, DEBUG/SQL aggregate, slow query. Satır sayımları stdout'a basılır.
+- Ham dump kullanma (limit 1000'i aşar, agent context'ini boğar).
+- `run_in_background: true` ile çalıştır, `task-notification` bekle.
 
-> **Neden ham değil stratified?** 15dk'lık tek pencere ~40k DEBUG satırı tutabilir; ham dump
-> hem limit'i (1000) aşar hem agent context'ini boğar. Sinyal (ERROR/WARN) ham, gürültü
-> (DEBUG/SQL) aggregate verilir.
+## Adım 2 — SUB-AGENT: pencere × açı analiz
 
----
-
-## Adım 2 — WORKFLOW: pencere × açı paralel analiz
-
-Tek `Workflow` çağrısı. Fan-out birimi **pencere × açı** = `M × A` paralel agent.
-
-**4 standart açı** (gerekirse projeye özel ekle):
-- **hata** — gerçek hatalar (booking/payment/provider/sync fail, exception, constraint, 5xx);
-  ErrRecordNotFound (rows:0+boş error) = SAHTE, ayrı işaretle; zincirleme (aynı trace_id).
+Tek fazda `M × A` paralel sub-agent. 4 standart açı (gerekirse projeye özel ekle):
+- **hata** — gerçek hatalar (booking/payment/provider/sync fail, exception, constraint, 5xx); ErrRecordNotFound (rows:0+boş error) = SAHTE, ayrı işaretle; zincirleme (aynı trace_id).
 - **perf** — sql_agg tekrar/N+1, slow_query, debug_msg_agg hot-loop/spam, cache eksikliği.
-- **akis** — booking status akışı, **fiyat mismatch** (provider≠stored), provider tutarsızlık
-  (örn order CLOSED ama bilet canlı), markup fallback.
-- **hijyen** — yanlış log seviyesi (sahte ERROR), log spam/hacim, **PII/credential sızıntısı**
-  (örn PostgreSQL constraint `error.Detail`'de email/telefon), auth anomalisi (403/401).
+- **akis** — booking status akışı, fiyat mismatch (provider≠stored), provider tutarsızlık (örn order CLOSED ama bilet canlı), markup fallback.
+- **hijyen** — yanlış log seviyesi (sahte ERROR), log spam/hacim, PII/credential sızıntısı (örn PostgreSQL constraint `error.Detail`'de email/telefon), auth anomalisi (403/401).
 
-Workflow şablonu için **`references/workflow_template.md`** dosyasını oku — oradaki script'i
-pencere listesi + dosya yolu + (gerekiyorsa) projeye özel açı ile doldurup `Workflow` ile
-çağır. Her `agent()` çağrısı `model: 'sonnet'`, `effort: 'low'`, `label: '<P>:<açı>'`, `phase: 'Analyze'`.
+`references/subagent_template.md`'yi pencere listesi + dosya yolu + (gerekirse) özel açı ile doldurup sub-agent'ları spawn et; brief metinleri `references/angles.md`. Her sub-agent: etiket `<P>:<açı>`.
 
-> **Token verimliliği**: analiz agent'ları yapılandırılmış log okuma işidir → `sonnet`
-> yeter (token-efficiency kuralı). Opus'a düşme.
+Tüm sub-agent sonuçlarını topla (hata/boş döneni yeniden spawn et); her `{window, angle, text}`'i ayrı `.md`'ye yaz.
 
-Workflow `run_in_background` döner; `task-notification` ile sonucu topla. Çıktı truncate
-olabilir → tam sonuçları output dosyasından `result` listesini parse edip ayrı `.md`'lere yaz
-(her `{window, angle, text}`).
+## Adım 3 — Dedup + canlı doğrulama
 
----
-
-## Adım 3 — Dedup + canlı doğrulama (Claude)
-
-1. `M×A` bulguyu oku, **dedup** et: aynı sorun farklı pencerelerde tekrarlıyorsa **tek** bulgu
-   (tekrarı "4 pencerede de görüldü → sistemik" olarak not et, sayımları topla).
-2. **Canlı sorgu ile doğrula** (en kritik bulgular): `diji-logs query.sh` ile sorunun hâlâ
-   aktif/gerçek olduğunu teyit et (örn fiyat mismatch sayısı, constraint hatası, PII alanı).
-   Doğrulanamayan/spekülatif bulguyu düşür veya "doğrulanamadı" işaretle.
-3. Bulguları **katmanlara** ayır:
+1. Dedup: farklı pencerelerde tekrarlayan sorun = tek bulgu; "N pencerede görüldü → sistemik" notu, sayımları topla.
+2. Kritik bulguları `diji-logs query.sh` canlı sorgusuyla doğrula (hâlâ aktif/gerçek mi; örn mismatch sayısı, constraint hatası, PII alanı). Doğrulanamayanı düşür veya "doğrulanamadı" işaretle.
+3. Katmanla:
    - **Katman 1 — Kritik**: veri kaybı, para/booking tutarsızlığı, güvenlik (PII), acil.
    - **Katman 2 — Yüksek/Orta**: provider/sync fail, altyapı eksikliği.
    - **Katman 3 — Performans**: N+1, cache, slow query, index.
    - **Katman 4 — Log Hijyeni**: yanlış seviye, spam, credential log, frontend gürültü.
 
----
+## Adım 4 — Bulguları tablo halinde sun (onaydan ÖNCE, zorunlu)
 
-## Adım 4 — BULGULARI TABLO HALİNDE SUN (onaydan ÖNCE — ZORUNLU)
+Onay sorusundan önce tüm bulguları konuşmada tablo olarak listele; kör onay yasak. Katman başına ayrı tablo, kolonlar en az: # / Sorun / Kanıt(sayım) / Kapsam(tenant·provider·booking) / Örnek trace_id / Kök neden / Plane'de var mı.
 
-**Kullanıcı onay sorusunu görmeden ÖNCE** tüm bulguları konuşmaya **tablo** olarak listele.
-Kör onay yasak — kullanıcı tabloyu görür, sonra karar verir.
+## Adım 5 — Plane eşleştirme (`log-triage` label)
 
-Her katman için ayrı tablo, satırlarda en az: **# / Sorun / Kanıt(sayım) / Kapsam(tenant·
-provider·booking) / Örnek trace_id / Kök neden / Plane'de var mı**.
+Skill'in açtığı tüm issue'lar `log-triage` label'ı taşır; eşleştirme yalnız bu label'lı issue'larla yapılır.
 
----
-
-## Adım 5 — Plane eşleştirme (`log-triage` label ile)
-
-Bu skill'in açtığı tüm issue'lar **`log-triage` label'ı** taşır. Eşleştirme **yalnız bu label'lı
-issue'lar** üzerinden yapılır — böylece alakasız feature/provider issue'ları gürültü yaratmaz,
-karşılaştırma sadece bu skill'in geçmiş bulgularına bakar.
-
-1. **Label'ı bul/oluştur** (idempotent):
+1. Label'ı bul/oluştur (idempotent), UUID'sini sakla:
    ```bash
    plane-cli --json label list --project <UUID>     # "log-triage" var mı?
    # yoksa:
    plane-cli --json label create "log-triage" --project <UUID> --color "#e11d48"
    ```
-   Label UUID'sini sonraki adımlar için sakla.
-2. **Mevcut label'lı issue'ları çek.** ⚠️ **KRİTİK — `issue list` `labels` alanını serialize
-   ETMEZ** (her zaman boş `[]` döner; bu Plane self-hosted'ın bilinen davranışıdır). Bu yüzden
-   label eşleştirmeyi **asla `issue list` çıktısının `labels` alanına dayandırma** — yoksa skill
-   "hiç log-triage issue yok" sanıp **her çalıştırmada duplicate açar.** İki güvenilir yol:
-   - **Tercih edilen — server-side label filtresi**: `issue list` label'a göre filtreleyen bir
-     flag/parametre destekliyorsa onu kullan (`plane-cli issue list --help` ile doğrula).
-   - **Fallback — `issue get` ile doğrula**: `issue list`'ten aday issue ID'lerini al, sonra her
-     birini `plane-cli --json issue get <uuid> --project <UUID>` ile çek — `get` çıktısı `labels`
-     alanını **dolu** döndürür. Label UUID'si `get`'in `labels` listesinde varsa o issue
-     `log-triage` etiketli sayılır.
-3. Her bulguyu bu **label-doğrulanmış** liste başlıklarıyla karşılaştır. Tabloda "Plane'de var
-   mı?" kolonunu doldur (yoksa "YOK", varsa `PROJ-N`). Eşleşen bulgu için yeni issue açma —
-   gerekiyorsa mevcut issue'ya yorum/güncelleme öner.
+2. Label'lı issue'ları çek. `issue list` `labels` alanını hep `[]` döner — ona asla dayanma (yoksa her çalıştırmada duplicate açılır):
+   - Tercih: `issue list` label filtresi destekliyorsa kullan (`plane-cli issue list --help` ile doğrula).
+   - Fallback: `issue list`'ten aday ID'leri al, her birini `plane-cli --json issue get <uuid> --project <UUID>` ile çek; label UUID'si `get`'in `labels` listesindeyse `log-triage` etiketlidir.
+3. Bulguları bu label-doğrulanmış liste başlıklarıyla karşılaştır; tablodaki "Plane'de var mı?" = "YOK" veya `PROJ-N`. Eşleşene yeni issue açma; gerekirse mevcut issue'ya yorum/güncelleme öner.
 
-> **Neden bu kadar vurgu?** Geçmiş çalıştırmada (`vesentur-web`, VSN-20..29) `issue list`
-> `labels: []` döndürdüğü için "label eklenmemiş" yanlış teşhisi kondu; oysa `create` label'ı
-> zaten eklemişti (`issue get` ile teyit edildi). `list`'e güvenme, `get` ile doğrula.
+## Adım 6 — Katman katman onay
 
----
+Katman başına bir soru (soru aracı, `multiSelect: true`): "Hangileri için issue açayım?" Seçenekler = katmandaki bulgular (label kısa, description'da kanıt+öncelik). Kullanıcı "hepsini aç" derse soruları atla. Onay/seçim her zaman soru aracıyla; düz metin soru yok.
 
-## Adım 6 — Katman katman onay (multiSelect)
+## Adım 7 — Onaylananları sırayla aç
 
-Her katman için **bir** `AskUserQuestion` (`multiSelect: true`): "Hangileri için issue açayım?"
-Seçenekler = o katmandaki bulgular (label kısa, description'da kanıt+öncelik). Kullanıcı
-"hepsini aç" derse soruları atla.
-
-> ask-first kuralı: onay/seçim **her zaman** AskUserQuestion ile; düz metin soru yasak.
-
----
-
-## Adım 7 — Onaylananları sırayla aç (Claude)
-
-1. Plane state UUID'sini çöz (genelde "Başlanmadı"/unstarted): `plane-cli state list --project <UUID>`.
-2. **`log-triage` label UUID'si** (Adım 5'te bulunan/oluşturulan) hazır olsun.
-3. Her onaylı bulgu için HTML açıklamayı **`references/issue_template.md`'deki zorunlu yapıya
-   göre** üret: Sorun · Kapsam · **Kanıt (≥1 ham log örneği, PII maskeli)** · Sayım/Sıklık ·
-   trace_id · Kök Neden · Öneri · **Tespit Bağlamı** (provenance). **Eksik bağlamlı issue yasak**
-   — her bölüm dolu, veri yoksa "tespit edilemedi" yaz. İçeriği **`html.escape` ile** escape edip
-   **dosyaya yaz** (özel karakter `<`, `"`, `()` inline geçince plane-cli/HTML parser bozulur —
-   **dosyadan create zorunlu**).
-   > **Log örneği zorunlu**: her issue en az 1 ham log satırı taşır (sonraki oturum sıfırdan
-   > kazmadan doğrulayabilsin). PII'yı maskele — issue'nun kendisi sızıntı olmasın.
-4. `scripts/create_issue.sh` ile sırayla aç (label UUID 6. argüman — **her issue `log-triage`
-   label'ı alır**):
+1. State UUID'si (genelde "Başlanmadı"/unstarted): `plane-cli state list --project <UUID>`.
+2. `log-triage` label UUID'si (Adım 5) hazır olsun.
+3. Her bulgu için HTML'i `references/issue_template.md` zorunlu yapısına göre üret (tüm bölümler, ≥1 PII-maskeli ham log örneği, Tespit Bağlamı; veri yoksa "tespit edilemedi"). `html.escape` ile escape edip dosyaya yaz; create dosyadan zorunlu.
+4. `scripts/create_issue.sh` ile sırayla aç:
    ```bash
    "$HOME/.../log-triage/scripts/create_issue.sh" \
      "<proj_uuid>" "<state_uuid>" "<priority>" "<html_dosyası>" "<başlık>" "<label_uuid>"
    ```
-   > ⚠️ **Başlığa `[log-triage]` (veya başka) metin prefix'i EKLEME.** Etiketleme **yalnız
-   > `log-triage` label'ı** ile yapılır — 6. argüman zaten label'ı bağlar. Başlığa tag koymak
-   > gereksiz gürültü yaratır ve label ile çift işaretleme olur. Başlık = sadece sorunun kendisi
-   > (örn. `Ödeme callback POST body maskesiz loglanıyor — KVKK/PCI`, `[log-triage]` YOK).
-   > **Label UUID'sini boş bırakma** — 6. argüman verilmezse issue etiketsiz açılır ve sonraki
-   > çalıştırma eşleştiremez.
-5. **Create sonrası label'ı doğrula (`get` ile, `list` ile DEĞİL).** `create_issue.sh`
-   `PROJ-N OK` yazdıysa label eklenmiştir; teyit gerekiyorsa **`issue get <uuid>`** ile bak
-   (Adım 5.2'deki uyarı: `issue list` `labels` alanını boş döndürür, ona güvenme). `FAIL`
-   dönen olursa `plane-cli issue label <uuid> --project <UUID> --add <label_uuid>` ile
-   incremental ekle (bu list'e değil, get'e yansır).
-6. Açılan `PROJ-N`'leri kullanıcıya katman tablosu olarak özetle.
-
-> Priority eşlemesi: Katman1→`urgent`/`high`, Katman2→`high`/`medium`, Katman3→`medium`,
-> Katman4→`medium`/`low` (güvenlik içerenler `high`).
-
----
-
-## Görev Takibi
-
-3+ pencere + workflow + issue açma çok adımlı → başta `TaskCreate` ile görev listesi aç
-(çek / workflow / dedup+doğrula / tablo+onay / issue create), ilerledikçe `TaskUpdate`.
+   - 6. argüman (label UUID) boş bırakılmaz; her issue `log-triage` label'ı alır.
+   - Başlığa `[log-triage]` veya başka tag prefix'i EKLEME; başlık = yalnız sorun (örn `Ödeme callback POST body maskesiz loglanıyor — KVKK/PCI`).
+   - Priority: Katman1→`urgent`/`high`, Katman2→`high`/`medium`, Katman3→`medium`, Katman4→`medium`/`low`; güvenlik içerenler `high`.
+5. `PROJ-N OK` = label eklendi. Teyit gerekirse `issue get <uuid>` ile bak (`list` ile değil). `FAIL` olursa: `plane-cli issue label <uuid> --project <UUID> --add <label_uuid>`.
+6. Açılan `PROJ-N`'leri katman tablosu olarak özetle.
 
 ## İlgili
 
-- `diji-logs` skill — VictoriaLogs/LogsQL sorgu katmanı (bu skill onun üstüne kurulu).
+- `diji-logs` skill — VictoriaLogs/LogsQL sorgu katmanı.
 - `plane-cli` skill — issue CRUD.
-- `references/workflow_template.md` — analiz Workflow script şablonu.
-- `references/angles.md` — açı promptları (detaylı).
-- `references/issue_template.md` — issue zorunlu bağlam yapısı (log örneği + provenance).
+- `references/subagent_template.md`, `references/angles.md`, `references/issue_template.md`.

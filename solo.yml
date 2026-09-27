@@ -1,12 +1,6 @@
 name: personal-assistant
 icon: null
 processes:
-  # PA Render server — single-screen dashboard for user-render pages.
-  # Serves ~/.pa-render/active|archive/<topic>/index.html (sidebar + iframe),
-  # SSE auto-reload, archive/unarchive UI, shared UI kit at /lib (render/lib).
-  render:
-    command: bun scripts/render-server.ts
-    auto_start: false
   # Ortak derleme slot havuzunun durumu: hangi slot dolu, hangi komut + pid + cwd.
   # Repo script'i doğrudan çağrılır — ~/.local/bin/heavy symlink'i PATH'te olmasa da çalışır.
   heavy-status:
@@ -19,5 +13,5 @@ processes:
     auto_start: false
   # Gerekirse buraya ekle, örnek:
   # test:
-  #   command: bash scripts/init-check.sh
+  #   command: bash scripts/load-rules.sh
   #   auto_start: false
