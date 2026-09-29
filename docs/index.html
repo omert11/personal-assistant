@@ -249,6 +249,7 @@
           <li>Zorunlu olarak yarım kalan iş <code>TODO:</code> yorumuyla işaretlenebilir.</li>
           <li>Önceki notlar <code>obsidian-search</code> ile aranır, yenileri <code>obsidian-write</code> ile eklenir.</li>
         </ul></div>
+        <div class="block trig"><div class="bt"><i data-lucide="bot"></i> Sub-agent</div><p>Orchestrator ve ileri teknik kod <code>opus 5.5</code>, diğer her şey <code>sonnet 5.5</code> (<code>medium</code>). Çağrı model almıyorsa o modele atanmış agent kullanılır.</p></div>
         <div class="block trig"><div class="bt"><i data-lucide="info"></i> Genel bilgiler</div><p>Global bir kilit ağır build/test komutlarını kuyruğa alır; guard hook bunları <code>heavy</code>'ye sarıp arka plana atar. Obsidian vault not defteri değil, <b>hızlı ve kesin bilgi kaynağıdır</b> (<code>~/Documents/ObsidianVault/</code>).</p></div>
       </div>
     </div>
@@ -536,7 +537,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-circle"></i></div><div><div class="etitle">WhatsApp</div><div class="emeta">whatsapp-mcp · mesaj kanalı</div></div></div>
       <div class="ebody">
         <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır.</p>
-        <p><strong>Ne işe yarar:</strong> Sohbetleri listeleme, mesaj arama, kişi bulma ve mesaj/dosya/ses gönderme; Claude doğrudan WhatsApp üzerinden iletişim kurar.</p>
+        <p><strong>Ne işe yarar:</strong> Sohbetleri listeleme, mesaj arama, kişi bulma ve mesaj/dosya/ses gönderme.</p>
         <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin çıktı kanallarından biri. Skill müşteri/acenta mesajını kanal-agnostik üretir; WhatsApp seçilirse <code>mcp__whatsapp__*</code> araçlarıyla gönderilir (skill mesajı üretir, gönderimi entegrasyon yapar).</p></div>
       </div>
     </div>
@@ -545,7 +546,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="mail"></i></div><div><div class="etitle">Google Workspace</div><div class="emeta">Gmail · Calendar · Drive (claude.ai MCP)</div></div></div>
       <div class="ebody">
         <p><strong>Nedir:</strong> claude.ai üzerinden sağlanan resmi Google MCP server'ları: <strong>Gmail</strong> (e-posta), <strong>Google Calendar</strong> (takvim) ve <strong>Google Drive</strong> (dosya). HTTP MCP olarak bağlanır, OAuth ile yetkilendirilir.</p>
-        <p><strong>Ne işe yarar:</strong> E-postaları okuma/arama/gönderme, takvim etkinliklerini görüntüleme/oluşturma ve Drive dosyalarına erişim. Claude doğrudan Google hesabıyla çalışır.</p>
+        <p><strong>Ne işe yarar:</strong> E-postaları okuma/arama/gönderme, takvim etkinliklerini görüntüleme/oluşturma ve Drive dosyalarına erişim.</p>
         <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin e-posta kanalı Gmail ile gönderilebilir; takvim/dosya entegrasyonu genel asistan akışlarını besler. Üç servis de claude.ai üzerinden gelir, ayrı binary kurulumu gerekmez.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yetkilendirme</div><pre><code>Claude Code → /mcp → claude.ai servisi seç → Authenticate
 # Gmail / Google Calendar / Google Drive ayrı ayrı OAuth</code></pre></div>

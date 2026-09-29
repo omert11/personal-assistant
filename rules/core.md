@@ -11,14 +11,12 @@
 
 ## Sub-agent
 
-Her sub-agent'a model ve effort'u bu tablodan açıkça ver (boş effort oturumun değerini devralır); başka yerde model yazılmaz.
+Model ve effort'u tablodan açıkça ver; çağrı model almıyorsa o modele atanmış agent'ı kullan. Başka yerde model yazılmaz.
 
 | İş | model | effort |
 |---|---|---|
-| Sözleşme fazıyla imza/tip/şema tasarımı | `opus` | `high` |
-| Kod yazma, refactor, test yazımı, fix | `opus` | `medium` |
-| Mekanik uygulama (rename, taşıma, şablon doldurma) | `sonnet` | `low` |
-| Salt-okunur arama / envanter / log tarama | `sonnet` | `low` |
+| Orchestrator & İleri Teknik Kod Yazma | `opus 5.5` | `medium` |
+| Diğer Herşey | `sonnet 5.5` | `medium` |
 
 ## Genel Bilgiler
 
