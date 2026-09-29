@@ -9,6 +9,7 @@
 - `obsidian-search` ile kaydedilmiş önceki notları arayabilir, `obsidian-write` ile yeni not ekleyebilirsin.
 - Diji işi için credential gerektiğinde `work-diji-secrets`, kişisel işler için `personal-secrets` skill'ini yükle.
 - Remote çalışma ortamı (diji sunucusundaki `work` container'ı: bağlantı, port, DB, dosya aktarımı, limit) hakkında bilgi gerektiğinde `remote-workspace` skill'ini yükle.
+- Tarayıcı disiplini: açtığın sekmeyi iş bitince kapat; tek tarayıcı örneğini paylaş, test başına yeni tarayıcı açma; tarayıcı testlerini en fazla 2 paralel worker ile çalıştır.
 
 ## Sub-agent
 
