@@ -56,7 +56,9 @@ format_reset() {
   fi
   # Accept unix epoch or ISO 8601 (e.g. 2026-07-16T18:00:00Z)
   if ! [[ "$resets_at" =~ ^[0-9]+$ ]]; then
-    resets_at=$(date -j -u -f "%Y-%m-%dT%H:%M:%S" "${resets_at%%[.Z+]*}" +%s 2>/dev/null)
+    local iso="${resets_at%%[.Z+]*}"
+    # BSD date (macOS) first, GNU date (Linux) as fallback
+    resets_at=$(date -j -u -f "%Y-%m-%dT%H:%M:%S" "$iso" +%s 2>/dev/null || date -u -d "$iso" +%s 2>/dev/null)
     if [ -z "$resets_at" ]; then
       echo ""
       return

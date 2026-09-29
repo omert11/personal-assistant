@@ -8,6 +8,7 @@
 - Zorunlu olarak yarım kalan geliştirmeleri `TODO:` yorumuyla işaretleyip takip edebilirsin.
 - `obsidian-search` ile kaydedilmiş önceki notları arayabilir, `obsidian-write` ile yeni not ekleyebilirsin.
 - Diji işi için credential gerektiğinde `work-diji-secrets`, kişisel işler için `personal-secrets` skill'ini yükle.
+- Remote çalışma ortamı (diji sunucusundaki `work` container'ı: bağlantı, port, DB, dosya aktarımı, limit) hakkında bilgi gerektiğinde `remote-workspace` skill'ini yükle.
 
 ## Sub-agent
 

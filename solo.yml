@@ -11,6 +11,16 @@ processes:
   deslop-sources:
     command: bash scripts/deslop-sources.sh
     auto_start: false
+  # diji-dev agent container'ının canlı durumu: kaynak/limit, servisler, agent oturumları, portlar, senkron.
+  # ~/.local/bin/dw-status (makineye özel; repo dışı).
+  work-status:
+    command: dw-status
+    auto_start: false
+  # Bırakma alanı: bu terminale sürüklenen dosya/klasör container'da aynı yola kopyalanır;
+  # çalışırken Solo'ya yapıştırılan görseller de gönderilir. ~/.local/bin/dw-drop (makineye özel).
+  work-drop:
+    command: dw-drop
+    auto_start: false
   # Gerekirse buraya ekle, örnek:
   # test:
   #   command: bash scripts/load-rules.sh

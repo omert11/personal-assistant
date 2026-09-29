@@ -248,6 +248,8 @@
           <li>Workaround yok, doğru çözüm bulunur.</li>
           <li>Zorunlu olarak yarım kalan iş <code>TODO:</code> yorumuyla işaretlenebilir.</li>
           <li>Önceki notlar <code>obsidian-search</code> ile aranır, yenileri <code>obsidian-write</code> ile eklenir.</li>
+          <li>Diji işi credential'ı için <code>work-diji-secrets</code>, kişisel işler için <code>personal-secrets</code> skill'i yüklenir.</li>
+          <li>diji sunucusundaki remote çalışma ortamı (<code>work</code> container'ı) hakkında bilgi gerekince <code>remote-workspace</code> skill'i yüklenir.</li>
         </ul></div>
         <div class="block trig"><div class="bt"><i data-lucide="bot"></i> Sub-agent</div><p>Orchestrator ve ileri teknik kod <code>opus 5.5</code>, diğer her şey <code>sonnet 5.5</code> (<code>medium</code>). Çağrı model almıyorsa o modele atanmış agent kullanılır.</p></div>
         <div class="block trig"><div class="bt"><i data-lucide="info"></i> Genel bilgiler</div><p>Global bir kilit ağır build/test komutlarını kuyruğa alır; guard hook bunları <code>heavy</code>'ye sarıp arka plana atar. Obsidian vault not defteri değil, <b>hızlı ve kesin bilgi kaynağıdır</b> (<code>~/Documents/ObsidianVault/</code>).</p></div>
@@ -377,7 +379,7 @@
         <p><strong>Scope (dijiscope) tipi bir scoped VictoriaLogs erişim API'si üzerinden log arar, sayar ve teşhis eder.</strong> Kullanıcı projeyi seçer; skill LogsQL pipe'ı kurup <code>/api/logs/query/</code> ya da <code>/api/logs/count/</code> çağırır, sonucu özetler.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"&lt;proje&gt; loglarına bak", "son N dk/saat hata var mı", "şu hatayı VL'de ara", "log sorgula", "logsql", "hata sayısını zamanla göster", <code>/diji-logs</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Credential'ı <code>~/.config/diji-logs/env</code>'den oku (tekrar sormaz) → <code>projects/</code> ile erişilebilir projeleri listele → mod belirle (query / count / stats) → LogsQL pipe kur (<code>references/logsql.md</code>) → <code>scripts/query.sh</code> ile sorgula → ham JSON'u özetle.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Mimari sözleşme</strong>: kullanıcı asla ham stream-selector veremez; sunucu <code>(env, project)</code>'i scope'a göre doğrular, sen yalnız <code>|</code> sonrası narrowing pipe gönderirsin. Token scope'ludur (kapsam dışı proje → 403). DB/AppLog basket analizi için değildir; yalnız VictoriaLogs/LogsQL üzerinden çalışır.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Mimari sözleşme</strong>: kullanıcı asla ham stream-selector veremez; sunucu <code>(env, project)</code>'i scope'a göre doğrular, skill yalnız <code>|</code> sonrası narrowing pipe gönderir. Token scope'ludur (kapsam dışı proje → 403). DB/AppLog basket analizi için değildir; yalnız VictoriaLogs/LogsQL üzerinden çalışır.</p></div>
       </div>
     </div>
 
@@ -394,21 +396,21 @@
     <!-- issue-workflow -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="circle-dot"></i></div><div><div class="etitle">issue-workflow</div></div></div>
       <div class="ebody">
-        <p><strong>Bir kaynağı (Plane issue / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → kök-neden analizi → izole worktree + plan → çözüm + kanıt → <code>commit</code> skill → sonuç raporu. <strong>Duraklamasız tek akış</strong>: adımlar arasında onay/kapı yok; yalnız gerçekten belirsiz bir karar veya sert durakta soru sorulur. Agent <strong>uzman duruşundadır</strong>: en doğru yolu kendisi belirler.</p>
+        <p><strong>Bir kaynağı (Plane issue / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → kök-neden analizi → izole worktree + plan → çözüm + kanıt → <code>commit</code> skill → sonuç raporu. <strong>Duraklamasız tek akış</strong>: adımlar arasında onay/kapı yok; yalnız gerçekten belirsiz bir karar veya sert durakta soru sorulur. En doğru yolu agent kendisi belirler.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'i çöz", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/issue-workflow &lt;ref|metin&gt;</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
-          <li><code>1</code> — <code>AGENTS.md</code> "## Issue Workflow" alanını oku (proje-özel komut/port/test/akış notu)</li>
-          <li><code>2</code> — kaynak toplama, tam detay (Plane, metin, görsel, doküman, log)</li>
-          <li><code>3</code> — <strong>analiz, ultrathink</strong>: şu anki durum / istek / neden / yapılacaklar / öneriler / açık konular (en iyisi seçilir, yalnız belirsizse sorulur) / riskler</li>
-          <li><code>4</code> — <strong>uygulama modu</strong> sormadan seçilir: kullanıcı söylediyse veya 2+ sinyal varsa (ayrık görevler, sıralı bağlılık, büyük boyut) <strong>yönetici modu</strong> (<code>references/yonetici-modu.md</code>, Adım 7 yerine <strong>7Y</strong>), değilse tek akış</li>
-          <li><code>5</code> — worktree aç (<code>EnterWorktree</code>; <code>SESSION_NAME</code> = worktree ismi) + plan context'te kurulur, onay beklenmeden uygulanır</li>
-          <li><code>6</code> — kaynak <strong>Plane issue ise işleme al (otomatik)</strong>: <code>started</code> + assignee yoksa <strong>self ata</strong> + <code>start_date</code> boşsa bugün; <em>dolu/zaten started olana dokunma</em></li>
-          <li><code>7</code> — uygula (<strong><code>[SESSION_NAME]</code> prefix'li loglar</strong>) → test ortamı → <strong>unique port + arka plan</strong> → kanıt <code>/tmp/issue-&lt;isim&gt;/</code> (görselde <strong>screenshot zorunlu</strong>) → uygulamayı <strong>durdur</strong> <em>(yönetici modu → <strong>7Y</strong>: sub-agent dalgaları, ilk dalga sözleşme, doğrulama + fix + kanıt sonda)</em></li>
-          <li><code>8</code> — <strong><code>[SESSION_NAME]</code> log temizliği (bloklayıcı)</strong></li>
-          <li><code>9</code> — <code>commit</code> skill: <strong>akışın tek review noktası</strong> + tek commit + <strong>tek PR</strong> + Plane kapama</li>
-          <li><code>10</code> — <code>user-report</code> ile HTML sonuç raporu (kararlar, gömülü kanıtlar, ek kazançlar, son durum, commit/PR/Plane), tarayıcıda açılır</li>
+          <li><code>1</code>: <code>AGENTS.md</code> "## Issue Workflow" alanını oku (proje-özel komut/port/test/akış notu)</li>
+          <li><code>2</code>: kaynak toplama, tam detay (Plane, metin, görsel, doküman, log)</li>
+          <li><code>3</code>: <strong>analiz (ultrathink)</strong>; şu anki durum / istek / neden / yapılacaklar / öneriler / açık konular (en iyisi seçilir, yalnız belirsizse sorulur) / riskler</li>
+          <li><code>4</code>: <strong>uygulama modu</strong> sormadan seçilir: kullanıcı söylediyse veya 2+ sinyal varsa (ayrık görevler, sıralı bağlılık, büyük boyut) <strong>yönetici modu</strong> (<code>references/yonetici-modu.md</code>, Adım 7 yerine <strong>7Y</strong>), değilse tek akış</li>
+          <li><code>5</code>: worktree aç (<code>EnterWorktree</code>; <code>SESSION_NAME</code> = worktree ismi) + plan context'te kurulur, onay beklenmeden uygulanır</li>
+          <li><code>6</code>: kaynak <strong>Plane issue ise işleme al (otomatik)</strong>: <code>started</code> + assignee yoksa <strong>self ata</strong> + <code>start_date</code> boşsa bugün; <em>dolu/zaten started olana dokunma</em></li>
+          <li><code>7</code>: uygula (<strong><code>[SESSION_NAME]</code> prefix'li loglar</strong>) → test ortamı → <strong>unique port + arka plan</strong> → kanıt <code>/tmp/issue-&lt;isim&gt;/</code> (görselde <strong>screenshot zorunlu</strong>) → uygulamayı <strong>durdur</strong> <em>(yönetici modu → <strong>7Y</strong>: sub-agent dalgaları, ilk dalga sözleşme, doğrulama + fix + kanıt sonda)</em></li>
+          <li><code>8</code>: <strong><code>[SESSION_NAME]</code> log temizliği (bloklayıcı)</strong></li>
+          <li><code>9</code>: <code>commit</code> skill: <strong>akışın tek review noktası</strong> + tek commit + <strong>tek PR</strong> + Plane kapama</li>
+          <li><code>10</code>: <code>user-report</code> ile HTML sonuç raporu (kararlar, gömülü kanıtlar, ek kazançlar, son durum, commit/PR/Plane), tarayıcıda açılır</li>
         </ul></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Temel ilke: kontrol sonda, tek seferde yapılır.</strong> Ara commit, ara build, ara review, aşamalı teslim yapılmaz; süreç içinde kırık noktalar normaldir. Tek PR açılır. Kanıt dosyaları repo dışında (<code>/tmp/issue-&lt;isim&gt;/</code>) tutulur.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Kontrol sonda, tek seferde yapılır.</strong> Ara commit, ara build, ara review, aşamalı teslim yapılmaz; süreç içinde kırık noktalar normaldir. Tek PR açılır. Kanıt dosyaları repo dışında (<code>/tmp/issue-&lt;isim&gt;/</code>) tutulur.</p></div>
       </div>
     </div>
 
@@ -558,12 +560,12 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
       <div class="ebody">
         <p>Plugin ayrıca şu araçlarla entegre olur (hepsi opsiyonel, <code>setup.sh</code> kurar):</p>
         <div class="block howto"><div class="bt"><i data-lucide="layers"></i> Destekleyici stack</div><ul>
-          <li><strong>uv</strong> — Python paket/script yöneticisi; <code>setup.py</code>, <code>crawl2md</code> ve tüm Python akışlarının temeli.</li>
-          <li><strong>Playwright CLI</strong> — tarayıcı otomasyonu ve frontend testi (<code>playwright-cli</code> skill'i; MCP yerine CLI).</li>
-          <li><strong>playwright-best-practices</strong> — <code>@playwright/test</code> ile E2E/component/API/visual spec yazımı için harici skill (currents.dev, MIT); <code>~/.claude/skills/</code> altına klonlanır. <code>playwright-cli</code> skill'i tarafından zorunlu eşlikçi olarak çağrılır.</li>
-          <li><strong>Context7 (ctx7)</strong> — kütüphane/framework dökümanını canlı çeker; <code>obsidian-doc-source</code> library modunda zorunlu.</li>
-          <li><strong>Plane (plane-cli)</strong> — proje/issue yönetimi; <code>user-message</code> ile issue yanıtı üretimi.</li>
-          <li><strong>markitdown</strong> — PDF/Office/ses/görsel → markdown; <code>crawl2md</code> ve <code>obsidian-doc-source</code> dosya kaynaklarında.</li>
+          <li><strong>uv</strong>: Python paket/script yöneticisi; <code>setup.py</code>, <code>crawl2md</code> ve tüm Python akışlarının temeli.</li>
+          <li><strong>Playwright CLI</strong>: tarayıcı otomasyonu ve frontend testi (<code>playwright-cli</code> skill'i; MCP yerine CLI).</li>
+          <li><strong>playwright-best-practices</strong>: <code>@playwright/test</code> ile E2E/component/API/visual spec yazımı için harici skill (currents.dev, MIT); <code>~/.claude/skills/</code> altına klonlanır. <code>playwright-cli</code> skill'i tarafından zorunlu eşlikçi olarak çağrılır.</li>
+          <li><strong>Context7 (ctx7)</strong>: kütüphane/framework dökümanını canlı çeker; <code>obsidian-doc-source</code> library modunda zorunlu.</li>
+          <li><strong>Plane (plane-cli)</strong>: proje/issue yönetimi; <code>user-message</code> ile issue yanıtı üretimi.</li>
+          <li><strong>markitdown</strong>: PDF/Office/ses/görsel → markdown; <code>crawl2md</code> ve <code>obsidian-doc-source</code> dosya kaynaklarında.</li>
         </ul></div>
       </div>
     </div>
