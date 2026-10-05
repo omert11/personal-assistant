@@ -30,7 +30,7 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
    - Obsidian kayıt ihtiyacı (bkz. Obsidian).
 5. **Düzelt** — tüm bulgular sormadan düzeltilir (bkz. Bulgu düzeltme). Sonra son analiz: atlanan bir şey var mı; yeni bulgu varsa düzelt.
 6. **Commit** — onay beklemeden; `git add <ilgili-dosyalar>` + `git commit`.
-   - Mesaj sorulmaz: diff özeti + branch adı + değişen dosyalardan İngilizce türet; conventional commit (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`) tercih, zorunlu değil.
+   - Mesaj sorulmaz: diff özeti + branch adı + değişen dosyalardan İngilizce türet; conventional commit (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`) tercih, zorunlu değil. `dijii-tech` repolarında (origin URL'i) zorunlu; kırıcı değişiklikte `type!:`.
    - Her commit'te `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 7. **Pre-commit hook fail** — hatayı oku → otomatik düzelt (formatter, linter vb.) → yeniden stage + commit → hâlâ fail ise kullanıcıya göster: "Şu hata var, ne yapalım?"
 8. **Teslimat** (seçime göre)
@@ -43,7 +43,7 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
    BRANCH_NAME="feat/$(echo "$CONU" | tr '[:upper:]' '[:lower:]' | tr -s ' _' '-' | sed 's/[^a-z0-9-]//g')"
    git checkout -b "$BRANCH_NAME"
    ```
-10. **PR** — `gh pr create`; başlık = commit subject.
+10. **PR** — `gh pr create`; başlık = commit subject. `dijii-tech` repolarında başlık conventional commit değilse conventional'a çevir (release-bot sürümü başlıktan üretir).
 11. **Plane** — otomatik kapat/oluştur (bkz. Plane).
 12. **Son sorular** — iş bitince (bkz. Sorular/Son).
 13. **Sonuç özeti** — commit, teslimat, düzeltilen bulgular, deslop raporu, Plane işlemi, yazılmayan testler ve nedeni.

@@ -186,7 +186,7 @@
 <!-- HERO -->
 <header class="hero">
   <div class="wrap">
-    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.82.0 · MIT</span>
+    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.88.0 · MIT</span>
     <h1>Claude Code'a <span class="accent">hafıza, disiplin<br/>ve otomasyon</span> kazandıran plugin</h1>
     <p class="lead">Her oturum başında global kuralları yükler, Django projelerini tanıyıp ilgili kuralları ekler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir.</p>
     <div class="cta-row">
@@ -250,6 +250,7 @@
           <li>Önceki notlar <code>obsidian-search</code> ile aranır, yenileri <code>obsidian-write</code> ile eklenir.</li>
           <li>Diji işi credential'ı için <code>work-diji-secrets</code>, kişisel işler için <code>personal-secrets</code> skill'i yüklenir.</li>
           <li>Diji deploy, release, rollback, Dokploy, yeni site/domain, canlı env/migration veya altyapı işinde <code>work-diji-deploy</code> skill'i yüklenir.</li>
+          <li><code>dijii-tech</code> repolarında PR başlığı conventional commit olur (<code>feat:</code>, <code>fix:</code>, <code>chore:</code>…, kırıcı değişiklikte <code>type!:</code>); release-bot sürümü başlıktan üretir.</li>
           <li>diji sunucusundaki remote çalışma ortamı (<code>work</code> container'ı) hakkında bilgi gerekince <code>remote-workspace</code> skill'i yüklenir.</li>
           <li>Tarayıcı disiplini: açılan sekme iş bitince kapatılır, tek tarayıcı örneği paylaşılır, tarayıcı testleri en fazla 2 paralel worker ile çalışır.</li>
           <li>Remote ortamda kullanıcı oturumu açık tarayıcı gerekince <code>gbrowser</code> skill'i yüklenir.</li>
@@ -324,7 +325,7 @@
         <p><strong>Kod değişikliklerini commit etmeden önce kalite kapısı kurar.</strong> Analizi sessizce yapar, bulguları sormadan düzeltir, commit mesajını diff'ten üretir; yalnız teslimat şeklini sorar (kullanıcı söylemediyse), ek soruları iş bitince sorar.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"commit", "push et", "PR oluştur", "branch aç", <code>/commit</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → branch tespit → teslimat sorusu → <b>deslop</b> (kullanıcı yüzeyi varsa) + <b>code review</b> (kod değiştiyse) arka planda → test (gerekiyorsa yazılır) → Plane eşleştir → Obsidian → bulgular düzeltilir → otomatik mesajlı commit (Co-Authored-By) → teslimat → Plane otomatik kapat/oluştur → son sorular (Obsidian, worktree) → sonuç özeti.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="shield-alert"></i> Öne çıkan</div><p>Code review kod değiştiyse zorunlu, <strong>tek tur</strong> ve tek seviye: <code>claude -p '/code-review low'</code> ayrı oturumda arka planda; büyük diff modül bazlı 3-4 paralel oturuma bölünür. Tüm bulgular (uncertain dahil) düzeltilir. Yasaklar ayrı bölümde: <code>git add -A</code>, <code>--no-verify</code>, <code>--amend</code>, ana branch'e force push, bulgu filtrelemek.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="shield-alert"></i> Öne çıkan</div><p>Code review kod değiştiyse zorunlu, <strong>tek tur</strong> ve tek seviye: <code>claude -p '/code-review low'</code> ayrı oturumda arka planda; büyük diff modül bazlı 3-4 paralel oturuma bölünür. Tüm bulgular (uncertain dahil) düzeltilir. <code>dijii-tech</code> repolarında commit mesajı ve PR başlığı conventional commit zorunlu (release-bot sürümü başlıktan üretir). Yasaklar ayrı bölümde: <code>git add -A</code>, <code>--no-verify</code>, <code>--amend</code>, ana branch'e force push, bulgu filtrelemek.</p></div>
       </div>
     </div>
 
@@ -599,7 +600,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
 <footer>
   <div class="wrap">
     <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub'da Görüntüle</a>
-    <p class="made">personal-assistant · v1.82.0 · MIT · Ömer Faruk Yığın</p>
+    <p class="made">personal-assistant · v1.88.0 · MIT · Ömer Faruk Yığın</p>
     <p class="made"><i data-lucide="bot"></i> Claude Code ile geliştirildi</p>
   </div>
 </footer>

@@ -1,6 +1,6 @@
 {
   "name": "personal-assistant",
-  "version": "1.87.0",
+  "version": "1.88.0",
   "description": "Kisisel asistan plugin'i \u2014 oturum yonetimi, commit, django, obsidian docs, user-message, user-report, diji-logs, log-triage, deslop, heavy-build guard, global rules",
   "author": {
     "name": "Omer Faruk Yigin"
