@@ -34,7 +34,7 @@ django/djangojs'e ek `djangof7` domain'i (F7 çevirileri): `python manage.py mak
 - B2C URL yapısı: Django Admin → `superadmin/`, Panel sayfaları → `admin/`
 
 ## Deploy Tetikleme
-PR merge → deploy tetiklenir, sunucuda her şey otomatik; ek işlem yapma. Django dışı projelere genelleme yapma — tetikleyiciyi `.github/workflows/*.yml` `on:` bloğundan doğrula.
+PR merge → release-bot tag + Release açar ve Dokploy'da deploy eder; elle deploy yok. PR başlığı conventional commit olmalı (bump'ı belirler). Ayrıntı ve migration kuralları: `work-diji-deploy`.
 
 ## Proje Kurulumu (uv)
 ### Python 3.11 (eski projeler)
@@ -50,4 +50,4 @@ uv python pin 3.13 && uv venv && uv pip install -r requirements.txt && uv pip in
 ## Mobil Publish — Domain Pre-Flight (ZORUNLU, TÜM PROJELER)
 Publish/release öncesi bloklayıcı kontrol:
 1. Mobil app'in (Framework7 / Capacitor) backend domain tanımını bul — yaygın: `mobile/<app>/src/js/core/app.js` içinde `window.domain_name`.
-2. Kullanıcı aksini söylemedikçe domain MUTLAKA prod olmalı: `https://www.<marka>.com` / `https://<marka>.com`. Dev/stage/localhost ise release etme.
+2. Kullanıcı aksini söylemedikçe domain MUTLAKA prod olmalı: `https://www.<marka>.com` / `https://<marka>.com`. Prod değilse (localhost, IP, test domaini) release etme.

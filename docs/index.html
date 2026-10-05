@@ -249,6 +249,7 @@
           <li>Zorunlu olarak yarım kalan iş <code>TODO:</code> yorumuyla işaretlenebilir.</li>
           <li>Önceki notlar <code>obsidian-search</code> ile aranır, yenileri <code>obsidian-write</code> ile eklenir.</li>
           <li>Diji işi credential'ı için <code>work-diji-secrets</code>, kişisel işler için <code>personal-secrets</code> skill'i yüklenir.</li>
+          <li>Diji deploy, release, rollback, Dokploy, yeni site/domain, canlı env/migration veya altyapı işinde <code>work-diji-deploy</code> skill'i yüklenir.</li>
           <li>diji sunucusundaki remote çalışma ortamı (<code>work</code> container'ı) hakkında bilgi gerekince <code>remote-workspace</code> skill'i yüklenir.</li>
           <li>Tarayıcı disiplini: açılan sekme iş bitince kapatılır, tek tarayıcı örneği paylaşılır, tarayıcı testleri en fazla 2 paralel worker ile çalışır.</li>
           <li>Remote ortamda kullanıcı oturumu açık tarayıcı gerekince <code>gbrowser</code> skill'i yüklenir.</li>
@@ -330,7 +331,7 @@
     <!-- django -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="server-cog"></i></div><div><div class="etitle">django</div></div></div>
       <div class="ebody">
-        <p><strong>Diji Django projeleri için zorunlu kurallar</strong>: CSRF ve full-page cache uyumu, F7 çeviri domain'i (<code>djangof7</code>), uv ile proje kurulumu, mobil publish öncesi domain pre-flight, proje yapısı ve deploy tetikleyicisi (PR merge = deploy).</p>
+        <p><strong>Diji Django projeleri için zorunlu kurallar</strong>: CSRF ve full-page cache uyumu, F7 çeviri domain'i (<code>djangof7</code>), uv ile proje kurulumu, mobil publish öncesi domain pre-flight, proje yapısı ve deploy tetikleyicisi (PR merge → release-bot tag + Dokploy deploy).</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>Django projesinde çalışırken (template/form/AJAX/CSRF, makemessages, kurulum, mobil release, deploy). <code>manage.py</code> olan projelerde <code>django-detect.sh</code> hook'u skill'i oturum başında otomatik yükler.</p></div>
       </div>
     </div>
