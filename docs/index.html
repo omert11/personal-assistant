@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 14 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 15 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -186,7 +186,7 @@
 <!-- HERO -->
 <header class="hero">
   <div class="wrap">
-    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.90.0 · MIT</span>
+    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.91.0 · MIT</span>
     <h1>Claude Code'a <span class="accent">hafıza, disiplin<br/>ve otomasyon</span> kazandıran plugin</h1>
     <p class="lead">Her oturum başında global kuralları yükler, Django projelerini tanıyıp ilgili kuralları ekler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir.</p>
     <div class="cta-row">
@@ -196,7 +196,7 @@
     <div class="hero-stats">
       <div class="stat"><div class="num">1</div><div class="lbl">Kural</div></div>
       <div class="stat"><div class="num">4</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">14</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">15</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">1</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -314,7 +314,7 @@
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 14 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 15 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
       <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır; ağır iş agent'lara delege edilir.</p>
     </div>
@@ -374,6 +374,16 @@
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"siteyi crawl et", "URL'i markdown yap", <code>/crawl2md &lt;url&gt; &lt;dir&gt; [--depth N] [--delay S]</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>uv</code> kontrol → parametre parse → crawl onayı → <code>uv run --script</code> (PEP 723 inline deps, ephemeral venv) → rapor → temizleme onayı → cleaner agent.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Same-host kilidi</strong>: sadece aynı hosttaki linkleri izler. Delay zorunlu (rate-limit). Cleaner aggressive modda yedek önerir.</p></div>
+      </div>
+    </div>
+
+    <!-- gemini-chat -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="sparkles"></i></div><div><div class="etitle">gemini-chat</div></div></div>
+      <div class="ebody">
+        <p><strong>Kullanıcının oturum açık Chrome'undaki Gemini ile sohbet eder, görsel üretir ve indirir.</strong> Akış, bekleme, kurtarma ve indirme <code>scripts/gemini.js</code>'te; agent yalnız <code>ask</code> / <code>generate</code> çağırır.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"gemini'ye sor", "gemini ile görsel oluştur", "gemini chat", <code>/gemini-chat</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Agent'a ait etiketli sekme (<code>agent-gemini</code>) → <code>ask</code>: gönder → en yeni cevabın bitmesini bekle → metni dön · <code>generate</code>: görsel aracını seç → gönder → bekle → doğrulanmış indir → <code>close()</code>.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Hep kullanıcının profili</strong>: Mac'te kullanıcının kendi Chrome'u (relay), remote container'da <code>gbrowser</code> paylaşımlı oturumlu Chromium'u; yönetilen temiz tarayıcıya hiç düşmez. <strong>Kurtarma</strong>: metin/hata cevabında "Yeniden yap", donmada aynı sohbeti yeniden yükle, 4 denemede pes. <strong>Doğrulanmış indirme</strong>: tam boy, cevabın önizlemesiyle 32×32 karşılaştırılır; eşleşmezse önizleme tutulur. Kullanıcının sekmelerine dokunmaz, pencereyi öne getirmez. Stil tutarlılığı ve görsel prompt kuralları skill'de.</p></div>
       </div>
     </div>
 
@@ -600,7 +610,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
 <footer>
   <div class="wrap">
     <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub'da Görüntüle</a>
-    <p class="made">personal-assistant · v1.90.0 · MIT · Ömer Faruk Yığın</p>
+    <p class="made">personal-assistant · v1.91.0 · MIT · Ömer Faruk Yığın</p>
     <p class="made"><i data-lucide="bot"></i> Claude Code ile geliştirildi</p>
   </div>
 </footer>
