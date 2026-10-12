@@ -20,8 +20,9 @@ Model ve effort'u tablodan açıkça ver; çağrı model almıyorsa o modele ata
 
 | İş | model | effort |
 |---|---|---|
-| Orchestrator & İleri Teknik Kod Yazma | `opus 5.5` | `medium` |
-| Diğer Herşey | `sonnet 5.5` | `medium` |
+| Orchestrator | `opus 5.5` | `medium` |
+| İleri Teknik Kod Yazma | `sonnet 5.5` | `medium` |
+| Kodlama ve diğer herşey | `haiku 5.5` | `medium` |
 
 ## Genel Bilgiler
 
