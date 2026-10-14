@@ -17,7 +17,8 @@ processes:
     command: dw-status
     auto_start: false
   # Bırakma alanı: bu terminale sürüklenen dosya/klasör container'da aynı yola kopyalanır;
-  # çalışırken Solo'ya yapıştırılan görseller de gönderilir. ~/.local/bin/dw-drop (makineye özel).
+  # çalışırken Solo'ya yapıştırılan görseller de gönderilir; ilerleme çubuğu (pv) gösterir, son gönderilenler
+  # listelenir — satıra tıklamak / 1-9 yolu panoya alır. ~/.local/bin/dw-drop (makineye özel).
   work-drop:
     command: dw-drop
     auto_start: false
