@@ -222,7 +222,7 @@
         <p>SessionStart'ta tek çekirdek kural dosyası <code>~/.claude/rules/</code> altına kopyalanır; Django projelerinde <code>django</code> skill'i otomatik yüklenir. Plugin omp üzerinde de çalışır: kurallar, skill'ler ve hook'lar <code>scripts/build-omp.py</code> ile çevrilir.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="presentation"></i></div><div class="body">
         <h3>Görsel Rapor</h3>
-        <p><code>user-report</code> yapılan işi tek dosyalık HTML rapora döker: ölçülmüş KPI'lar, önce/sonra grafikleri, değişim haritası. <code>issue-workflow</code> sonuç raporu da buradan üretilir.</p></div></div>
+        <p><code>user-report</code> yapılan işi <a href="https://github.com/omert11/report-kit">report-kit</a> ile tek dosyalık, etkileşimli HTML rapora döker: ölçülmüş KPI'lar, önce/sonra grafikleri, onay/soru blokları, sürümler. <code>issue-workflow</code> sonuç raporu da buradan üretilir.</p></div></div>
     </div>
   </div>
 </section>
@@ -451,9 +451,9 @@
     <!-- user-report -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="presentation"></i></div><div><div class="etitle">user-report</div></div></div>
       <div class="ebody">
-        <p><strong>Yapılan işi veya bir konuyu tek dosyalık, görsel zengin HTML rapor olarak sunar.</strong> Saf ölçülmüş gerçek, tek bakışta özet: KPI kutuları, önce/sonra grafikleri, renkli değişim haritası, akış çipleri, diyagramlar.</p>
+        <p><strong>Yapılan işi veya bir konuyu report-kit ile tek dosyalık, etkileşimli HTML rapor olarak sunar.</strong> Model yalnız JSON yazar; KPI, grafik, diyagram, tablo, önce/sonra, onay/ret ve soru blokları report-kit ile çizilir.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"rapor hazırla", "görsel özet", "yaptıklarımızı özetle", "önce/sonra göster", <code>/user-report</code>.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Tek dosya <code>/tmp/&lt;konu&gt;.html</code>, CDN kütüphaneleri (Tailwind, Chart.js, Mermaid, Lucide); server gerekmez. Headless tarayıcıda render doğrulanır, sonra kullanıcının tarayıcısında açılır.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Tek dosya <code>/tmp/&lt;konu&gt;.html</code>, <code>report-kit</code> CDN'den; server gerekmez. <code>npx github:omert11/report-kit</code> ile doğrulanır, kullanıcının tarayıcısında açılır. Kullanıcı yanıtlarını yapıştırınca dosyaya yeni sürüm eklenir.</p></div>
       </div>
     </div>
 
