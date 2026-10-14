@@ -3,7 +3,8 @@
 
 Claude-side sources (rules/, skills/, local-skills/, agents/) stay canonical;
 omp/ holds only omp-specific overlays. See omp/translate.sed for the text
-mapping. Output is gitignored because it embeds local-skills/ (credentials).
+mapping. Output is gitignored because it embeds local-skills/ (credentials)
+and machine-specific MCP paths (.mcp.json).
 
 Usage: python3 scripts/build-omp.py [--link] [--quiet]
 """
@@ -25,6 +26,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OMP = ROOT / "omp"
 TARGETS = ROOT / "targets"
 OUT = TARGETS / "omp"
+WHATSAPP_SERVER = Path.home() / "Desktop" / "local" / "whatsapp-mcp" / "whatsapp-mcp-server"
 
 SKIP_NAMES = {".DS_Store", "__pycache__"}
 SKIP_SUFFIXES = {".pyc"}
@@ -263,6 +265,7 @@ class Builder:
             self.build_skills(stage, exclude_skills)
             self.build_agents(stage)
             self.build_hooks(stage)
+            self.build_mcp(stage)
         except BaseException:
             shutil.rmtree(stage, ignore_errors=True)
             raise
@@ -389,6 +392,23 @@ class Builder:
             return
         for f in self.iter_files(base):
             self.copy_file(stage, Path("hooks") / f.relative_to(base), f, None)
+
+    def build_mcp(self, stage: Path) -> None:
+        """Emit .mcp.json for MCP servers installed on this machine (paths resolved at build time)."""
+        if not WHATSAPP_SERVER.is_dir():
+            return
+        uv = shutil.which("uv") or str(Path.home() / ".local" / "bin" / "uv")
+        if not os.access(uv, os.X_OK):
+            self.warn(f"uv not found; whatsapp MCP skipped ({WHATSAPP_SERVER})")
+            return
+        servers = {
+            "whatsapp": {
+                "type": "stdio",
+                "command": uv,
+                "args": ["--directory", str(WHATSAPP_SERVER), "run", "main.py"],
+            }
+        }
+        self.write(stage, Path(".mcp.json"), json.dumps({"mcpServers": servers}, indent=2) + "\n")
 
 
 def swap_into_place(stage: Path) -> None:

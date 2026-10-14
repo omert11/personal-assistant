@@ -552,7 +552,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
     <!-- whatsapp -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-circle"></i></div><div><div class="etitle">WhatsApp</div><div class="emeta">whatsapp-mcp · mesaj kanalı</div></div></div>
       <div class="ebody">
-        <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır.</p>
+        <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır. Claude Code'a <code>setup.py</code> ile, omp'ye kurulu olduğu makinede <code>build-omp.py</code> ile (<code>targets/omp/.mcp.json</code>) kaydedilir.</p>
         <p><strong>Ne işe yarar:</strong> Sohbetleri listeleme, mesaj arama, kişi bulma ve mesaj/dosya/ses gönderme.</p>
         <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin çıktı kanallarından biri. Skill müşteri/acenta mesajını kanal-agnostik üretir; WhatsApp seçilirse <code>mcp__whatsapp__*</code> araçlarıyla gönderilir (skill mesajı üretir, gönderimi entegrasyon yapar).</p></div>
       </div>
@@ -601,7 +601,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
         <li>Plugin'i kur:<pre><code>/plugin install personal-assistant</code></pre></li>
         <li>Yeniden yükle ve yeni oturum aç:<pre><code>/reload-plugins</code></pre></li>
       </ol>
-      <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler ve hook'lar omp karşılıklarına çevrilir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
+      <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler ve hook'lar omp karşılıklarına çevrilir; makinede kurulu yerel MCP'ler (WhatsApp) plugin'e eklenir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
       <pre><code>python3 scripts/build-omp.py --link</code></pre>
     </div>
   </div>
