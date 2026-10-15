@@ -3,7 +3,7 @@ name: commit
 description: Commit oncesi kalite kontrol + teslimat secenekleri (commit, push, PR, branch).
 when_to_use: Trigger — "commit", "commit at", "push et", "PR olustur", "branch ac", "degisiklikleri kaydet", "kodu gonder", "/commit". Her kod teslimat/kaydetme isteginde tetiklenir; manuel `git commit` yerine bu skill calisir.
 disable-model-invocation: false
-allowed-tools: Bash(git *), Bash(gh *), Bash(plane-cli *), Read, Grep, Glob, AskUserQuestion, Task, Skill
+allowed-tools: Bash(git *), Bash(gh *), Bash(plane-cli *), Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, Skill
 ---
 
 # Commit
@@ -13,6 +13,7 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
 ## Akış
 
 1. **Değişiklik** — `git status --porcelain`; boşsa "Commit edecek bir şey yok." de, çık.
+1b. **Repo kuralları** — bkz. Repo kuralları.
 2. **Branch**
    ```bash
    CURRENT_BRANCH=$(git branch --show-current)
@@ -47,6 +48,12 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
 11. **Plane** — otomatik kapat/oluştur (bkz. Plane).
 12. **Son sorular** — iş bitince (bkz. Sorular/Son).
 13. **Sonuç özeti** — commit, teslimat, düzeltilen bulgular, deslop raporu, Plane işlemi, yazılmayan testler ve nedeni.
+
+## Repo kuralları
+
+- Dosya: `<repo kökü>/.agents/COMMIT_RULES.md`; varsa oku, skill varsayılanlarını ezer (Yasaklar hariç).
+- `git check-ignore -q .agents/COMMIT_RULES.md` başarısız ve dosya tracked değilse: global ignore dosyasına (`git config --global core.excludesFile`, boşsa `~/.config/git/ignore`) `.agents/` satırını ekle.
+- Kullanıcı kalıcı repo tercihi söylerse dosyaya madde olarak ekle.
 
 ## Deslop
 
@@ -102,8 +109,9 @@ Tümü soru aracıyla sorulur; blok başına max 4 soru; önerilen seçenek ilk 
 
 header `Teslimat`, question `Commit sonrası ne yapayım?`
 
-- Ana branch'te: "PR + Merge + Clean" (Recommended) — branch aç, push, PR, merge, cleanup · "Branch + PR" — branch aç, push, PR (merge etme) · "Push et" — direkt `git push` (risky) · "Sadece commit" — local bırak
-- Feature branch'te: "PR + Merge + Clean" (Recommended) — push, PR, merge, cleanup · "PR oluştur" — push, PR (merge etme) · "Push et" — sadece `git push` · "Sadece commit" — local bırak
+- Ana branch'te: "PR + Merge + Clean" — branch aç, push, PR, merge, cleanup · "Branch + PR" — branch aç, push, PR (merge etme) · "Push et" — direkt `git push` (risky) · "Sadece commit" — local bırak
+- Feature branch'te: "PR + Merge + Clean" — push, PR, merge, cleanup · "PR oluştur" — push, PR (merge etme) · "Push et" — sadece `git push` · "Sadece commit" — local bırak
+- Recommended: `COMMIT_RULES.md`'deki teslimat tercihi; yoksa "PR + Merge + Clean".
 
 ### Son (iş bitince, yalnız koşulu sağlananlar, tek blok)
 
