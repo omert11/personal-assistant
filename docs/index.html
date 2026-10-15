@@ -186,7 +186,7 @@
 <!-- HERO -->
 <header class="hero">
   <div class="wrap">
-    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.91.0 · MIT</span>
+    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.95.0 · MIT</span>
     <h1>Claude Code'a <span class="accent">hafıza, disiplin<br/>ve otomasyon</span> kazandıran plugin</h1>
     <p class="lead">Her oturum başında global kuralları yükler, Django projelerini tanıyıp ilgili kuralları ekler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir.</p>
     <div class="cta-row">
@@ -219,7 +219,7 @@
         <p><code>commit</code> skill, kod değişen her teslimatta <code>/code-review</code>'u <strong>zorunlu</strong> çalıştırır; kullanıcı "hızlıca commit" dese bile. Bulgular sorulmadan düzeltilir, commit mesajı diff'ten üretilir, yalnız teslimat şekli sorulur. Plane issue oluşturup/kapatırken <strong>self atama, başlangıç/bitiş tarihi ve hata/geliştirme label'ını</strong> otomatik doldurur.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="scroll-text"></i></div><div class="body">
         <h3>Oturum Başı Kural Disiplini</h3>
-        <p>SessionStart'ta tek çekirdek kural dosyası <code>~/.claude/rules/</code> altına kopyalanır; Django projelerinde <code>django</code> skill'i otomatik yüklenir. Plugin omp üzerinde de çalışır: kurallar, skill'ler ve hook'lar <code>scripts/build-omp.py</code> ile çevrilir.</p></div></div>
+        <p>SessionStart'ta tek çekirdek kural dosyası <code>~/.claude/rules/</code> altına kopyalanır; Django projelerinde <code>django</code> skill'i otomatik yüklenir. Plugin omp ve jcode üzerinde de çalışır: kurallar, skill'ler ve hook'lar <code>scripts/build-omp.py</code> / <code>scripts/build-jcode.py</code> ile çevrilir.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="presentation"></i></div><div class="body">
         <h3>Görsel Rapor</h3>
         <p><code>user-report</code> yapılan işi <a href="https://github.com/omert11/report-kit">report-kit</a> ile tek dosyalık, etkileşimli HTML rapora döker: ölçülmüş KPI'lar, önce/sonra grafikleri, onay/soru blokları, sürümler. <code>issue-workflow</code> sonuç raporu da buradan üretilir.</p></div></div>
@@ -545,14 +545,14 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
       <div class="ebody">
         <p><strong>Nedir:</strong> Geliştirme process'lerini (backend, frontend, worker vb.) yöneten bir araç; <code>solo.yml</code> ile tanımlanan komutları başlatır, durdurur, yeniden başlatır ve çıktılarını takip eder. <code>solo</code> CLI binary'si Solo app'in HTTP control plane'ine bağlanır (<code>solo doctor</code> ile doğrulanır).</p>
         <p><strong>Ne işe yarar:</strong> Tekrar eden shell komutlarını (build + run) tek yerde toplayıp Claude'un bunları başlatıp loglarını okumasını sağlar.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p>Tekrar eden komutlar <code>solo.yml</code>'a toplanıp Solo üzerinden çalıştırılabilir. Process başlatma/durdurma/restart <code>solo processes</code> / <code>solo commands</code> CLI komutlarıyla yapılır; process çıktısı/logu <code>solo processes output</code> ile CLI'den okunur.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p>Process başlatma/durdurma/restart <code>solo processes</code> / <code>solo commands</code> CLI komutlarıyla yapılır; process çıktısı/logu <code>solo processes output</code> ile CLI'den okunur.</p></div>
       </div>
     </div>
 
     <!-- whatsapp -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-circle"></i></div><div><div class="etitle">WhatsApp</div><div class="emeta">whatsapp-mcp · mesaj kanalı</div></div></div>
       <div class="ebody">
-        <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır. Claude Code'a <code>setup.py</code> ile, omp'ye kurulu olduğu makinede <code>build-omp.py</code> ile (<code>targets/omp/.mcp.json</code>) kaydedilir.</p>
+        <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır. Claude Code'a <code>setup.py</code> ile, omp'ye kurulu olduğu makinede <code>build-omp.py</code> ile (<code>targets/omp/.mcp.json</code>), jcode'a <code>build-jcode.py</code> ile (<code>~/.jcode/mcp.json</code>) kaydedilir.</p>
         <p><strong>Ne işe yarar:</strong> Sohbetleri listeleme, mesaj arama, kişi bulma ve mesaj/dosya/ses gönderme.</p>
         <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin çıktı kanallarından biri. Skill müşteri/acenta mesajını kanal-agnostik üretir; WhatsApp seçilirse <code>mcp__whatsapp__*</code> araçlarıyla gönderilir (skill mesajı üretir, gönderimi entegrasyon yapar).</p></div>
       </div>
@@ -561,9 +561,9 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
     <!-- google -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="mail"></i></div><div><div class="etitle">Google Workspace</div><div class="emeta">Gmail · Calendar · Drive (claude.ai MCP)</div></div></div>
       <div class="ebody">
-        <p><strong>Nedir:</strong> claude.ai üzerinden sağlanan resmi Google MCP server'ları: <strong>Gmail</strong> (e-posta), <strong>Google Calendar</strong> (takvim) ve <strong>Google Drive</strong> (dosya). HTTP MCP olarak bağlanır, OAuth ile yetkilendirilir.</p>
+        <p><strong>Nedir:</strong> claude.ai üzerinden sağlanan resmi Google MCP server'ları: Gmail (e-posta), Google Calendar (takvim) ve Google Drive (dosya). HTTP MCP olarak bağlanır, OAuth ile yetkilendirilir.</p>
         <p><strong>Ne işe yarar:</strong> E-postaları okuma/arama/gönderme, takvim etkinliklerini görüntüleme/oluşturma ve Drive dosyalarına erişim.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin e-posta kanalı Gmail ile gönderilebilir; takvim/dosya entegrasyonu genel asistan akışlarını besler. Üç servis de claude.ai üzerinden gelir, ayrı binary kurulumu gerekmez.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin e-posta kanalı Gmail ile gönderilebilir. Üç servis de claude.ai üzerinden gelir, ayrı binary kurulumu gerekmez.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yetkilendirme</div><pre><code>Claude Code → /mcp → claude.ai servisi seç → Authenticate
 # Gmail / Google Calendar / Google Drive ayrı ayrı OAuth</code></pre></div>
       </div>
@@ -603,6 +603,8 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
       </ol>
       <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler ve hook'lar omp karşılıklarına çevrilir; makinede kurulu yerel MCP'ler (WhatsApp) plugin'e eklenir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
       <pre><code>python3 scripts/build-omp.py --link</code></pre>
+      <p><strong>jcode için:</strong> repo'yu klonla, kurulumu çalıştır. Kurallar <code>~/.jcode/prompt-overlay.md</code>'ye, skill'ler (yerel skill'ler dahil) <code>~/.jcode/skills/</code>'e, WhatsApp MCP <code>~/.jcode/mcp.json</code>'a yazılır; <code>config.toml</code>'a varsayılan model (çekirdek kuraldaki Orchestrator satırı), heavy guard (<code>pre_tool_transform</code>), Claude girişinin <code>~/.claude/.credentials.json</code>'dan okunması ve oturum başı yenileme eklenir; telemetri kapatılır. Django otomatik yüklemesi jcode'da yok.</p>
+      <pre><code>python3 scripts/build-jcode.py</code></pre>
     </div>
   </div>
 </section>
@@ -610,7 +612,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
 <footer>
   <div class="wrap">
     <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub'da Görüntüle</a>
-    <p class="made">personal-assistant · v1.91.0 · MIT · Ömer Faruk Yığın</p>
+    <p class="made">personal-assistant · v1.95.0 · MIT · Ömer Faruk Yığın</p>
     <p class="made"><i data-lucide="bot"></i> Claude Code ile geliştirildi</p>
   </div>
 </footer>

@@ -1,0 +1,11 @@
+{
+  "excludeSkills": ["do-deslop"],
+  "config": {
+    "provider": {
+      "default_provider": "claude"
+    },
+    "hooks": {
+      "pre_tool_transform_timeout_ms": 5000
+    }
+  }
+}

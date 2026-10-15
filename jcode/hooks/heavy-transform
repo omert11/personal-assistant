@@ -1,0 +1,18 @@
+#!/bin/sh
+# jcode pre_tool_transform -> scripts/heavy-guard.sh.
+#
+# jcode's bash input (command, timeout ms, run_in_background) matches Claude's
+# Bash input, so the guard runs unchanged: wrap the input in a PreToolUse
+# payload, print its updatedInput. No stdout = input unchanged (fail-open).
+set -eu
+
+[ "${JCODE_HOOK_TOOL_NAME:-}" = "bash" ] || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+
+ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+CLAUDE_PLUGIN_ROOT=$ROOT
+export CLAUDE_PLUGIN_ROOT
+
+jq -c '{tool_name: "Bash", tool_input: .}' |
+  bash "$ROOT/scripts/heavy-guard.sh" |
+  jq -c '.hookSpecificOutput.updatedInput // empty'
