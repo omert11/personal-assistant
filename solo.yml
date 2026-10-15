@@ -22,6 +22,11 @@ processes:
   work-drop:
     command: dw-drop
     auto_start: false
+  # Claude abonelik hesaplarının canlı paneli: hesap başına 5 saat / 7 gün limitleri, aktif hesap,
+  # giriş geçerlilik süresi, sunucu servisleri ve istemci senkronu. ~/.local/bin/claude-status (makineye özel).
+  claude-status:
+    command: claude-status
+    auto_start: false
   # Gerekirse buraya ekle, örnek:
   # test:
   #   command: bash scripts/load-rules.sh
