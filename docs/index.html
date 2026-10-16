@@ -603,7 +603,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
       </ol>
       <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler ve hook'lar omp karşılıklarına çevrilir; makinede kurulu yerel MCP'ler (WhatsApp) plugin'e eklenir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
       <pre><code>python3 scripts/build-omp.py --link</code></pre>
-      <p><strong>jcode için:</strong> repo'yu klonla, kurulumu çalıştır. Kurallar <code>~/.jcode/prompt-overlay.md</code>'ye, skill'ler (yerel skill'ler dahil) <code>~/.jcode/skills/</code>'e, WhatsApp MCP <code>~/.jcode/mcp.json</code>'a yazılır; <code>config.toml</code>'a varsayılan model (çekirdek kuraldaki Orchestrator satırı), heavy guard (<code>pre_tool_transform</code>), Claude girişinin <code>~/.claude/.credentials.json</code>'dan okunması ve oturum başı yenileme eklenir; telemetri kapatılır. Django otomatik yüklemesi jcode'da yok.</p>
+      <p><strong>jcode için:</strong> repo'yu klonla, kurulumu çalıştır. Kurallar <code>~/.jcode/prompt-overlay.md</code>'ye, skill'ler (yerel skill'ler dahil) <code>~/.jcode/skills/</code>'e, WhatsApp MCP <code>~/.jcode/mcp.json</code>'a yazılır; <code>config.toml</code>'a varsayılan model (çekirdek kuraldaki Orchestrator satırı), heavy guard (<code>pre_tool_transform</code>), Claude girişinin <code>~/.claude/.credentials.json</code>'dan okunması ve oturum başı yenileme eklenir; telemetri kapatılır. jcode'da soru aracı olmadığından skill'lerdeki sorular numaralı başlık ve harfli seçeneklerle metin içinde sorulur. Django otomatik yüklemesi jcode'da yok.</p>
       <pre><code>python3 scripts/build-jcode.py</code></pre>
     </div>
   </div>

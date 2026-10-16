@@ -3,12 +3,13 @@
 
 jcode has no plugin format, so this writes straight into its home directory and
 touches only what it owns:
-  rules/*.md                  -> prompt-overlay.md (global prompt layer)
+  rules/*.md + jcode/rules.md -> prompt-overlay.md (global prompt layer)
   skills/, local-skills/      -> skills/<name>/ (manifest-tracked, pruned)
   whatsapp MCP (if installed) -> mcp.json `whatsapp` entry
   jcode/build.json + core.md  -> config.toml keys (provider, model, hooks, auth trust)
   telemetry                   -> no_telemetry marker
 Claude-side sources stay canonical; jcode/ holds only jcode-specific bits.
+Markdown from rules/ and skills is passed through jcode/translate.sed.
 Idempotent: unchanged files are not rewritten. jcode's session_start hook re-runs
 it, so edits apply from the next session.
 
@@ -24,6 +25,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -31,6 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "jcode"
 JHOME = Path(os.environ.get("JCODE_HOME") or Path.home() / ".jcode")
 MANIFEST = ".personal-assistant-manifest"
+SED_FILE = SRC / "translate.sed"
 HEAVY_HOOK = str(SRC / "hooks" / "heavy-transform")
 REFRESH_HOOK = f"python3 {Path(__file__).resolve()} --quiet"
 CREDENTIALS_TRUST = "claude_code_credentials|{}"
@@ -89,13 +92,37 @@ class Installer:
         os.replace(tmp, path)
         self.changed.append(str(path.relative_to(JHOME)))
 
+    @staticmethod
+    def translate(texts: list[str]) -> list[str]:
+        """Run jcode/translate.sed over all texts in one sed call (rules are line-local)."""
+        if not texts:
+            return []
+        split = f"{omp.SED_SPLIT}\n"
+        if any(omp.SED_SPLIT in t for t in texts):
+            raise BuildError("sed split marker found in source text")
+        joined = split.join(t if t.endswith("\n") else t + "\n" for t in texts)
+        proc = subprocess.run(
+            ["sed", "-E", "-f", str(SED_FILE)],
+            input=joined.encode("utf-8"),
+            capture_output=True,
+            env=dict(os.environ, LC_ALL="C"),
+        )
+        if proc.returncode != 0:
+            raise BuildError(f"sed failed: {proc.stderr.decode('utf-8', 'replace').strip()}")
+        out = proc.stdout.decode("utf-8").split(split)
+        if len(out) != len(texts):
+            raise BuildError("sed output split mismatch")
+        return [o if t.endswith("\n") else o[:-1] for t, o in zip(texts, out)]
+
     # --- skills ------------------------------------------------------------
     def skill_files(self, name: str, base: Path) -> dict[Path, tuple[bytes, int]]:
         skill_dir = str(JHOME / "skills" / name)
         files: dict[Path, tuple[bytes, int]] = {}
+        texts: dict[Path, str] = {}
         for f in self.builder.iter_files(base):
             rel = f.relative_to(base)
             data = f.read_bytes()
+            mode = f.stat().st_mode & 0o777
             if f.suffix in omp.TEXT_SUFFIXES:
                 try:
                     text = data.decode("utf-8")
@@ -103,11 +130,15 @@ class Installer:
                     pass
                 else:
                     text = text.replace("${CLAUDE_PLUGIN_ROOT}", str(ROOT))
-                    text = omp.SKILL_DIR_RE.sub(lambda _m: skill_dir, text)
-                    if rel == Path("SKILL.md"):
-                        text = self.builder.transform_skill_md(text, Path(name) / rel)
-                    data = text.encode("utf-8")
-            files[rel] = (data, f.stat().st_mode & 0o777)
+                    texts[rel] = omp.SKILL_DIR_RE.sub(lambda _m: skill_dir, text)
+            files[rel] = (data, mode)
+        md = [rel for rel in texts if rel.suffix == ".md"]
+        for rel, text in zip(md, self.translate([texts[rel] for rel in md])):
+            texts[rel] = text
+        for rel, text in texts.items():
+            if rel == Path("SKILL.md"):
+                text = self.builder.transform_skill_md(text, Path(name) / rel)
+            files[rel] = (text.encode("utf-8"), files[rel][1])
         return files
 
     def install_skills(self, exclude: set[str]) -> None:
@@ -150,8 +181,11 @@ class Installer:
     def install_overlay(self) -> None:
         parts = []
         for f in sorted((ROOT / "rules").glob("*.md")):
-            fm, body = self.builder.split_frontmatter(f.read_text(encoding="utf-8"))
-            parts.append((body if fm is not None else f.read_text(encoding="utf-8")).strip("\n"))
+            text = f.read_text(encoding="utf-8")
+            fm, body = self.builder.split_frontmatter(text)
+            parts.append(body if fm is not None else text)
+        parts = [p.strip("\n") for p in self.translate(parts)]
+        parts.append((SRC / "rules.md").read_text(encoding="utf-8").strip("\n"))
         self.put(JHOME / "prompt-overlay.md", (OVERLAY_HEADER + "\n\n".join(parts) + "\n").encode())
 
     # --- MCP ---------------------------------------------------------------
