@@ -27,6 +27,10 @@ OMP = ROOT / "omp"
 TARGETS = ROOT / "targets"
 OUT = TARGETS / "omp"
 WHATSAPP_SERVER = Path.home() / "Desktop" / "local" / "whatsapp-mcp" / "whatsapp-mcp-server"
+# Skills setup.py installs user-level for Claude Code (plane-cli, po-cli, playwright-cli, ...).
+CLAUDE_USER_SKILLS = Path.home() / ".claude" / "skills"
+# load-rules.sh copies local-skills/ there and lists them in this manifest.
+CLAUDE_USER_SKILLS_MANIFEST = CLAUDE_USER_SKILLS / ".personal-assistant-manifest"
 
 SKIP_NAMES = {".DS_Store", "__pycache__"}
 SKIP_SUFFIXES = {".pyc"}
@@ -43,6 +47,29 @@ SED_SPLIT = "@@PA-OMP-BUILD-SPLIT-7f3c1e@@"
 
 class BuildError(Exception):
     pass
+
+
+def skill_sources(exclude: frozenset[str] = frozenset()) -> dict[str, Path]:
+    """Skill name -> source dir: committed skills/ and gitignored local-skills/ (one
+    namespace), plus user-level Claude Code skills this plugin does not own.
+    Excluded names are skipped before the collision check."""
+    bases: dict[str, Path] = {}
+    for src_root in (ROOT / "skills", ROOT / "local-skills"):
+        if not src_root.is_dir():
+            continue
+        for p in sorted(src_root.iterdir()):
+            if not (p / "SKILL.md").is_file() or p.name in exclude:
+                continue
+            if p.name in bases:
+                raise BuildError(f"skill name collision: {p.relative_to(ROOT)} vs {bases[p.name].relative_to(ROOT)}")
+            bases[p.name] = p
+    owned = set(CLAUDE_USER_SKILLS_MANIFEST.read_text().split()) if CLAUDE_USER_SKILLS_MANIFEST.is_file() else set()
+    if CLAUDE_USER_SKILLS.is_dir():
+        for p in sorted(CLAUDE_USER_SKILLS.iterdir()):
+            if p.name in bases or p.name in owned or p.name in exclude or not (p / "SKILL.md").is_file():
+                continue
+            bases[p.name] = p
+    return bases
 
 
 class Builder:
@@ -317,17 +344,7 @@ class Builder:
             self.warn(f"omp/rules.json entry matches no rule: {name}")
 
     def build_skills(self, stage: Path, exclude: set[str]) -> None:
-        # Committed skills/ and gitignored local-skills/ share one namespace.
-        bases: dict[str, Path] = {}
-        for src_root in (ROOT / "skills", ROOT / "local-skills"):
-            if not src_root.is_dir():
-                continue
-            for p in sorted(src_root.iterdir()):
-                if not p.is_dir():
-                    continue
-                if p.name in bases:
-                    raise BuildError(f"skill name collision: {p.relative_to(ROOT)} vs {bases[p.name].relative_to(ROOT)}")
-                bases[p.name] = p
+        bases = skill_sources()
         skills = sorted(bases)
         ov_root = OMP / "skills"
         overlays = sorted(p.name for p in ov_root.iterdir() if p.is_dir()) if ov_root.is_dir() else []

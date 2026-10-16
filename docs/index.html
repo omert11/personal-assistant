@@ -186,7 +186,7 @@
 <!-- HERO -->
 <header class="hero">
   <div class="wrap">
-    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.95.0 · MIT</span>
+    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.96.0 · MIT</span>
     <h1>Claude Code'a <span class="accent">hafıza, disiplin<br/>ve otomasyon</span> kazandıran plugin</h1>
     <p class="lead">Her oturum başında global kuralları yükler, Django projelerini tanıyıp ilgili kuralları ekler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir.</p>
     <div class="cta-row">
@@ -601,9 +601,9 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
         <li>Plugin'i kur:<pre><code>/plugin install personal-assistant</code></pre></li>
         <li>Yeniden yükle ve yeni oturum aç:<pre><code>/reload-plugins</code></pre></li>
       </ol>
-      <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler ve hook'lar omp karşılıklarına çevrilir; makinede kurulu yerel MCP'ler (WhatsApp) plugin'e eklenir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
+      <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler (setup'ın <code>~/.claude/skills/</code>'e kurduğu <code>plane-cli</code>, <code>po-cli</code>, <code>playwright-cli</code> gibi skill'ler dahil) ve hook'lar omp karşılıklarına çevrilir; makinede kurulu yerel MCP'ler (WhatsApp) plugin'e eklenir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
       <pre><code>python3 scripts/build-omp.py --link</code></pre>
-      <p><strong>jcode için:</strong> repo'yu klonla, kurulumu çalıştır. Kurallar <code>~/.jcode/prompt-overlay.md</code>'ye, skill'ler (yerel skill'ler dahil) <code>~/.jcode/skills/</code>'e, WhatsApp MCP <code>~/.jcode/mcp.json</code>'a yazılır; <code>config.toml</code>'a varsayılan model (çekirdek kuraldaki Orchestrator satırı), heavy guard (<code>pre_tool_transform</code>), Claude girişinin <code>~/.claude/.credentials.json</code>'dan okunması ve oturum başı yenileme eklenir; telemetri kapatılır. jcode'da soru aracı olmadığından skill'lerdeki sorular numaralı başlık ve harfli seçeneklerle metin içinde sorulur. Django otomatik yüklemesi jcode'da yok.</p>
+      <p><strong>jcode için:</strong> repo'yu klonla, kurulumu çalıştır. Kurallar <code>~/.jcode/prompt-overlay.md</code>'ye, skill'ler (yerel skill'ler ve <code>~/.claude/skills/</code>'teki <code>plane-cli</code>, <code>po-cli</code> gibi skill'ler dahil) <code>~/.jcode/skills/</code>'e, WhatsApp MCP <code>~/.jcode/mcp.json</code>'a yazılır; <code>config.toml</code>'a varsayılan model (çekirdek kuraldaki Orchestrator satırı), heavy guard (<code>pre_tool_transform</code>), Claude girişinin <code>~/.claude/.credentials.json</code>'dan okunması ve oturum başı yenileme eklenir; telemetri kapatılır. jcode'da soru aracı olmadığından skill'lerdeki sorular numaralı başlık ve harfli seçeneklerle metin içinde sorulur. Django otomatik yüklemesi jcode'da yok.</p>
       <pre><code>python3 scripts/build-jcode.py</code></pre>
     </div>
   </div>
@@ -612,7 +612,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
 <footer>
   <div class="wrap">
     <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub'da Görüntüle</a>
-    <p class="made">personal-assistant · v1.95.0 · MIT · Ömer Faruk Yığın</p>
+    <p class="made">personal-assistant · v1.96.0 · MIT · Ömer Faruk Yığın</p>
     <p class="made"><i data-lucide="bot"></i> Claude Code ile geliştirildi</p>
   </div>
 </footer>

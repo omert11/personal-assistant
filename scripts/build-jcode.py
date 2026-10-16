@@ -4,7 +4,8 @@
 jcode has no plugin format, so this writes straight into its home directory and
 touches only what it owns:
   rules/*.md + jcode/rules.md -> prompt-overlay.md (global prompt layer)
-  skills/, local-skills/      -> skills/<name>/ (manifest-tracked, pruned)
+  skills/, local-skills/,
+  user-level ~/.claude/skills/ -> skills/<name>/ (manifest-tracked, pruned)
   whatsapp MCP (if installed) -> mcp.json `whatsapp` entry
   jcode/build.json + core.md  -> config.toml keys (provider, model, hooks, auth trust)
   telemetry                   -> no_telemetry marker
@@ -142,16 +143,7 @@ class Installer:
         return files
 
     def install_skills(self, exclude: set[str]) -> None:
-        bases: dict[str, Path] = {}
-        for src_root in (ROOT / "skills", ROOT / "local-skills"):
-            if not src_root.is_dir():
-                continue
-            for p in sorted(src_root.iterdir()):
-                if not (p / "SKILL.md").is_file() or p.name in exclude:
-                    continue
-                if p.name in bases:
-                    raise BuildError(f"skill name collision: {p.relative_to(ROOT)} vs {bases[p.name].relative_to(ROOT)}")
-                bases[p.name] = p
+        bases = omp.skill_sources(frozenset(exclude))
 
         dst_root = JHOME / "skills"
         dst_root.mkdir(parents=True, exist_ok=True)
