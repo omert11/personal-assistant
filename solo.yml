@@ -22,6 +22,12 @@ processes:
   work-drop:
     command: dw-drop
     auto_start: false
+  # Container'daki tmux oturumları (sekme kapansa da çalışmaya devam ederler): komut, bağlı/arkada, son etkinlik, klasör.
+  # Satıra tıklamak / 1-9 `dw -a <oturum>` komutunu panoya alır; x + y seçili oturumu kapatır.
+  # ~/.local/bin/dw-sessions (makineye özel).
+  work-sessions:
+    command: dw-sessions
+    auto_start: false
   # Claude abonelik hesaplarının canlı paneli: hesap başına 5 saat / 7 gün limitleri, aktif hesap,
   # giriş geçerlilik süresi, sunucu servisleri ve istemci senkronu. ~/.local/bin/claude-status (makineye özel).
   claude-status:

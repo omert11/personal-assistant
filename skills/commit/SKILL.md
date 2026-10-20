@@ -32,7 +32,7 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
 5. **Düzelt** — tüm bulgular sormadan düzeltilir (bkz. Bulgu düzeltme). Sonra son analiz: atlanan bir şey var mı; yeni bulgu varsa düzelt.
 6. **Commit** — onay beklemeden; `git add <ilgili-dosyalar>` + `git commit`.
    - Mesaj sorulmaz: diff özeti + branch adı + değişen dosyalardan İngilizce türet; conventional commit (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`) tercih, zorunlu değil. `dijii-tech` repolarında (origin URL'i) zorunlu; kırıcı değişiklikte `type!:`.
-   - Her commit'te `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
+   - Her commit'te `Co-Authored-By: (MODEL)`.
 7. **Pre-commit hook fail** — hatayı oku → otomatik düzelt (formatter, linter vb.) → yeniden stage + commit → hâlâ fail ise kullanıcıya göster: "Şu hata var, ne yapalım?"
 8. **Teslimat** (seçime göre)
    - "PR + Merge + Clean" → branch aç (gerekirse), push, PR, merge, cleanup
