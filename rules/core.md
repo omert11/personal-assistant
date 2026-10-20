@@ -13,6 +13,7 @@
 - Remote çalışma ortamı (diji sunucusundaki `work` container'ı: bağlantı, port, DB, dosya aktarımı, limit) hakkında bilgi gerektiğinde `remote-workspace` skill'ini yükle.
 - Tarayıcı disiplini: açtığın sekmeyi iş bitince kapat; tek tarayıcı örneğini paylaş, test başına yeni tarayıcı açma; tarayıcı testlerini en fazla 2 paralel worker ile çalıştır.
 - Remote ortamda kullanıcı oturumu açık bir tarayıcı gerektiğinde `gbrowser` skill'ini yükle.
+- Uzun iş: çıktıyı log dosyasına yaz (`… > /tmp/<iş>.log 2>&1 &`), `| tail`/`| head` ile bitişi bekleme. 10 dakikadan uzun ve sessiz beklemede beklemeyi bırak, log'a ve sürece bak. "Bitti" demeden önce süreci PID ile doğrula (`ps -p`, DB işinde `pg_stat_activity`); `grep` ile süreç/container listesi taramak yetmez.
 
 ## Sub-agent
 
