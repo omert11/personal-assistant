@@ -26,6 +26,7 @@ processes:
     auto_start: false
   # Container'daki tmux oturumları (sekme kapansa da çalışmaya devam ederler): komut, bağlı/arkada, son etkinlik, klasör.
   # Satıra tıklamak / 1-9 `dw -a <oturum>` komutunu panoya alır; x + y seçili oturumu kapatır.
+  # Listenin altındaki buton (tıkla veya k, y ile onay) arka plandaki tüm oturumları kapatır.
   # ~/.local/bin/dw-sessions (makineye özel).
   work-sessions:
     command: dw-sessions
