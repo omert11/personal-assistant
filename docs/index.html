@@ -186,7 +186,7 @@
 <!-- HERO -->
 <header class="hero">
   <div class="wrap">
-    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.97.0 · MIT</span>
+    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.98.0 · MIT</span>
     <h1>Claude Code'a <span class="accent">hafıza, disiplin<br/>ve otomasyon</span> kazandıran plugin</h1>
     <p class="lead">Her oturum başında global kuralları yükler, Django projelerini tanıyıp ilgili kuralları ekler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir.</p>
     <div class="cta-row">
@@ -222,7 +222,7 @@
         <p>SessionStart'ta tek çekirdek kural dosyası <code>~/.claude/rules/</code> altına kopyalanır; Django projelerinde <code>django</code> skill'i otomatik yüklenir. Plugin omp ve jcode üzerinde de çalışır: kurallar, skill'ler ve hook'lar <code>scripts/build-omp.py</code> / <code>scripts/build-jcode.py</code> ile çevrilir.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="presentation"></i></div><div class="body">
         <h3>Görsel Rapor</h3>
-        <p><code>user-report</code> yapılan işi <a href="https://github.com/omert11/report-kit">report-kit</a> ile tek dosyalık, etkileşimli HTML rapora döker: ölçülmüş KPI'lar, önce/sonra grafikleri, onay/soru blokları, sürümler. <code>issue-workflow</code> sonuç raporu da buradan üretilir.</p></div></div>
+        <p><code>user-report</code> yapılan işi <a href="https://github.com/omert11/report-kit">report-kit</a> ile tek dosyalık, etkileşimli HTML rapora döker: ölçülmüş KPI'lar, önce/sonra grafikleri, onay/soru blokları, sürümler.</p></div></div>
     </div>
   </div>
 </section>
@@ -408,24 +408,19 @@
       </div>
     </div>
 
-    <!-- issue-workflow -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="circle-dot"></i></div><div><div class="etitle">issue-workflow</div></div></div>
+    <!-- orchestrate -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="circle-dot"></i></div><div><div class="etitle">orchestrate</div></div></div>
       <div class="ebody">
-        <p><strong>Bir kaynağı (Plane issue / serbest metin / doküman / görsel / log) uçtan uca çözer:</strong> tam bağlam çıkarır → kök-neden analizi → izole worktree + plan → çözüm + kanıt → <code>commit</code> skill → sonuç raporu. <strong>Duraklamasız tek akış</strong>: adımlar arasında onay/kapı yok; yalnız gerçekten belirsiz bir karar veya sert durakta soru sorulur. En doğru yolu agent kendisi belirler.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'i çöz", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/issue-workflow &lt;ref|metin&gt;</code>.</p></div>
+        <p><strong>Bir kaynağı (Plane issue / serbest metin / doküman / görsel / log) sub-agent'larla uçtan uca çözer.</strong> Ana agent orkestratördür: kod yazmaz, test/build çalıştırmaz; işi sub-agent'lara dağıtır, sonuçları toplar, kullanıcıyla konuşur.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'ı çöz", "orkestre et", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/orchestrate &lt;ref|metin&gt;</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
-          <li><code>1</code>: <code>AGENTS.md</code> "## Issue Workflow" alanını oku (proje-özel komut/port/test/akış notu)</li>
-          <li><code>2</code>: kaynak toplama, tam detay (Plane, metin, görsel, doküman, log)</li>
-          <li><code>3</code>: <strong>analiz (ultrathink)</strong>; şu anki durum / istek / neden / yapılacaklar / öneriler / açık konular (en iyisi seçilir, yalnız belirsizse sorulur) / riskler</li>
-          <li><code>4</code>: <strong>uygulama modu</strong> sormadan seçilir: kullanıcı söylediyse veya 2+ sinyal varsa (ayrık görevler, sıralı bağlılık, büyük boyut) <strong>yönetici modu</strong> (<code>references/yonetici-modu.md</code>, Adım 7 yerine <strong>7Y</strong>), değilse tek akış</li>
-          <li><code>5</code>: worktree aç (<code>EnterWorktree</code>; <code>SESSION_NAME</code> = worktree ismi) + plan context'te kurulur, onay beklenmeden uygulanır</li>
-          <li><code>6</code>: kaynak <strong>Plane issue ise işleme al (otomatik)</strong>: <code>started</code> + assignee yoksa <strong>self ata</strong> + <code>start_date</code> boşsa bugün; <em>dolu/zaten started olana dokunma</em></li>
-          <li><code>7</code>: uygula (<strong><code>[SESSION_NAME]</code> prefix'li loglar</strong>) → test ortamı → <strong>unique port + arka plan</strong> → kanıt <code>/tmp/issue-&lt;isim&gt;/</code> (görselde <strong>screenshot zorunlu</strong>) → uygulamayı <strong>durdur</strong> <em>(yönetici modu → <strong>7Y</strong>: sub-agent dalgaları, ilk dalga sözleşme, doğrulama + fix + kanıt sonda)</em></li>
-          <li><code>8</code>: <strong><code>[SESSION_NAME]</code> log temizliği (bloklayıcı)</strong></li>
-          <li><code>9</code>: <code>commit</code> skill: <strong>akışın tek review noktası</strong> + tek commit + <strong>tek PR</strong> + Plane kapama</li>
-          <li><code>10</code>: <code>user-report</code> ile HTML sonuç raporu (kararlar, gömülü kanıtlar, ek kazançlar, son durum, commit/PR/Plane), tarayıcıda açılır</li>
+          <li><code>1</code>: kaynak + <code>AGENTS.md</code> "## Orchestrate" okunur; gerekirse analiz sub-agent'ları mevcut durumu ve kök nedeni doğrular</li>
+          <li><code>2</code>: <strong>netleştirme</strong>: açık konuların tamamı kullanıcıyla kapanmadan kodlamaya geçilmez</li>
+          <li><code>3</code>: <strong>worktree</strong> içinde görevler sub-agent'lara dağıtılır (aynı dosyaya yazanlar paralel koşmaz)</li>
+          <li><code>4</code>: iş bitince <strong>doğrulama sub-agent'ı</strong>: diff, build/test/lint; hatalar sub-agent'lara düzelttirilir</li>
+          <li><code>5</code>: <code>commit</code> skill</li>
         </ul></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Kontrol sonda, tek seferde yapılır.</strong> Ara commit, ara build, ara review, aşamalı teslim yapılmaz; süreç içinde kırık noktalar normaldir. Tek PR açılır. Kanıt dosyaları repo dışında (<code>/tmp/issue-&lt;isim&gt;/</code>) tutulur.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Kontrol sonda, tek seferde yapılır.</strong> İş bitene kadar ne ana agent ne sub-agent test/build/doğrulama çalıştırır; ara kırık durum normaldir.</p></div>
       </div>
     </div>
 
@@ -613,7 +608,7 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
 <footer>
   <div class="wrap">
     <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub'da Görüntüle</a>
-    <p class="made">personal-assistant · v1.97.0 · MIT · Ömer Faruk Yığın</p>
+    <p class="made">personal-assistant · v1.98.0 · MIT · Ömer Faruk Yığın</p>
     <p class="made"><i data-lucide="bot"></i> Claude Code ile geliştirildi</p>
   </div>
 </footer>
