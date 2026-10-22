@@ -11,7 +11,9 @@ processes:
   deslop-sources:
     command: bash scripts/deslop-sources.sh
     auto_start: false
-  # diji-dev agent container'ının canlı durumu: kaynak/limit, servisler, agent oturumları, portlar, senkron.
+  # diji-dev agent container'ının canlı durumu: kaynak/limit, servisler, agent oturumları, portlar, senkron, disk %.
+  # Alttaki buton (tıkla veya t, y ile onay) sunucu diskini temizler: Go/Docker build önbelleği + 7 gündür
+  # yazılmayan DB'ler (yedeksiz). Sunucuda /usr/local/sbin/dw-disk-clean (root; omer sudoers ile çağırır).
   # ~/.local/bin/dw-status (makineye özel; repo dışı).
   work-status:
     command: dw-status
