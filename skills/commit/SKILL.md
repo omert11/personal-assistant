@@ -64,6 +64,7 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
 
 - Kod değiştiyse zorunlu; yalnız kullanıcı açıkça isterse atla.
 - Komut (arka planda, repo/worktree kökünde): `cd <root> && claude -p '/code-review low'`
+- Bekleme: her arka plan oturumunun PID'ini (`$!`) sakla, bitişi `ps -p <PID>` ile bekle; `pgrep -f` ile bekleme.
 - `/code-review` ile başlayan oturumdaysan delegasyon yapma, doğrudan koş.
 - Hata/timeout → tekrar dene.
 - Büyük diff → modül bazlı 3-4 paralel oturum (`… -p '/code-review low — sadece <küme>'`), sonuçları birleştir.
