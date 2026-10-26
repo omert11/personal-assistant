@@ -1,7 +1,7 @@
 {
   "name": "personal-assistant",
-  "version": "1.99.0",
-  "description": "Kisisel asistan plugin'i \u2014 oturum yonetimi, commit, django, obsidian docs, user-message, user-report, diji-logs, log-triage, deslop, gemini-chat, heavy-build guard, global rules",
+  "version": "1.100.0",
+  "description": "Kisisel asistan plugin'i — oturum yonetimi, commit, django, obsidian docs, user-message, user-report, diji-logs, log-triage, deslop, gemini-chat, heavy-build guard, global rules",
   "author": {
     "name": "Omer Faruk Yigin"
   },
@@ -20,6 +20,8 @@
     "ticket-resolution",
     "workflow-orchestration",
     "multi-agent",
+    "work-split",
+    "task-breakdown",
     "user-message",
     "customer-message",
     "diji-logs",
