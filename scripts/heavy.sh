@@ -15,17 +15,23 @@
 # HEAVY_GROW_WINDOW seconds and decides at once instead of standing in line to
 # re-observe an idleness that already happened.
 #
-# macOS ships no flock(1); /usr/bin/lockf is the system equivalent. lockf holds
-# one file, so N concurrent slots are N lock files tried round-robin. Slots are
-# shared by every language and project: a Rust build and a Go build compete for
-# the same slots instead of fighting for cores.
+# macOS ships no flock(1); /usr/bin/lockf is the system equivalent, and Linux
+# uses flock(1) the same way. Either holds one file, so N concurrent slots are N
+# lock files tried round-robin. Slots are shared by every language and project: a
+# Rust build and a Go build compete for the same slots instead of fighting for
+# cores.
+#
+# CPU is not the only thing a build eats. On a memory-capped host (a container
+# with a cgroup limit) two big compiles can fit the cores and still push the
+# box into swap thrash, so a lane is only grown while HEAVY_MEM_FLOOR_MB of
+# memory is still available.
 set -uo pipefail
 
 # Machine-local defaults (a 16 GB laptop may want a single slot where the shipped
 # default is 2). Only these knobs are read from the file; HEAVY_CONFIG itself is
 # not, since it already picked the file.
 CONFIG_VARS='HEAVY_SLOTS HEAVY_TIMEOUT HEAVY_STATE_DIR HEAVY_LOG
-HEAVY_MAX_SLOTS HEAVY_GROW_WINDOW HEAVY_CPU_CEIL'
+HEAVY_MAX_SLOTS HEAVY_GROW_WINDOW HEAVY_CPU_CEIL HEAVY_MEM_FLOOR_MB'
 CONFIG="${HEAVY_CONFIG:-$HOME/.config/heavy/config.sh}"
 if [ -f "$CONFIG" ]; then
   # Read in a subshell: a config that aborts (unset var under set -u, a stray
@@ -64,6 +70,7 @@ SLOTS="${HEAVY_SLOTS:-2}"
 MAX_SLOTS="${HEAVY_MAX_SLOTS:-4}"    # hard ceiling for the side lanes
 GROW_WINDOW="${HEAVY_GROW_WINDOW:-30}"  # seconds of idle CPU that buy one lane
 CPU_CEIL="${HEAVY_CPU_CEIL:-90}"     # busy percent that counts as bottlenecked
+MEM_FLOOR="${HEAVY_MEM_FLOOR_MB:-0}" # MB that must stay available to grow; 0 = off
 
 # A non-numeric or sub-minimum value would leave the round-robin loop with
 # nothing to try, so the command would never run.
@@ -78,6 +85,7 @@ SLOTS=$(num_or "$SLOTS" 1 1)
 MAX_SLOTS=$(num_or "$MAX_SLOTS" 4 1)
 GROW_WINDOW=$(num_or "$GROW_WINDOW" 30 1)
 CPU_CEIL=$(num_or "$CPU_CEIL" 90 1)
+MEM_FLOOR=$(num_or "$MEM_FLOOR" 0 0)
 # A ceiling under the base would shrink the pool instead of extending it.
 [ "$MAX_SLOTS" -lt "$SLOTS" ] && MAX_SLOTS=$SLOTS
 # How wide this run currently believes the pool is; grows, never shrinks.
@@ -90,6 +98,27 @@ POLL_INTERVAL=2
 # retried, running it twice.
 RC_LOCK_BUSY=75
 RC_CMD_75=175
+
+# Non-blocking "take this lock file, run the command while holding it", exiting
+# RC_LOCK_BUSY when the file is already held. flock's -E makes its conflict code
+# match lockf's, so callers see one contract on both systems. -o keeps the lock
+# fd out of the command: otherwise anything the build leaves behind (the CPU
+# sampler's last sleep, a stray daemon) holds the slot after the build is done.
+if command -v lockf >/dev/null 2>&1; then
+  LOCKER=lockf
+elif command -v flock >/dev/null 2>&1; then
+  LOCKER=flock
+else
+  LOCKER=
+fi
+try_lock() {  # $1 = lock file, $2.. = command
+  f=$1
+  shift
+  case $LOCKER in
+    lockf) lockf -kst 0 "$f" "$@" ;;
+    flock) flock -n -o -E "$RC_LOCK_BUSY" "$f" "$@" ;;
+  esac
+}
 
 mkdir -p "$STATE_DIR"
 
@@ -106,6 +135,7 @@ ortam:
   HEAVY_MAX_SLOTS   ek slotlarla cikilabilecek tavan (varsayilan 4)
   HEAVY_GROW_WINDOW ek slot icin gereken bos-CPU suresi, saniye (varsayilan 30)
   HEAVY_CPU_CEIL    bu yuzdenin ustundeki CPU darbogaz sayilir (varsayilan 90)
+  HEAVY_MEM_FLOOR_MB ek slot icin bos kalmasi gereken bellek, MB (varsayilan 0 = kapali)
   HEAVY_TIMEOUT     bekleme tavani, saniye (varsayilan 1200)
   HEAVY_STATE_DIR   kilit + holder dosyalarinin dizini (varsayilan ~/.cache)
   HEAVY_CONFIG      makine-lokal ayar dosyasi (varsayilan ~/.config/heavy/config.sh)
@@ -133,7 +163,8 @@ log_run() {
   # Create it private before the first append: a plain >> would make it 0644 for
   # as long as it takes to reach the chmod, and the lines carry command text.
   [ -f "$LOG_FILE" ] || (umask 077; : >> "$LOG_FILE") 2>/dev/null
-  loadnow=$(sysctl -n vm.loadavg 2>/dev/null | tr -d '{}' | awk '{print $1","$2}')
+  loadnow=$( { sysctl -n vm.loadavg 2>/dev/null || cat /proc/loadavg 2>/dev/null; } |
+    tr -d '{}' | awk '{print $1","$2}')
   printf '%s\tmode=%s\tslots=%s\tqueued=%ss\tran=%ss\trc=%s\tload=%s\tcwd=%s\tcmd=%s\n' \
     "$(date '+%Y-%m-%dT%H:%M:%S')" "$mode" "${SLOT_LIMIT:-$SLOTS}" "$queued" "$ran" "$rc" \
     "${loadnow:-?}" "$PWD" "$(printf '%s' "$*" | tr '\n' ' ' | cut -c1-200)" \
@@ -144,8 +175,8 @@ log_run() {
   # Lines appended between the tail and the mv are lost, which is acceptable
   # for sampling and why the threshold is far above a normal day's volume.
   if [ "$(wc -c < "$LOG_FILE" 2>/dev/null || echo 0)" -gt 524288 ] &&
-     command -v lockf >/dev/null 2>&1; then
-    lockf -kst 0 "$LOG_FILE.rotate" sh -c '
+     [ -n "$LOCKER" ]; then
+    try_lock "$LOG_FILE.rotate" sh -c '
       tmp=$1.$$.tmp
       tail -n 2000 "$1" > "$tmp" 2>/dev/null && chmod 600 "$tmp" && mv "$tmp" "$1"
     ' sh "$LOG_FILE" 2>/dev/null
@@ -175,16 +206,51 @@ run_and_log() {
 }
 
 slot_is_free() {
-  lockf -kst 0 "$LOCK_FILE.$1" true 2>/dev/null
+  try_lock "$LOCK_FILE.$1" true 2>/dev/null
 }
 
 # Busy CPU percent averaged over $1 seconds, empty when it cannot be read.
-# iostat's own interval doubles as the poll sleep, so sampling costs no extra
-# wall-clock while queued. Idle is always the fourth field from the end — the
-# three load averages trail it — whatever the disk count on the line.
+# The measuring interval doubles as the poll sleep, so sampling costs no extra
+# wall-clock while queued. macOS: iostat, where idle is always the fourth field
+# from the end — the three load averages trail it — whatever the disk count on
+# the line. Linux: two reads of the aggregate /proc/stat line.
 cpu_busy() {
+  if [ -r /proc/stat ]; then
+    a=$(head -1 /proc/stat)
+    sleep "$1"
+    b=$(head -1 /proc/stat)
+    printf '%s\n%s\n' "$a" "$b" | awk '
+      { idle[NR] = $5 + $6; tot[NR] = 0; for (i = 2; i <= NF; i++) tot[NR] += $i }
+      END { d = tot[2] - tot[1]; if (d > 0) printf "%d", 100 * (d - (idle[2] - idle[1])) / d }'
+    return
+  fi
   iostat -c 2 -w "$1" 2>/dev/null |
     awk 'END { if (NF > 4 && $(NF-3) ~ /^[0-9.]+$/) printf "%d", 100 - $(NF-3) }'
+}
+
+cpu_sampling_ok() {
+  [ -r /proc/stat ] || command -v iostat >/dev/null 2>&1
+}
+
+# MB of memory still available to new work, empty when it cannot be read. Inside
+# a cgroup with a limit the limit is what counts, not the host's free memory.
+mem_available_mb() {
+  if [ -r /sys/fs/cgroup/memory.max ] && [ -r /sys/fs/cgroup/memory.current ]; then
+    max=$(cat /sys/fs/cgroup/memory.max)
+    if [ "$max" != max ]; then
+      echo $(( (max - $(cat /sys/fs/cgroup/memory.current)) / 1048576 ))
+      return
+    fi
+  fi
+  awk '/^MemAvailable:/ { printf "%d", $2 / 1024 }' /proc/meminfo 2>/dev/null
+}
+
+# Growth needs memory headroom as well as idle CPU. Unknown counts as enough:
+# the floor guards hosts that can measure it, it is not a reason to stall.
+mem_ok_to_grow() {
+  [ "$MEM_FLOOR" -gt 0 ] || return 0
+  avail=$(mem_available_mb)
+  [ -z "$avail" ] || [ "$avail" -ge "$MEM_FLOOR" ]
 }
 
 # Take one sample and append it to the shared history. Lines are short and
@@ -318,7 +384,10 @@ case "${1:-}" in
     if [ -x /usr/sbin/taskpolicy ]; then
       exec /usr/sbin/taskpolicy -b "$@"
     fi
-    exec "$@"
+    if command -v ionice >/dev/null 2>&1; then
+      exec nice -n 10 ionice -c 3 "$@"
+    fi
+    exec nice -n 10 "$@"
     ;;
   --queue)
     # Wait for a slot like a normal run, but never skip the command: when the
@@ -330,7 +399,7 @@ case "${1:-}" in
     MODE=queue
     ;;
   __exec)
-    # Internal: runs with the slot's lock already held by the parent lockf.
+    # Internal: runs with the slot's lock already held by the parent locker.
     shift
     slot="$1"
     shift
@@ -344,11 +413,11 @@ case "${1:-}" in
     # somebody needs to judge it. Duplicate samplers are harmless.
     #
     # The loop runs until the trap kills it: a failed sample costs one reading,
-    # never the sampler. Letting a transient iostat hiccup end it would leave
+    # never the sampler. Letting a transient sampling hiccup end it would leave
     # this lane held for the rest of a long build while the window it was
     # supposed to fill goes thin, quietly freezing growth for everybody else.
     sampler=
-    if [ "${HEAVY_NO_SAMPLER:-0}" != 1 ] && command -v iostat >/dev/null 2>&1; then
+    if [ "${HEAVY_NO_SAMPLER:-0}" != 1 ] && cpu_sampling_ok; then
       ( while :; do cpu_sample_append "$POLL_INTERVAL" || sleep "$POLL_INTERVAL"; done ) &
       sampler=$!
     fi
@@ -372,8 +441,8 @@ if [ "${HEAVY_SLOT_HELD:-0}" = 1 ]; then
   run_and_log nested 0 "$@"
 fi
 
-if ! command -v lockf >/dev/null 2>&1; then
-  # No lockf (non-macOS): degrade to running unserialized rather than failing.
+if [ -z "$LOCKER" ]; then
+  # Neither lockf nor flock: degrade to running unserialized rather than failing.
   exec "$@"
 fi
 
@@ -385,7 +454,7 @@ last_grant=
 while :; do
   for i in $(seq 1 "$SLOT_LIMIT"); do
     queued=$SECONDS
-    HEAVY_WAITER="$WAIT_FILE.$$" lockf -kst 0 "$LOCK_FILE.$i" "$0" __exec "$i" "$@"
+    HEAVY_WAITER="$WAIT_FILE.$$" try_lock "$LOCK_FILE.$i" "$0" __exec "$i" "$@"
     rc=$?
     # Runs that only started because a lane was granted are tagged, so --stats
     # can show what the growth actually bought.
@@ -424,7 +493,7 @@ while :; do
   if [ "$SLOT_LIMIT" -lt "$MAX_SLOTS" ] &&
      { [ -z "$last_grant" ] ||
        [ "$(($(date +%s) - last_grant))" -ge "$GROW_WINDOW" ]; }; then
-    if [ "$(cpu_window_verdict "$GROW_WINDOW")" = clean ]; then
+    if [ "$(cpu_window_verdict "$GROW_WINDOW")" = clean ] && mem_ok_to_grow; then
       SLOT_LIMIT=$((SLOT_LIMIT + 1))
       last_grant=$(date +%s)
       printf '[heavy] CPU son %ss boyunca %%%s altinda, ek slot: %s/%s\n' \
