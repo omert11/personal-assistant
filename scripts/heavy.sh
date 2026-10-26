@@ -31,7 +31,8 @@ set -uo pipefail
 # default is 2). Only these knobs are read from the file; HEAVY_CONFIG itself is
 # not, since it already picked the file.
 CONFIG_VARS='HEAVY_SLOTS HEAVY_TIMEOUT HEAVY_STATE_DIR HEAVY_LOG
-HEAVY_MAX_SLOTS HEAVY_GROW_WINDOW HEAVY_CPU_CEIL HEAVY_MEM_FLOOR_MB'
+HEAVY_MAX_SLOTS HEAVY_GROW_WINDOW HEAVY_CPU_CEIL HEAVY_MEM_FLOOR_MB
+HEAVY_GOGC HEAVY_GOMEMLIMIT'
 CONFIG="${HEAVY_CONFIG:-$HOME/.config/heavy/config.sh}"
 if [ -f "$CONFIG" ]; then
   # Read in a subshell: a config that aborts (unset var under set -u, a stray
@@ -136,6 +137,8 @@ ortam:
   HEAVY_GROW_WINDOW ek slot icin gereken bos-CPU suresi, saniye (varsayilan 30)
   HEAVY_CPU_CEIL    bu yuzdenin ustundeki CPU darbogaz sayilir (varsayilan 90)
   HEAVY_MEM_FLOOR_MB ek slot icin bos kalmasi gereken bellek, MB (varsayilan 0 = kapali)
+  HEAVY_GOGC        slottaki komuta GOGC olarak verilir (Go derleyici bellegi; bos = dokunma)
+  HEAVY_GOMEMLIMIT  slottaki komuta GOMEMLIMIT olarak verilir (ornek 3GiB; bos = dokunma)
   HEAVY_TIMEOUT     bekleme tavani, saniye (varsayilan 1200)
   HEAVY_STATE_DIR   kilit + holder dosyalarinin dizini (varsayilan ~/.cache)
   HEAVY_CONFIG      makine-lokal ayar dosyasi (varsayilan ~/.config/heavy/config.sh)
@@ -441,6 +444,11 @@ case "${1:-}" in
     fi
     trap 'rm -f "$HOLDER_FILE.$slot"; [ -n "$sampler" ] && kill "$sampler" 2>/dev/null' EXIT
     export HEAVY_SLOT_HELD=1
+    # Go's compiler is a Go program: a lower GOGC trades build time for a lower
+    # peak heap, which is what decides whether a huge package fits next to the
+    # others. A value the caller set on the command itself always wins.
+    [ -n "${HEAVY_GOGC:-}" ] && [ -z "${GOGC:-}" ] && export GOGC="$HEAVY_GOGC"
+    [ -n "${HEAVY_GOMEMLIMIT:-}" ] && [ -z "${GOMEMLIMIT:-}" ] && export GOMEMLIMIT="$HEAVY_GOMEMLIMIT"
     "$@"
     rc=$?
     [ $rc -eq $RC_LOCK_BUSY ] && rc=$RC_CMD_75
