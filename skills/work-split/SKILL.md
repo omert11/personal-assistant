@@ -29,9 +29,13 @@ Analistsin: kod yazma, çözüm önerme. Yalnız "ne" ve "neden" yaz; "nasıl" o
 
 - Referansları canlı veride ve kodda salt-okur doğrula; yazma ve deneme işlem yok.
 - Bulguyu olgu olarak yaz (değer, durum, kimlik); kök neden yerine "uyuşuyor / çelişiyor".
-- Kaynak ile canlı veri çelişirse "Açık soru" yap.
-- Her iş: **Not** (kısa alıntı), **Sorun / İstek** (etki: mali, deneyim, operasyon), **Canlı veri / Kanıt**, **Beklenen** (sonuç, yöntem değil), **Kapsam** (ürün, kanal, tenant, dışarıda kalan), **Bağlam / İlişki**, **Açık soru**, **Kabul** (görsel, matris, ölçüm, tablo).
+- Doğru karar netse kararı al, "Karar" olarak yaz. Yalnız kullanıcı onayı veya kararı kesin gerekiyorsa "Açık soru" yap.
+- Her iş: **Not** (kısa alıntı), **Sorun / İstek** (etki: mali, deneyim, operasyon), **Canlı veri / Kanıt**, **Beklenen** (sonuç, yöntem değil), **Kapsam** (ürün, kanal, tenant, dışarıda kalan), **Bağlam / İlişki**, **Karar**, **Açık soru** (yalnız kullanıcı kararı gerekiyorsa), **Kabul** (görsel, matris, ölçüm, tablo).
 - Çözüm adımı, dosya değişikliği tarifi, mimari öneri yazma.
+
+## 3b. Açık sorular
+
+- Tüm açık soruları prompt üretmeden önce soru aracıyla tek blokta sor; cevapları "Karar"a çevir.
 
 ## 4. Gruplar
 
@@ -57,13 +61,13 @@ Analistsin: kod yazma, çözüm önerme. Yalnız "ne" ve "neden" yaz; "nasıl" o
 - Yol: aynı klasörde `orkestrator-promptlari.md`; kullanım (yeni oturum, yapıştır, dalga sırası), genel şablon, grup başına kopyala-yapıştır prompt.
 - Her prompt kendi başına yeterli ve şunları içerir:
   - Analiz dosyasının mutlak yolu, `Grup <X> · <ad>` bölümü, iş numaraları; ortak bağlam ve sıra bölümlerini okuma talimatı.
-  - `orchestrate` skill ile çalış; önce kanıtla doğrula; açık soruları kodlamadan önce sor; varsayım yapma.
+  - `orchestrate` skill ile çalış; önce kanıtla doğrula; analizdeki Kararlara uy.
   - `AGENTS.md` ve worktree izolasyonu; grup sınırı dışına çıkma.
   - Kanıt türleri ve yeri: `.agents/<konu-tarih>/kanit/grup-<x>/<iş-no>/`.
   - Commit/PR başlığında iş numarası; `commit` skill ile teslim; COMMIT_RULES gereği release notes.
   - Canlıda geri dönüşsüz işlem (satış, bilet, void, iade, müşteriye/tedarikçiye e-posta, prod yazma) önce sorulur.
   - Bitişte `user-report` ile iş numarası bazlı rapor (sorun → kök neden → yapılan → kanıt → PR/sürüm → açık kalanlar), `rapor-grup-<x>.html`, `dw-share` ile gönderim.
-  - Gruba özel notlar: başlangıç kanıtı, ölçüm beklentisi, diğer gruplarla sınır, önce kullanıcıya özetlenecek tasarım kararları.
+  - Gruba özel notlar: başlangıç kanıtı, ölçüm beklentisi, diğer gruplarla sınır.
   - Zor/kritik grupta son satır `ultrathink`.
 
 ## 8. Doğrulama ve teslim

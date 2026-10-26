@@ -19,8 +19,8 @@ Orkestratörsün: kod yazma, test/build çalıştırma; işi sub-agent'lara dağ
 
 ## 2. Netleştirme
 
-- Açık konuları soru aracıyla sor; hepsi kapanana kadar sürdür.
-- Tüm yapılacaklar netleşmeden kodlamaya geçme.
+- Doğru karar netse kararı al ve uygula; teslim özetinde yaz.
+- Yalnız kullanıcı onayı veya kararı kesin gerekiyorsa sor; soruları soru aracıyla tek blokta topla.
 
 ## 3. Uygulama
 

@@ -415,7 +415,7 @@
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'ı çöz", "orkestre et", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/orchestrate &lt;ref|metin&gt;</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
           <li><code>1</code>: kaynak + <code>AGENTS.md</code> "## Orchestrate" okunur; gerekirse analiz sub-agent'ları mevcut durumu ve kök nedeni doğrular</li>
-          <li><code>2</code>: <strong>netleştirme</strong>: açık konuların tamamı kullanıcıyla kapanmadan kodlamaya geçilmez</li>
+          <li><code>2</code>: <strong>karar</strong>: doğru karar netse ajan kararı alır, teslim özetine yazar; yalnız kullanıcı onayı/kararı kesin gerekiyorsa tek blokta sorar</li>
           <li><code>3</code>: <strong>worktree</strong> içinde görevler sub-agent'lara dağıtılır (aynı dosyaya yazanlar paralel koşmaz)</li>
           <li><code>4</code>: iş bitince <strong>doğrulama sub-agent'ı</strong>: diff, build/test/lint; hatalar sub-agent'lara düzelttirilir</li>
           <li><code>5</code>: aksi söylenmedikçe tüm iş <strong>tek PR</strong>'da toplanır; <code>commit</code> skill</li>
@@ -429,7 +429,7 @@
       <div class="ebody">
         <p><strong>Toplantı notu / geri bildirim / doküman gibi çok maddeli bir kaynağı numaralı işlere, ajan gruplarına ve grup başına orkestratör promptuna böler.</strong> Analist rolündedir: kod yazmaz, çözüm önermez; yalnız sorunu, beklentiyi ve kanıtı yazar.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"işleri grupla", "ajanlara böl", "toplantı notlarını analiz et", "iş analizi çıkar", "orkestratör promptu hazırla", <code>/work-split &lt;kaynak&gt;</code>. Tek iş için <code>orchestrate</code> yeterli.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>kaynak + görseller + son değişiklik bağlamı → kalıcı iş numaraları (<code>UCK-01</code>, <code>OTL-03</code>…) → canlı veri/kodda salt-okur doğrulama, çelişki "Açık soru" olur → alan bütünlüğü / zorluk / boyuta göre gruplar ve sınırlar → çakışmaya göre dalgalar → <code>.agents/&lt;konu-tarih&gt;/</code> altında iş analizi + <code>orkestrator-promptlari.md</code> → <code>dw-share</code> ile gönderim.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>kaynak + görseller + son değişiklik bağlamı → kalıcı iş numaraları (<code>UCK-01</code>, <code>OTL-03</code>…) → canlı veri/kodda salt-okur doğrulama; net olan "Karar" olur, yalnız kullanıcı kararı gereken "Açık soru" olarak split sırasında tek blokta sorulur → alan bütünlüğü / zorluk / boyuta göre gruplar ve sınırlar → çakışmaya göre dalgalar → <code>.agents/&lt;konu-tarih&gt;/</code> altında iş analizi + <code>orkestrator-promptlari.md</code> → <code>dw-share</code> ile gönderim.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Her prompt kendi başına yeterlidir</strong>: <code>orchestrate</code> ile çalışma, kanıt klasörü, iş numaralı commit/PR, canlıda geri dönüşsüz işlem yasağı ve <code>user-report</code> ile grup raporu promptun içinde gelir.</p></div>
       </div>
     </div>
