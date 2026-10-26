@@ -35,4 +35,5 @@ Orkestratörsün: kod yazma, test/build çalıştırma; işi sub-agent'lara dağ
 
 ## 5. Teslim
 
+- Aksi söylenmedikçe tüm işi tek dalda, tek PR'da topla.
 - `commit` skill'ini çağır.

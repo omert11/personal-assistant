@@ -418,7 +418,7 @@
           <li><code>2</code>: <strong>netleştirme</strong>: açık konuların tamamı kullanıcıyla kapanmadan kodlamaya geçilmez</li>
           <li><code>3</code>: <strong>worktree</strong> içinde görevler sub-agent'lara dağıtılır (aynı dosyaya yazanlar paralel koşmaz)</li>
           <li><code>4</code>: iş bitince <strong>doğrulama sub-agent'ı</strong>: diff, build/test/lint; hatalar sub-agent'lara düzelttirilir</li>
-          <li><code>5</code>: <code>commit</code> skill</li>
+          <li><code>5</code>: aksi söylenmedikçe tüm iş <strong>tek PR</strong>'da toplanır; <code>commit</code> skill</li>
         </ul></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Kontrol sonda, tek seferde yapılır.</strong> İş bitene kadar ne ana agent ne sub-agent test/build/doğrulama çalıştırır; ara kırık durum normaldir.</p></div>
       </div>
