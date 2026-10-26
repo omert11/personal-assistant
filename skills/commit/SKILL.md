@@ -62,7 +62,7 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
 
 ## Code review
 
-- Kod değiştiyse zorunlu; yalnız kullanıcı açıkça isterse atla.
+- Kod değiştiyse zorunlu; yalnız kullanıcı açıkça isterse veya çağıran `orchestrate` akışı bu diff'i doğrulamada incelediyse atla.
 - Komut (arka planda, repo/worktree kökünde): `cd <root> && claude -p '/code-review low'`
 - Bekleme: her arka plan oturumunun PID'ini (`$!`) sakla, bitişi `ps -p <PID>` ile bekle; `pgrep -f` ile bekleme.
 - `/code-review` ile başlayan oturumdaysan delegasyon yapma, doğrudan koş.
@@ -124,7 +124,7 @@ header `Teslimat`, question `Commit sonrası ne yapayım?`
 - `git add -A` / `git add .` (hassas dosya riski).
 - `--no-verify`; `--amend` (her zaman yeni commit).
 - Ana branch'e `git push --force` (uyar).
-- Code review'u atlamak/ertelemek/koşula bağlamak; "hızlıca commit", "direkt commit", "test geçiyor", "trivial" gerekçe değildir.
+- Code review'u atlamak/ertelemek/koşula bağlamak (Code review bölümündeki iki istisna hariç); "hızlıca commit", "direkt commit", "test geçiyor", "trivial" gerekçe değildir.
 - `/code-review`'u doğrudan çağırmak, code-review'u sub-agent'a ya da başka bir araçla koşturmak; path'i `cd` yerine yalnız prompt'a yazmak.
 - Review bulgularını "küçük/önemsiz/stil" diye filtrelemek, false positive sandığını elemek, şiddeti yumuşatmak, review'i kısa kesmek, kullanıcı baskısıyla bulgu gizlemek.
 - Hata/boş/timeout veren review'u sessizce geçmek.

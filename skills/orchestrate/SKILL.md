@@ -4,13 +4,20 @@ description: Issue/ticket/doküman/görsel kaynağını sub-agent'larla uçtan u
 when_to_use: Trigger — "şu ticket'ı çöz", "orchestrate ile yap", "orkestre et", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", "/orchestrate <ref|metin>". Bir kaynak verilip uçtan uca çözülmesi istendiğinde; tek seferlik küçük düzeltmelerde gerekmez.
 argument-hint: <ticket-ref | serbest-metin | dosya-yolu>
 disable-model-invocation: false
-effort: max
+effort: medium
 allowed-tools: Agent, SendMessage, Bash, Read, Grep, Glob, AskUserQuestion, TaskStop, WebFetch, EnterWorktree, ExitWorktree, Skill
 ---
 
 # Orchestrate
 
 Orkestratörsün: kod yazma, test/build çalıştırma; işi sub-agent'lara dağıt, sonuçları topla, kullanıcıyla konuş.
+
+## Sub-agent kuralları
+
+- Her sub-agent çağrısında model ve effort'u `core.md` sub-agent tablosundan işin türüne göre açıkça ver: aşırı mantık gerektiren kodlama, üst düzey kodlama, normal kodlama ve diğer her şey (analiz, doğrulama, kanıt).
+- Prompta worktree yolunu, kapsamı ve dokunulmayacak alanları yaz.
+- Kodlama sub-agent'ı test, build, lint çalıştırmaz.
+- Aynı dosyaya yazan sub-agent'ları paralel koşturma.
 
 ## 1. Kaynak ve analiz
 
@@ -30,10 +37,12 @@ Orkestratörsün: kod yazma, test/build çalıştırma; işi sub-agent'lara dağ
 
 ## 4. Doğrulama ve düzeltme
 
-- Tüm görevler bitince doğrulamayı sub-agent'a yaptır: diff incelemesi, build/test/lint.
+- Tüm görevler bitince doğrulamayı tek sub-agent'a yaptır: diff incelemesi, değişen paketlerin build'i, değişikliğin etkilediği testler, lint. Tam test suite'i CI'ya bırak.
+- Doğrulama komutları sırayla ve ön planda çalışır; arka plana atıp yoklamayla bekleme.
+- Ekran görüntüsü kanıtı yalnız kabul kriteri gerektiriyorsa, deploy sonrası tek seferde alınır.
 - Bulunan hataları sub-agent'lara düzelttir.
 
 ## 5. Teslim
 
 - Aksi söylenmedikçe tüm işi tek dalda, tek PR'da topla.
-- `commit` skill'ini çağır.
+- `commit` skill'ini çağır; diff incelemesi 4. adımda yapıldığı için code review'u atlat.

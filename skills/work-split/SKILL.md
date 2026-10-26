@@ -63,7 +63,7 @@ Analistsin: kod yazma, çözüm önerme. Yalnız "ne" ve "neden" yaz; "nasıl" o
   - Analiz dosyasının mutlak yolu, `Grup <X> · <ad>` bölümü, iş numaraları; ortak bağlam ve sıra bölümlerini okuma talimatı.
   - `orchestrate` skill ile çalış; önce kanıtla doğrula; analizdeki Kararlara uy.
   - `AGENTS.md` ve worktree izolasyonu; grup sınırı dışına çıkma.
-  - Kanıt türleri ve yeri: `.agents/<konu-tarih>/kanit/grup-<x>/<iş-no>/`.
+  - Kanıt türleri ve yeri: `.agents/<konu-tarih>/kanit/grup-<x>/<iş-no>/`; ekran görüntüsü yalnız kabul kriteri gerektiriyorsa, deploy sonrası tek seferde.
   - Commit/PR başlığında iş numarası; `commit` skill ile teslim; COMMIT_RULES gereği release notes.
   - Canlıda geri dönüşsüz işlem (satış, bilet, void, iade, müşteriye/tedarikçiye e-posta, prod yazma) önce sorulur.
   - Bitişte `user-report` ile iş numarası bazlı rapor (sorun → kök neden → yapılan → kanıt → PR/sürüm → açık kalanlar), `rapor-grup-<x>.html`, `dw-share` ile gönderim.
