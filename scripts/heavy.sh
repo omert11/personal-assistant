@@ -213,14 +213,29 @@ slot_is_free() {
 # The measuring interval doubles as the poll sleep, so sampling costs no extra
 # wall-clock while queued. macOS: iostat, where idle is always the fourth field
 # from the end — the three load averages trail it — whatever the disk count on
-# the line. Linux: two reads of the aggregate /proc/stat line.
+# the line. Linux inside a CPU-capped cgroup: the cgroup's own usage against its
+# quota, since the host's /proc/stat would look idle while the quota is spent.
+# Plain Linux: two reads of the aggregate /proc/stat line; guest time is already
+# inside user/nice, so only fields 2-9 are summed.
 cpu_busy() {
+  if [ -r /sys/fs/cgroup/cpu.stat ] && [ -r /sys/fs/cgroup/cpu.max ]; then
+    read -r quota period < /sys/fs/cgroup/cpu.max
+    if [ "$quota" != max ] && [ "${period:-0}" -gt 0 ]; then
+      u0=$(awk '/^usage_usec/ { print $2 }' /sys/fs/cgroup/cpu.stat)
+      sleep "$1"
+      u1=$(awk '/^usage_usec/ { print $2 }' /sys/fs/cgroup/cpu.stat)
+      # quota/period cores for $1 seconds = quota * $1 * 1e6 / period usec
+      awk -v d="$((u1 - u0))" -v cap="$((quota * $1 * 1000000 / period))" \
+        'BEGIN { if (cap > 0) { b = 100 * d / cap; printf "%d", (b > 100 ? 100 : b) } }'
+      return
+    fi
+  fi
   if [ -r /proc/stat ]; then
     a=$(head -1 /proc/stat)
     sleep "$1"
     b=$(head -1 /proc/stat)
     printf '%s\n%s\n' "$a" "$b" | awk '
-      { idle[NR] = $5 + $6; tot[NR] = 0; for (i = 2; i <= NF; i++) tot[NR] += $i }
+      { idle[NR] = $5 + $6; tot[NR] = 0; for (i = 2; i <= 9 && i <= NF; i++) tot[NR] += $i }
       END { d = tot[2] - tot[1]; if (d > 0) printf "%d", 100 * (d - (idle[2] - idle[1])) / d }'
     return
   fi
@@ -234,11 +249,14 @@ cpu_sampling_ok() {
 
 # MB of memory still available to new work, empty when it cannot be read. Inside
 # a cgroup with a limit the limit is what counts, not the host's free memory.
+# memory.current includes page cache; its inactive part is reclaimable, so it is
+# counted as available (the same accounting podman stats uses).
 mem_available_mb() {
   if [ -r /sys/fs/cgroup/memory.max ] && [ -r /sys/fs/cgroup/memory.current ]; then
     max=$(cat /sys/fs/cgroup/memory.max)
     if [ "$max" != max ]; then
-      echo $(( (max - $(cat /sys/fs/cgroup/memory.current)) / 1048576 ))
+      cache=$(awk '/^inactive_file / { print $2 }' /sys/fs/cgroup/memory.stat 2>/dev/null)
+      echo $(( (max - $(cat /sys/fs/cgroup/memory.current) + ${cache:-0}) / 1048576 ))
       return
     fi
   fi
