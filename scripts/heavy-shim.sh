@@ -43,11 +43,34 @@ is_heavy_tool() {
   return 1
 }
 
+# Re-run the go command with `-exec true` right after the subcommand at
+# position $1: go builds (and caches) the executable, then runs a no-op.
+go_prebuild() {
+  at=$1; shift
+  n=$# i=0
+  for a do
+    i=$((i + 1))
+    set -- "$@" "$a"
+    [ "$i" = "$at" ] && set -- "$@" -exec true
+  done
+  shift "$n"
+  heavy "$real" "$@"
+}
+
 heavy=0
+go_run=0
 case "$name" in
   go)
+    # `go -C dir <cmd>`: -C has to come first, so the subcommand moves.
+    at=1
     case "${1:-}" in
-      build|test|vet|install) heavy=1 ;;
+      -C|--C) at=3 ;;
+      -C=*|--C=*) at=2 ;;
+    esac
+    eval "sub=\${$at:-}"
+    case "$sub" in
+      build|test|vet|install|generate) heavy=1 ;;
+      run) go_run=1 ;;
     esac
     ;;
   npx)
@@ -89,6 +112,18 @@ case "$name" in
     esac
     ;;
 esac
+
+# `go run` keeps running after the build (a dev server would hold the slot for
+# hours), so only the build goes through the lock; the second call finds the
+# executable in the go build cache and starts it outside the slot. A caller's
+# own -exec would be overridden by ours, so those calls run directly.
+if [ $go_run = 1 ]; then
+  for a in "$@"; do
+    case "$a" in -exec|-exec=*|--exec|--exec=*) exec "$real" "$@" ;; esac
+  done
+  go_prebuild "$at" "$@" || exit $?
+  exec "$real" "$@"
+fi
 
 [ $heavy = 1 ] && exec heavy "$real" "$@"
 exec "$real" "$@"
