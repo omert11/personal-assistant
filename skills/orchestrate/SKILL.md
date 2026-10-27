@@ -39,10 +39,12 @@ Orkestratörsün: kod yazma, test/build çalıştırma; işi sub-agent'lara dağ
 
 - Tüm görevler bitince doğrulamayı tek sub-agent'a yaptır: diff incelemesi, değişen paketlerin build'i, değişikliğin etkilediği testler, lint. Tam test suite'i CI'ya bırak.
 - Doğrulama komutları sırayla ve ön planda çalışır; arka plana atıp yoklamayla bekleme.
-- Ekran görüntüsü kanıtı yalnız kabul kriteri gerektiriyorsa, deploy sonrası tek seferde alınır.
+- Arayüz değiştiyse merge öncesi yerel ortamda kabul kriterindeki ekran genişlikleri ve veri durumlarıyla görsel kontrol yaptır; canlıda bulunacak sorunu burada yakala.
+- Canlı ekran görüntüsü yalnız kabul kriteri gerektiriyorsa, deploy sonrası tek seferlik onaydır; hata arama turu değildir.
 - Bulunan hataları sub-agent'lara düzelttir.
 
 ## 5. Teslim
 
 - Aksi söylenmedikçe tüm işi tek dalda, tek PR'da topla.
+- Deploy sonrası bulunan sorunları tek takip PR'ında topla; bulgu başına ayrı PR ve deploy açma.
 - `commit` skill'ini çağır; diff incelemesi 4. adımda yapıldığı için code review'u atlat.

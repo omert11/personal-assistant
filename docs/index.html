@@ -417,8 +417,8 @@
           <li><code>1</code>: kaynak + <code>AGENTS.md</code> "## Orchestrate" okunur; gerekirse analiz sub-agent'ları mevcut durumu ve kök nedeni doğrular</li>
           <li><code>2</code>: <strong>karar</strong>: doğru karar netse ajan kararı alır, teslim özetine yazar; yalnız kullanıcı onayı/kararı kesin gerekiyorsa tek blokta sorar</li>
           <li><code>3</code>: <strong>worktree</strong> içinde görevler sub-agent'lara dağıtılır; her çağrıda model/effort <code>core.md</code> tablosundan açıkça verilir, aynı dosyaya yazanlar paralel koşmaz</li>
-          <li><code>4</code>: iş bitince tek <strong>doğrulama sub-agent'ı</strong>: diff, değişen paketlerin build'i, etkilenen testler, lint; sırayla, ön planda; tam suite CI'da; ekran görüntüsü yalnız kabul kriteri gerektiriyorsa deploy sonrası bir kez; hatalar sub-agent'lara düzelttirilir</li>
-          <li><code>5</code>: aksi söylenmedikçe tüm iş <strong>tek PR</strong>'da toplanır; <code>commit</code> skill (code review tekrarlanmaz)</li>
+          <li><code>4</code>: iş bitince tek <strong>doğrulama sub-agent'ı</strong>: diff, değişen paketlerin build'i, etkilenen testler, lint; sırayla, ön planda; tam suite CI'da; arayüz değiştiyse merge öncesi yerelde kabul kriterindeki ekran genişlikleriyle görsel kontrol; canlı ekran görüntüsü yalnız kabul kriteri gerektiriyorsa deploy sonrası tek seferlik onay; hatalar sub-agent'lara düzelttirilir</li>
+          <li><code>5</code>: aksi söylenmedikçe tüm iş <strong>tek PR</strong>'da toplanır; deploy sonrası bulgular tek takip PR'ında; <code>commit</code> skill (code review tekrarlanmaz)</li>
         </ul></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Kontrol sonda, tek seferde yapılır.</strong> İş bitene kadar ne ana agent ne sub-agent test/build/doğrulama çalıştırır; ara kırık durum normaldir.</p></div>
       </div>
