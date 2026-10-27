@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 16 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 17 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -196,7 +196,7 @@
     <div class="hero-stats">
       <div class="stat"><div class="num">1</div><div class="lbl">Kural</div></div>
       <div class="stat"><div class="num">4</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">16</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">17</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">1</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -315,7 +315,7 @@
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 16 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 17 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
       <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır; ağır iş agent'lara delege edilir.</p>
     </div>
@@ -431,6 +431,16 @@
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"işleri grupla", "ajanlara böl", "toplantı notlarını analiz et", "iş analizi çıkar", "orkestratör promptu hazırla", <code>/work-split &lt;kaynak&gt;</code>. Tek iş için <code>orchestrate</code> yeterli.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>kaynak + görseller + son değişiklik bağlamı → kalıcı iş numaraları (<code>UCK-01</code>, <code>OTL-03</code>…) → canlı veri/kodda salt-okur doğrulama; net olan "Karar" olur, yalnız kullanıcı kararı gereken "Açık soru" olarak split sırasında tek blokta sorulur → alan bütünlüğü / zorluk / boyuta göre gruplar ve sınırlar → çakışmaya göre dalgalar → <code>.agents/&lt;konu-tarih&gt;/</code> altında iş analizi + <code>orkestrator-promptlari.md</code> → <code>dw-share</code> ile gönderim.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Her prompt kendi başına yeterlidir</strong>: <code>orchestrate</code> ile çalışma, <code>&lt;Ana iş adı&gt; - &lt;harf&gt; &lt;kısa tanım&gt;</code> oturum adı, yalnız görsel işlerde kanıt klasörü, iş numaralı commit/PR, canlıda geri dönüşsüz işlem yasağı ve <code>user-report</code> ile grup raporu promptun içinde gelir; raporlar ve analiz Mac'te <code>dw-share/&lt;Ana iş adı&gt;/</code> klasöründe toplanır.</p></div>
+      </div>
+    </div>
+
+    <!-- solo-dispatch -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="radio-tower"></i></div><div><div class="etitle">solo-dispatch</div></div></div>
+      <div class="ebody">
+        <p><strong>Görevleri Solo üzerinden remote (work container) veya yerel ajan oturumlarına dağıtır, izler, oturumlara mesaj iletir ve teslimi toplar.</strong> Dağıtıcı rolündedir: görevi analiz etmez, kod yazmaz.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şunu başlat", "ajana ver", "grupları başlat", "durum?", "oturumlara söyle", "merge et deploy et", <code>/solo-dispatch &lt;görev|prompt dosyası&gt;</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>analizsiz başlatma (varsayılan tek oturum <code>/orchestrate</code>; <code>work-split</code> promptlarında grup başına oturum, en fazla 6 aktif) → <code>&lt;Ana iş adı&gt; - &lt;harf&gt; &lt;kısa tanım&gt;</code> adlandırma → tmux zil hook'uyla izleme (yalnız soru, merge, rapor, kota) → toplu mesaj (hafızaya yazma notu, açık soru penceresini atlar) → raporları <code>dw-share/&lt;Ana iş adı&gt;/</code> klasörüne toplama → pin'li toplu merge + tek deploy → oturumlara merge sonrası işleri.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><code>scripts/solo-agent.sh</code>: <code>spawn remote|local</code> (yeni veya <code>--resume</code>), <code>send</code>, <code>status</code>, <code>watch</code>, <code>close</code>. Remote oturumlar tmux id'siyle hedeflenir; Solo bağlantısı koparsa oturumlar yaşar.</p></div>
       </div>
     </div>
 
