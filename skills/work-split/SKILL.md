@@ -41,7 +41,7 @@ Analistsin: kod yazma, çözüm önerme. Yalnız "ne" ve "neden" yaz; "nasıl" o
 
 - Grup = tek orkestratör oturumu. Ölçüt sırası: alan bütünlüğü (aynı akış, kod bölgesi, sağlayıcı) → zorluk (Kritik / Zor / Orta / Kolay; mali risk ve geri dönüşsüz iş en üstte) → boyut (büyükse alt gruba böl, küçükse alan komşusuna kat).
 - "Hızlı işler" grubu yalnız dosya çakışması yaratmıyorsa kurulur.
-- Her grup: işler, zorluk, dalga, sınır (neyin bu grubun, neyin başkasının).
+- Her grup: işler, zorluk, dalga, sınır (neyin bu grubun, neyin başkasının), oturum adı için 2-4 kelimelik kısa tanım.
 - Aynı ekran/bileşene dokunan iki grupta sahip tek grup olur; diğeri kullanır, değiştirmez.
 
 ## 5. Sıra ve çakışma
@@ -53,12 +53,14 @@ Analistsin: kod yazma, çözüm önerme. Yalnız "ne" ve "neden" yaz; "nasıl" o
 ## 6. Analiz dosyası
 
 - Yol: repo kökünde git dışı `.agents/<konu-tarih>/<konu>-is-analizi.md`.
+- İlk satırda **Ana iş adı**: kısa, insan okur (ör. `Vesentur faz 1`, `b2btravel 23.10`). Oturum adı ve paylaşım klasörü bu addır.
 - Bölümler: ortak bağlam (ortam kimlikleri, ilgili son değişiklikler tablosu) → özet tablo (No · Konu · Ürün · Zorluk · Grup) → alan bölümleri (`### <NO> · <başlık>`) → iş dışı → ajan grupları tablosu → her grup `### Grup <X> · <ad>` → çakışma ve çalıştırma sırası.
 - Başlıklar promptlarda birebir alıntılanır; sabit tut.
 
 ## 7. Orkestratör promptları
 
 - Yol: aynı klasörde `orkestrator-promptlari.md`; kullanım (yeni oturum, yapıştır, dalga sırası), genel şablon, grup başına kopyala-yapıştır prompt.
+- Her grup başlığında oturum adı: `<Ana iş adı> - <harf> <kısa tanım>` (ör. `Vesentur faz 1 - A GA4 olayları`).
 - Her prompt kendi başına yeterli ve şunları içerir:
   - Analiz dosyasının mutlak yolu, `Grup <X> · <ad>` bölümü, iş numaraları; ortak bağlam ve sıra bölümlerini okuma talimatı.
   - `orchestrate` skill ile çalış; önce sorunu kodda doğrula; analizdeki Kararlara uy.
@@ -66,7 +68,7 @@ Analistsin: kod yazma, çözüm önerme. Yalnız "ne" ve "neden" yaz; "nasıl" o
   - Kanıt yalnız görsel işte (arayüz değişikliği): ekran görüntüsü `.agents/<konu-tarih>/kanit/grup-<x>/<iş-no>/` altına; diğer işlerde kodla doğrulama (diff, build, test) yeterli, kanıt toplanmaz.
   - Commit/PR başlığında iş numarası; `commit` skill ile teslim; COMMIT_RULES gereği release notes.
   - Canlıda geri dönüşsüz işlem (satış, bilet, void, iade, müşteriye/tedarikçiye e-posta, prod yazma) önce sorulur.
-  - Bitişte `user-report` ile iş numarası bazlı rapor (sorun → kök neden → yapılan → kanıt → PR/sürüm → açık kalanlar), `rapor-grup-<x>.html`, `dw-share` ile gönderim.
+  - Bitişte `user-report` ile iş numarası bazlı rapor (sorun → kök neden → yapılan → kanıt → PR/sürüm → açık kalanlar), `rapor-grup-<x>.html`, `dw-share -d "<Ana iş adı>"` ile gönderim.
   - Gruba özel notlar: ölçüm beklentisi, diğer gruplarla sınır.
   - Zor/kritik grupta son satır `ultrathink`.
 
@@ -74,4 +76,4 @@ Analistsin: kod yazma, çözüm önerme. Yalnız "ne" ve "neden" yaz; "nasıl" o
 
 - Her prompttaki grup başlığı ve iş numarası analiz dosyasında birebir başlık olarak var olmalı.
 - Her iş bir gruba ya da "İş dışı"na ait olmalı.
-- İki dosyayı `dw-share` ile gönder; sohbete grup/dalga tablosu ve öne çıkan canlı veri bulgularını kısa yaz.
+- İki dosyayı `dw-share -d "<Ana iş adı>"` ile gönder; sohbete grup/dalga tablosu ve öne çıkan canlı veri bulgularını kısa yaz.
