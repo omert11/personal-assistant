@@ -39,8 +39,9 @@ Orkestratörsün: kod yazma, test/build çalıştırma; işi sub-agent'lara dağ
 
 - Tüm görevler bitince doğrulamayı tek sub-agent'a yaptır: diff incelemesi, değişen paketlerin build'i, değişikliğin etkilediği testler, lint. Tam test suite'i CI'ya bırak.
 - Doğrulama komutları sırayla ve ön planda çalışır; arka plana atıp yoklamayla bekleme.
-- Arayüz değiştiyse merge öncesi yerel ortamda kabul kriterindeki ekran genişlikleri ve veri durumlarıyla görsel kontrol yaptır; canlıda bulunacak sorunu burada yakala.
-- Canlı ekran görüntüsü yalnız kabul kriteri gerektiriyorsa, deploy sonrası tek seferlik onaydır; hata arama turu değildir.
+- Görsel olmayan işte doğrulama koddur (diff, build, test); ekran görüntüsü, canlı veri, API veya DB kanıtı toplatma.
+- İş görselse (arayüz değişikliği) merge öncesi yerel ortamda kabul kriterindeki ekran genişlikleri ve veri durumlarıyla görsel kontrol yaptır; canlıda bulunacak sorunu burada yakala.
+- Canlı ekran görüntüsü yalnız görsel işte ve kabul kriteri gerektiriyorsa, deploy sonrası tek seferlik onaydır; hata arama turu değildir.
 - Bulunan hataları sub-agent'lara düzelttir.
 
 ## 5. Teslim

@@ -61,13 +61,13 @@ Analistsin: kod yazma, çözüm önerme. Yalnız "ne" ve "neden" yaz; "nasıl" o
 - Yol: aynı klasörde `orkestrator-promptlari.md`; kullanım (yeni oturum, yapıştır, dalga sırası), genel şablon, grup başına kopyala-yapıştır prompt.
 - Her prompt kendi başına yeterli ve şunları içerir:
   - Analiz dosyasının mutlak yolu, `Grup <X> · <ad>` bölümü, iş numaraları; ortak bağlam ve sıra bölümlerini okuma talimatı.
-  - `orchestrate` skill ile çalış; önce kanıtla doğrula; analizdeki Kararlara uy.
+  - `orchestrate` skill ile çalış; önce sorunu kodda doğrula; analizdeki Kararlara uy.
   - `AGENTS.md` ve worktree izolasyonu; grup sınırı dışına çıkma.
-  - Kanıt türleri ve yeri: `.agents/<konu-tarih>/kanit/grup-<x>/<iş-no>/`; ekran görüntüsü yalnız kabul kriteri gerektiriyorsa, deploy sonrası tek seferde.
+  - Kanıt yalnız görsel işte (arayüz değişikliği): ekran görüntüsü `.agents/<konu-tarih>/kanit/grup-<x>/<iş-no>/` altına; diğer işlerde kodla doğrulama (diff, build, test) yeterli, kanıt toplanmaz.
   - Commit/PR başlığında iş numarası; `commit` skill ile teslim; COMMIT_RULES gereği release notes.
   - Canlıda geri dönüşsüz işlem (satış, bilet, void, iade, müşteriye/tedarikçiye e-posta, prod yazma) önce sorulur.
   - Bitişte `user-report` ile iş numarası bazlı rapor (sorun → kök neden → yapılan → kanıt → PR/sürüm → açık kalanlar), `rapor-grup-<x>.html`, `dw-share` ile gönderim.
-  - Gruba özel notlar: başlangıç kanıtı, ölçüm beklentisi, diğer gruplarla sınır.
+  - Gruba özel notlar: ölçüm beklentisi, diğer gruplarla sınır.
   - Zor/kritik grupta son satır `ultrathink`.
 
 ## 8. Doğrulama ve teslim
