@@ -163,7 +163,7 @@ Tip: {SOURCE_TYPE}
 ## Kaynak ve Edinim
 
 - **Birincil kaynak**: {kaynak + edinim yöntemi: library ID + sorgu sayısı / OpenAPI export / mail eki + dönüştürme / tek sayfa fetch / crawl2md}
-- **İlgili referans**: {Plane issue (PROJ-N) / mail konu-ID + varsa orijinal dosya yolu}
+- **İlgili referans**: {issue/ticket ref / mail konu-ID + varsa orijinal dosya yolu}
 - **Credential'lar**: [[<credential-learnings-notu>]]
 - **Doğrulama**: {✅/❌ + tarih + kısa sonuç, örn. "CreateTokenV2 ✅ 2026-06-11, token alındı"}
 

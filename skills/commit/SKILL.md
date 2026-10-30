@@ -3,7 +3,7 @@ name: commit
 description: Commit oncesi kalite kontrol + teslimat secenekleri (commit, push, PR, branch).
 when_to_use: Trigger — "commit", "commit at", "push et", "PR olustur", "branch ac", "degisiklikleri kaydet", "kodu gonder", "/commit". Her kod teslimat/kaydetme isteginde tetiklenir; manuel `git commit` yerine bu skill calisir.
 disable-model-invocation: false
-allowed-tools: Bash(git *), Bash(gh *), Bash(plane-cli *), Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, Skill
+allowed-tools: Bash(git *), Bash(gh *), Read, Write, Edit, Grep, Glob, AskUserQuestion, Task, Skill
 ---
 
 # Commit
@@ -27,7 +27,6 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
    - Deslop (bkz. Deslop).
    - Code review (bkz. Code review).
    - Test (bkz. Test).
-   - Plane eşleşmesi (bkz. Plane).
    - Obsidian kayıt ihtiyacı (bkz. Obsidian).
 5. **Düzelt** — tüm bulgular sormadan düzeltilir (bkz. Bulgu düzeltme). Sonra son analiz: atlanan bir şey var mı; yeni bulgu varsa düzelt.
 6. **Commit** — onay beklemeden; `git add <ilgili-dosyalar>` + `git commit`.
@@ -45,9 +44,8 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
    git checkout -b "$BRANCH_NAME"
    ```
 10. **PR** — `gh pr create`; başlık = commit subject. `dijii-tech` repolarında başlık conventional commit değilse conventional'a çevir (release-bot sürümü başlıktan üretir).
-11. **Plane** — otomatik kapat/oluştur (bkz. Plane).
-12. **Son sorular** — iş bitince (bkz. Sorular/Son).
-13. **Sonuç özeti** — commit, teslimat, düzeltilen bulgular, deslop raporu, Plane işlemi, yazılmayan testler ve nedeni.
+11. **Son sorular** — iş bitince (bkz. Sorular/Son).
+12. **Sonuç özeti** — commit, teslimat, düzeltilen bulgular, deslop raporu, yazılmayan testler ve nedeni.
 
 ## Repo kuralları
 
@@ -78,24 +76,6 @@ Analizi sessizce yap, bulguları kendin düzelt, yalnız teslimatı sor (kullan�
 
 - Değişen kodun testi yoksa gerekip gerekmediğine karar ver: davranış/mantık değişikliği ve projede test altyapısı varsa yaz; config, metin, trivial değişiklik veya test altyapısı yoksa yazma.
 - Yazılan testler commit'e girer; yazılmayanlar nedeniyle özette.
-
-## Plane
-
-- Yalnız `AGENTS.md`'de Plane proje UUID'si varsa; yoksa atla. Komut sözdizimi (UUID çözme, `PROJ-N` → `issue get-id`, `--json` parse, REPLACE vs incremental, enum, hata kodları) `plane-cli` skill'inden; burada tekrar yazma.
-- Analizde açık issue'ları listele, değişiklikle uyuşanı bul. Teslimat sonrası sormadan:
-  - Uyuşan var → eksikleri tamamla, dolu alanları koru, liste alanlarında incremental ekle (REPLACE yapan `update --assignees/--labels` değil): `issue get` → self assignee yoksa `issue assignee --add` → label yoksa `issue label --add` → yalnız boş tarihleri `issue update` → `issue update --state` `completed`.
-  - Yok → tek `issue create` (self assignee + tarihler + label), sonra `issue update` ile `completed`.
-- Kapatma = `completed` group state (state list). Self = `member me` UUID.
-- Label sormadan: bug fix → `hata`; özellik/iyileştirme/refactor/chore → `geliştirme`; projede yoksa `label create` ile oluştur, ata.
-- Tarihler (`YYYY-MM-DD`):
-  - Feature branch (`IS_MAIN=false`): `start-date` = branch'in ilk commit tarihi, `target-date` = bugün.
-    ```bash
-    START=$(git log "$DEFAULT_BRANCH".."$CURRENT_BRANCH" --format=%cs --reverse 2>/dev/null | head -1)
-    [ -z "$START" ] && START=$(git log -1 --format=%cs "$(git merge-base "$DEFAULT_BRANCH" "$CURRENT_BRANCH")" 2>/dev/null)
-    [ -z "$START" ] && START=$(date +%Y-%m-%d)
-    TARGET=$(date +%Y-%m-%d)
-    ```
-  - Ana branch (`IS_MAIN=true`): ikisi de bugün.
 
 ## Obsidian
 
@@ -128,4 +108,3 @@ header `Teslimat`, question `Commit sonrası ne yapayım?`
 - `/code-review`'u doğrudan çağırmak, code-review'u sub-agent'a ya da başka bir araçla koşturmak; path'i `cd` yerine yalnız prompt'a yazmak.
 - Review bulgularını "küçük/önemsiz/stil" diye filtrelemek, false positive sandığını elemek, şiddeti yumuşatmak, review'i kısa kesmek, kullanıcı baskısıyla bulgu gizlemek.
 - Hata/boş/timeout veren review'u sessizce geçmek.
-- Plane'de priority set etmek; liste alanlarını REPLACE ile ezmek; dolu alanların üzerine yazmak.
