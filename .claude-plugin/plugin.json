@@ -1,6 +1,6 @@
 {
   "name": "personal-assistant",
-  "version": "1.111.0",
+  "version": "1.112.0",
   "description": "Kisisel asistan plugin'i — oturum yonetimi, commit, django, obsidian docs, user-message, user-report, diji-logs, log-triage, deslop, gemini-chat, heavy-build guard, global rules",
   "author": {
     "name": "Omer Faruk Yigin"
@@ -31,8 +31,6 @@
     "log-triage",
     "log-analysis",
     "incident-triage",
-    "plane",
-    "project-management",
     "heavy-build",
     "build-lock",
     "lockf",

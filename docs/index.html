@@ -216,7 +216,7 @@
         <p>Klasör hiyerarşisinde saf gerçek: genel alan klasörleri (<code>flight/</code>, <code>payment/</code>, <code>django/</code>) tüm projeleri besler, proje klasörleri yalnız kendine özgü bilgiyi tutar. <code>obsidian-write</code> yazar, <code>obsidian-search</code> bulur. Kronoloji ve proje yapısı tutulmaz; dosya <b>şu anki gerçeği</b> taşır.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="shield-check"></i></div><div class="body">
         <h3>Commit Kalite Kapısı</h3>
-        <p><code>commit</code> skill, kod değişen her teslimatta <code>/code-review</code>'u <strong>zorunlu</strong> çalıştırır; kullanıcı "hızlıca commit" dese bile. Tek istisna: <code>orchestrate</code> diff'i doğrulamada zaten incelediyse review tekrarlanmaz. Bulgular sorulmadan düzeltilir, commit mesajı diff'ten üretilir, yalnız teslimat şekli sorulur. Plane issue oluşturup/kapatırken <strong>self atama, başlangıç/bitiş tarihi ve hata/geliştirme label'ını</strong> otomatik doldurur.</p></div></div>
+        <p><code>commit</code> skill, kod değişen her teslimatta <code>/code-review</code>'u <strong>zorunlu</strong> çalıştırır; kullanıcı "hızlıca commit" dese bile. Tek istisna: <code>orchestrate</code> diff'i doğrulamada zaten incelediyse review tekrarlanmaz. Bulgular sorulmadan düzeltilir, commit mesajı diff'ten üretilir, yalnız teslimat şekli sorulur.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="scroll-text"></i></div><div class="body">
         <h3>Oturum Başı Kural Disiplini</h3>
         <p>SessionStart'ta tek çekirdek kural dosyası <code>~/.claude/rules/</code> altına kopyalanır; Django projelerinde <code>django</code> skill'i otomatik yüklenir. Plugin omp ve jcode üzerinde de çalışır: kurallar, skill'ler ve hook'lar <code>scripts/build-omp.py</code> / <code>scripts/build-jcode.py</code> ile çevrilir.</p></div></div>
@@ -326,7 +326,7 @@
       <div class="ebody">
         <p><strong>Kod değişikliklerini commit etmeden önce kalite kapısı kurar.</strong> Analizi sessizce yapar, bulguları sormadan düzeltir, commit mesajını diff'ten üretir; yalnız teslimat şeklini sorar (kullanıcı söylemediyse), ek soruları iş bitince sorar.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"commit", "push et", "PR oluştur", "branch aç", <code>/commit</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → repo kuralları (<code>.agents/COMMIT_RULES.md</code>, global ignore'lu; skill varsayılanlarını ezer) → branch tespit → teslimat sorusu → <b>deslop</b> (kullanıcı yüzeyi varsa) + <b>code review</b> (kod değiştiyse) arka planda → test (gerekiyorsa yazılır) → Plane eşleştir → Obsidian → bulgular düzeltilir → otomatik mesajlı commit (Co-Authored-By) → teslimat → Plane otomatik kapat/oluştur → son sorular (Obsidian, worktree) → sonuç özeti.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>status → repo kuralları (<code>.agents/COMMIT_RULES.md</code>, global ignore'lu; skill varsayılanlarını ezer) → branch tespit → teslimat sorusu → <b>deslop</b> (kullanıcı yüzeyi varsa) + <b>code review</b> (kod değiştiyse) arka planda → test (gerekiyorsa yazılır) → Obsidian → bulgular düzeltilir → otomatik mesajlı commit (Co-Authored-By) → teslimat → son sorular (Obsidian, worktree) → sonuç özeti.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="shield-alert"></i> Öne çıkan</div><p>Code review kod değiştiyse zorunlu (kullanıcı istemezse veya <code>orchestrate</code> diff'i zaten incelediyse atlanır), <strong>tek tur</strong> ve tek seviye: <code>claude -p '/code-review low'</code> ayrı oturumda arka planda; büyük diff modül bazlı 3-4 paralel oturuma bölünür. Her oturumun bitişi saklanan PID ile <code>ps -p</code> üzerinden beklenir. Tüm bulgular (uncertain dahil) düzeltilir. <code>dijii-tech</code> repolarında commit mesajı ve PR başlığı conventional commit zorunlu (release-bot sürümü başlıktan üretir). Yasaklar ayrı bölümde: <code>git add -A</code>, <code>--no-verify</code>, <code>--amend</code>, ana branch'e force push, bulgu filtrelemek.</p></div>
       </div>
     </div>
@@ -402,9 +402,9 @@
     <!-- log-triage -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="list-checks"></i></div><div><div class="etitle">log-triage</div></div></div>
       <div class="ebody">
-        <p><strong>Bir diji-logs projesinin son N saatlik logunu zaman pencerelerine böler, her pencereyi çok açıdan paralel analiz eder, bulguları doğrular ve onayla Plane'e issue açar.</strong> Proje-bağımsızdır; değişen tek şey hedef proje ve Plane proje UUID'si.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"logları analiz et", "son N saatte sorun var mı", "log triage", "loglardan issue çıkar", <code>/log-triage &lt;proje&gt; &lt;süre&gt;</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>fetch_windows.sh</code> ile pencereleri stratified çek (ERROR/WARN ham + DEBUG/SQL aggregate) → tek fazda pencere×açı paralel <strong>sub-agent</strong> → dedup + canlı sorgu ile doğrula → 4 katmanlı tablo sun → <code>log-triage</code> label'ı ile Plane eşleştir → katman katman onay → sırayla issue aç.</p></div>
+        <p><strong>Bir diji-logs projesinin son N saatlik logunu zaman pencerelerine böler, her pencereyi çok açıdan paralel analiz eder, bulguları doğrular ve sohbette raporlar.</strong> Proje-bağımsızdır; değişen tek şey hedef proje.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"logları analiz et", "son N saatte sorun var mı", "log triage", "loglardan sorun çıkar", <code>/log-triage &lt;proje&gt; &lt;süre&gt;</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>fetch_windows.sh</code> ile pencereleri stratified çek (ERROR/WARN ham + DEBUG/SQL aggregate) → tek fazda pencere×açı paralel <strong>sub-agent</strong> → dedup + canlı sorgu ile doğrula → 4 katmanlı bulgu tablosu → bulgu başına ayrıntılı rapor (sorun, kapsam, maskeli log örneği, sayım, trace_id, kök neden, öneri).</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>4 standart açı</strong> (hata / perf / akış / hijyen) her pencerede paralel taranır. Sahte ERROR (ErrRecordNotFound) ayıklanır, PII/credential sızıntısı işaretlenir. Her issue ≥1 ham log örneği + provenance taşır (sonraki oturum sıfırdan kazmasın). Issue açma sub-agent'a devredilmez: HTML escape için Claude sırayla açar.</p></div>
       </div>
     </div>
@@ -412,7 +412,7 @@
     <!-- orchestrate -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="circle-dot"></i></div><div><div class="etitle">orchestrate</div></div></div>
       <div class="ebody">
-        <p><strong>Bir kaynağı (Plane issue / serbest metin / doküman / görsel / log) sub-agent'larla uçtan uca çözer.</strong> Ana agent orkestratördür: kod yazmaz, test/build çalıştırmaz; işi sub-agent'lara dağıtır, sonuçları toplar, kullanıcıyla konuşur.</p>
+        <p><strong>Bir kaynağı (issue/ticket / serbest metin / doküman / görsel / log) sub-agent'larla uçtan uca çözer.</strong> Ana agent orkestratördür: kod yazmaz, test/build çalıştırmaz; işi sub-agent'lara dağıtır, sonuçları toplar, kullanıcıyla konuşur.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"şu ticket'ı çöz", "orkestre et", "bu hatayı worktree'de çöz", "ticket analiz et ve düzelt", "şu dokümandaki sorunu hallet", <code>/orchestrate &lt;ref|metin&gt;</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
           <li><code>1</code>: kaynak + <code>AGENTS.md</code> "## Orchestrate" okunur; gerekirse analiz sub-agent'ları mevcut durumu ve kök nedeni doğrular</li>
@@ -478,7 +478,7 @@
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-square"></i></div><div><div class="etitle">user-message</div></div></div>
       <div class="ebody">
         <p><strong>Müşteri/acenta tarafına kanal-agnostik mesaj üretir</strong> (ticket/email/panel/WhatsApp/SMS/push). Stil rehberini her çalıştırmada okur, onaya sunar, revize gelirse hem düzeltir hem stil dosyasına öğrenim işler.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"müşteri mesajı yaz", "acentaya mesaj", "plane yorumu", "duyuru yaz", "whatsapp mesajı", "sms yaz".</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"müşteri mesajı yaz", "acentaya mesaj", "duyuru yaz", "whatsapp mesajı", "sms yaz".</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Stil rehberini <b>oku</b> (yoksa dur) → kanal belirle → bağlam topla → mesaj üret → onay → revize ise yeniden üret + stil dosyasına ders ekle.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>E-posta kanalı zengin HTML</strong> üretir (vurgulu tablo, kalın, liste) ve sistem varsayılan programıyla (<code>open</code>) açıp <code>AskUserQuestion</code> ile onay alır; diğer kanallar düz metin + <code>zed --wait</code>. Stil dosyası <strong>tek doğruluk kaynağı</strong> (bellekten yazmaz). <strong>Her revize</strong> stil dosyasına kalıcı ders olarak işlenir. Türkçe karakter ASCII karşılığı (s/sh) yasak.</p></div>
       </div>
@@ -531,7 +531,7 @@
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="terminal"></i></div><div><div class="etitle">setup.sh <span class="ev">+ setup.py</span></div><div class="emeta">Tek komutla kurulum</div></div></div>
       <div class="ebody">
         <p><strong>Tüm stack'i tek komutla kuran idempotent installer.</strong> <code>setup.sh</code> önce <code>uv</code> yoksa kurar, sonra <code>setup.py</code>'yi <code>rich</code>/<code>questionary</code> bağımlılıklarıyla ephemeral venv'de çalıştırır (global kirletmeden).</p>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Ne kurar</div><p>settings.json + statusline, Homebrew prerequisites, Python CLI araçları (uv tool), Obsidian vault + CLI, local MCP repo'ları, <code>plane-cli</code>, <code>po-cli</code>, Playwright CLI, <code>playwright-best-practices</code> skill'i, Context7 CLI, Claude Code MCP server'ları ve interaktif credential prompt'ları.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Ne kurar</div><p>settings.json + statusline, Homebrew prerequisites, Python CLI araçları (uv tool), Obsidian vault + CLI, local MCP repo'ları, <code>po-cli</code>, Playwright CLI, <code>playwright-best-practices</code> skill'i, Context7 CLI, Claude Code MCP server'ları ve interaktif credential prompt'ları.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="play"></i> Çalıştırma</div><pre><code>./setup.sh              # uv kurup başlatır
 # idempotent — tekrar çalıştırılabilir, mevcut olanı atlar</code></pre></div>
       </div>
@@ -543,17 +543,6 @@
         <p><strong>Nedir:</strong> Markdown tabanlı yerel bilgi tabanı; dosyalar <code>[[wikilink]]</code> ile birbirine bağlanır. Vault düz dosya sistemidir, uygulama açık olmadan da okunur/yazılır. Resmi CLI (<code>obsidian</code> komutu) BM25 arama ekler, zorunlu değildir.</p>
         <p><strong>Ne işe yarar:</strong> Kalıcı teknik gerçeği (sistem davranışı, kalıcı karar, credential) oturumlar arası taşır. Genel alan klasörleri tüm projeleri besler; proje klasörü yalnız kendine özgü olanı tutar.</p>
         <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p>3 skill (<code>obsidian-search</code>/<code>obsidian-write</code>/<code>obsidian-doc-source</code>) doğrudan Obsidian üzerine kurulu; hepsi <b>ana agent context'inde</b> çalışır, subagent yoktur. Vault <code>~/Documents/ObsidianVault/</code> altında klasör hiyerarşisidir (genel alan + proje); MOC/index.md kullanılmaz. Erişim <code>Glob</code>/<code>Grep</code>/<code>Read</code> ile, Obsidian CLI opsiyonel.</p></div>
-      </div>
-    </div>
-
-    <!-- plane -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="list-checks"></i></div><div><div class="etitle">Plane</div><div class="emeta">plane-cli · proje/issue yönetimi</div></div></div>
-      <div class="ebody">
-        <p><strong>Nedir:</strong> Açık kaynak, self-hosted bir proje/issue yönetim aracı (Jira/Linear alternatifi). Plugin <code>plane-cli</code> binary'si üzerinden REST API'sine bağlanır.</p>
-        <p><strong>Ne işe yarar:</strong> Issue/project/cycle/module listeleme, oluşturma, state güncelleme, atama ve yorum. İş takibi terminalden çıkmadan yapılır.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><strong>Opsiyonel</strong>: <code>AGENTS.md</code>'de Plane proje UUID tanımlıysa <code>commit</code> skill'i değişiklikle uyuşan issue'yu completed state'e çekebilir. Tanımlı değilse Claude native <code>TaskCreate</code> ile takip yeterli.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yapılandırma</div><pre><code>~/.zshrc → PLANE_URL + PLANE_API_KEY + PLANE_WORKSPACE_SLUG
-AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
       </div>
     </div>
 
@@ -595,7 +584,6 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
           <li><strong>Playwright CLI</strong>: tarayıcı otomasyonu ve frontend testi (<code>playwright-cli</code> skill'i; MCP yerine CLI).</li>
           <li><strong>playwright-best-practices</strong>: <code>@playwright/test</code> ile E2E/component/API/visual spec yazımı için harici skill (currents.dev, MIT); <code>~/.claude/skills/</code> altına klonlanır. <code>playwright-cli</code> skill'i tarafından zorunlu eşlikçi olarak çağrılır.</li>
           <li><strong>Context7 (ctx7)</strong>: kütüphane/framework dokümanını canlı çeker; <code>obsidian-doc-source</code> library modunda zorunlu.</li>
-          <li><strong>Plane (plane-cli)</strong>: proje/issue yönetimi; <code>user-message</code> ile issue yanıtı üretimi.</li>
           <li><strong>markitdown</strong>: PDF/Office/ses/görsel → markdown; <code>crawl2md</code> ve <code>obsidian-doc-source</code> dosya kaynaklarında.</li>
         </ul></div>
       </div>
@@ -618,9 +606,9 @@ AGENTS.md → Plane proje UUID (opsiyonel)</code></pre></div>
         <li>Plugin'i kur:<pre><code>/plugin install personal-assistant</code></pre></li>
         <li>Yeniden yükle ve yeni oturum aç:<pre><code>/reload-plugins</code></pre></li>
       </ol>
-      <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler (setup'ın <code>~/.claude/skills/</code>'e kurduğu <code>plane-cli</code>, <code>po-cli</code>, <code>playwright-cli</code> gibi skill'ler dahil) ve hook'lar omp karşılıklarına çevrilir; makinede kurulu yerel MCP'ler (WhatsApp) plugin'e eklenir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
+      <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler (setup'ın <code>~/.claude/skills/</code>'e kurduğu <code>po-cli</code>, <code>playwright-cli</code> gibi skill'ler dahil) ve hook'lar omp karşılıklarına çevrilir; makinede kurulu yerel MCP'ler (WhatsApp) plugin'e eklenir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
       <pre><code>python3 scripts/build-omp.py --link</code></pre>
-      <p><strong>jcode için:</strong> repo'yu klonla, kurulumu çalıştır. Kurallar <code>~/.jcode/prompt-overlay.md</code>'ye, skill'ler (yerel skill'ler ve <code>~/.claude/skills/</code>'teki <code>plane-cli</code>, <code>po-cli</code> gibi skill'ler dahil) <code>~/.jcode/skills/</code>'e, WhatsApp MCP <code>~/.jcode/mcp.json</code>'a yazılır; <code>config.toml</code>'a varsayılan model (çekirdek kuraldaki Orchestrator satırı), heavy guard (<code>pre_tool_transform</code>), Claude girişinin <code>~/.claude/.credentials.json</code>'dan okunması ve oturum başı yenileme eklenir; telemetri kapatılır. jcode'da soru aracı olmadığından skill'lerdeki sorular numaralı başlık ve harfli seçeneklerle metin içinde sorulur. Django otomatik yüklemesi jcode'da yok.</p>
+      <p><strong>jcode için:</strong> repo'yu klonla, kurulumu çalıştır. Kurallar <code>~/.jcode/prompt-overlay.md</code>'ye, skill'ler (yerel skill'ler ve <code>~/.claude/skills/</code>'teki <code>po-cli</code>, <code>playwright-cli</code> gibi skill'ler dahil) <code>~/.jcode/skills/</code>'e, WhatsApp MCP <code>~/.jcode/mcp.json</code>'a yazılır; <code>config.toml</code>'a varsayılan model (çekirdek kuraldaki Orchestrator satırı), heavy guard (<code>pre_tool_transform</code>), Claude girişinin <code>~/.claude/.credentials.json</code>'dan okunması ve oturum başı yenileme eklenir; telemetri kapatılır. jcode'da soru aracı olmadığından skill'lerdeki sorular numaralı başlık ve harfli seçeneklerle metin içinde sorulur. Django otomatik yüklemesi jcode'da yok.</p>
       <pre><code>python3 scripts/build-jcode.py</code></pre>
     </div>
   </div>

@@ -1,7 +1,7 @@
 ---
 name: user-message
 description: Acentaya/müşteriye kanal-agnostik mesaj üretir (ticket/email/panel/WhatsApp/SMS/push).
-when_to_use: Trigger — "müşteri mesajı yaz", "acentaya mesaj", "müşteriye yaz", "destek talebi yanıtı", "plane yorumu", "issue cevabı", "duyuru yaz", "panel duyurusu", "whatsapp mesajı", "sms yaz", "push notification". Stil rehberi `~/Documents/ObsidianVault/user-message-still.md`'den okunur. E-posta kanalı zengin HTML (vurgulu tablo) üretip sistem varsayılan programıyla açar; diğer kanallar zed --wait ile onaya sunulur. Revize stil dosyasına öğrenim olarak eklenir.
+when_to_use: Trigger — "müşteri mesajı yaz", "acentaya mesaj", "müşteriye yaz", "destek talebi yanıtı", "issue cevabı", "duyuru yaz", "panel duyurusu", "whatsapp mesajı", "sms yaz", "push notification". Stil rehberi `~/Documents/ObsidianVault/user-message-still.md`'den okunur. E-posta kanalı zengin HTML (vurgulu tablo) üretip sistem varsayılan programıyla açar; diğer kanallar zed --wait ile onaya sunulur. Revize stil dosyasına öğrenim olarak eklenir.
 allowed-tools: Read, Write, Edit, Bash, AskUserQuestion
 disable-model-invocation: false
 ---
@@ -98,7 +98,7 @@ echo "$f"
 
 ## 6. Sonucu yorumla
 
-Mesaj kullanıcı onayı olmadan final değildir. Skill mesajı göndermez; kullanıcı kanala kendisi yapıştırır (Plane/WhatsApp gönderimi istenirse `plane-cli`/`whatsapp` MCP).
+Mesaj kullanıcı onayı olmadan final değildir. Skill mesajı göndermez; kullanıcı kanala kendisi yapıştırır (WhatsApp gönderimi istenirse `whatsapp` MCP).
 
 **5-T sonrası** — dosyanın son satırı:
 - `Y`, `Yes`, `Onay`, `Tamam`, `Ok` → onay; nihai metni göster, çık.

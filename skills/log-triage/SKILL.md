@@ -1,23 +1,22 @@
 ---
 name: log-triage
-description: Logları pencere×açı paralel analiz edip doğruladığı sorunları Plane'e issue açar.
-when_to_use: Trigger — "logları analiz et", "son N saatte sorun var mı", "log triage", "loglardan issue çıkar", "/log-triage <proje> <süre>". Bir diji-logs projesinin son N saatlik logu (hata + performans + iş akışı + log hijyeni) taranıp doğrulanan sorunlar Plane'e taşınacaksa. Tüm projelere uyar; değişen yalnız hedef proje ve Plane proje UUID'si.
+description: Logları pencere×açı paralel analiz eder, doğruladığı sorunları sohbette raporlar.
+when_to_use: Trigger — "logları analiz et", "son N saatte sorun var mı", "log triage", "loglardan sorun çıkar", "/log-triage <proje> <süre>". Bir diji-logs projesinin son N saatlik logu (hata + performans + iş akışı + log hijyeni) taranıp doğrulanan sorunlar raporlanacaksa. Tüm projelere uyar; değişen yalnız hedef proje.
 disable-model-invocation: true
 allowed-tools: Bash, Read, Write, Edit, AskUserQuestion, Skill, Task, TaskCreate, TaskUpdate
 ---
 
-# Log Triage — Pencere × Açı Paralel Log Analizi → Plane Issue
+# Log Triage — Pencere × Açı Paralel Log Analizi → Sohbet Raporu
 
 ```
 Hazırlık (Claude)     : log çek → N saat → M pencere → /tmp (stratified)
 SUB-AGENT (tek faz)   : her pencere × her açı = paralel sub-agent (M×A sub-agent)
 Claude orchestration  : dedup + canlı doğrulama → katmanlı rapor
-                        → BULGULARI TABLO HALİNDE SUN (onaydan ÖNCE — zorunlu)
-                        → Plane eşleştirme → katman katman onay → sıralı issue create
+                        → bulgu tablosu + bulgu başına ayrıntılı rapor (sohbete)
 ```
 
-- Tek sub-agent fan-out'u = analiz. Issue açma sub-agent'a DEVREDİLMEZ: Claude sırayla, her create ayrı plane-cli komutu.
-- Başta görev listesi aç (çek / sub-agent analiz / dedup+doğrula / tablo+onay / issue create); ilerledikçe güncelle.
+- Tek sub-agent fan-out'u = analiz. Rapor yazımı sub-agent'a DEVREDİLMEZ: Claude yazar.
+- Başta görev listesi aç (çek / sub-agent analiz / dedup+doğrula / rapor); ilerledikçe güncelle.
 
 ## Adım 0 — Argümanlar
 
@@ -67,47 +66,20 @@ Tüm sub-agent sonuçlarını topla (hata/boş döneni yeniden spawn et); her `{
    - **Katman 3 — Performans**: N+1, cache, slow query, index.
    - **Katman 4 — Log Hijyeni**: yanlış seviye, spam, credential log, frontend gürültü.
 
-## Adım 4 — Bulguları tablo halinde sun (onaydan ÖNCE, zorunlu)
+## Adım 4 — Bulgu tablosu
 
-Onay sorusundan önce tüm bulguları konuşmada tablo olarak listele; kör onay yasak. Katman başına ayrı tablo, kolonlar en az: # / Sorun / Kanıt(sayım) / Kapsam(tenant·provider·booking) / Örnek trace_id / Kök neden / Plane'de var mı.
+Tüm bulguları sohbette katman başına ayrı tablo olarak listele; kolonlar en az: # / Sorun / Kanıt(sayım) / Kapsam(tenant·provider·booking) / Örnek trace_id / Kök neden / Öncelik.
 
-## Adım 5 — Plane eşleştirme (`log-triage` label)
+- Öncelik: Katman1→`urgent`/`high`, Katman2→`high`/`medium`, Katman3→`medium`, Katman4→`medium`/`low`; güvenlik içerenler `high`.
 
-Skill'in açtığı tüm issue'lar `log-triage` label'ı taşır; eşleştirme yalnız bu label'lı issue'larla yapılır.
+## Adım 5 — Bulgu başına ayrıntılı rapor
 
-1. Label'ı bul/oluştur (idempotent), UUID'sini sakla:
-   ```bash
-   plane-cli --json label list --project <UUID>     # "log-triage" var mı?
-   # yoksa:
-   plane-cli --json label create "log-triage" --project <UUID> --color "#e11d48"
-   ```
-2. Label'lı issue'ları çek. `issue list` `labels` alanını hep `[]` döner — ona asla dayanma (yoksa her çalıştırmada duplicate açılır):
-   - Tercih: `issue list` label filtresi destekliyorsa kullan (`plane-cli issue list --help` ile doğrula).
-   - Fallback: `issue list`'ten aday ID'leri al, her birini `plane-cli --json issue get <uuid> --project <UUID>` ile çek; label UUID'si `get`'in `labels` listesindeyse `log-triage` etiketlidir.
-3. Bulguları bu label-doğrulanmış liste başlıklarıyla karşılaştır; tablodaki "Plane'de var mı?" = "YOK" veya `PROJ-N`. Eşleşene yeni issue açma; gerekirse mevcut issue'ya yorum/güncelleme öner.
+Tablodan sonra her bulgu için `references/finding_template.md` yapısında markdown rapor yaz (sohbete; katman sırasıyla, katman içinde öncelik sırasıyla).
 
-## Adım 6 — Katman katman onay
-
-Katman başına bir soru (soru aracı, `multiSelect: true`): "Hangileri için issue açayım?" Seçenekler = katmandaki bulgular (label kısa, description'da kanıt+öncelik). Kullanıcı "hepsini aç" derse soruları atla. Onay/seçim her zaman soru aracıyla; düz metin soru yok.
-
-## Adım 7 — Onaylananları sırayla aç
-
-1. State UUID'si (genelde "Başlanmadı"/unstarted): `plane-cli state list --project <UUID>`.
-2. `log-triage` label UUID'si (Adım 5) hazır olsun.
-3. Her bulgu için HTML'i `references/issue_template.md` zorunlu yapısına göre üret (tüm bölümler, ≥1 PII-maskeli ham log örneği, Tespit Bağlamı; veri yoksa "tespit edilemedi"). `html.escape` ile escape edip dosyaya yaz; create dosyadan zorunlu.
-4. `scripts/create_issue.sh` ile sırayla aç:
-   ```bash
-   "$HOME/.../log-triage/scripts/create_issue.sh" \
-     "<proj_uuid>" "<state_uuid>" "<priority>" "<html_dosyası>" "<başlık>" "<label_uuid>"
-   ```
-   - 6. argüman (label UUID) boş bırakılmaz; her issue `log-triage` label'ı alır.
-   - Başlığa `[log-triage]` veya başka tag prefix'i EKLEME; başlık = yalnız sorun (örn `Ödeme callback POST body maskesiz loglanıyor — KVKK/PCI`).
-   - Priority: Katman1→`urgent`/`high`, Katman2→`high`/`medium`, Katman3→`medium`, Katman4→`medium`/`low`; güvenlik içerenler `high`.
-5. `PROJ-N OK` = label eklendi. Teyit gerekirse `issue get <uuid>` ile bak (`list` ile değil). `FAIL` olursa: `plane-cli issue label <uuid> --project <UUID> --add <label_uuid>`.
-6. Açılan `PROJ-N`'leri katman tablosu olarak özetle.
+- Tüm bölümler zorunlu; ≥1 PII-maskeli ham log örneği; veri yoksa "tespit edilemedi".
+- Başlık = yalnız sorun (örn `Ödeme callback POST body maskesiz loglanıyor — KVKK/PCI`), tag prefix'i yok.
 
 ## İlgili
 
 - `diji-logs` skill — VictoriaLogs/LogsQL sorgu katmanı.
-- `plane-cli` skill — issue CRUD.
-- `references/subagent_template.md`, `references/angles.md`, `references/issue_template.md`.
+- `references/subagent_template.md`, `references/angles.md`, `references/finding_template.md`.

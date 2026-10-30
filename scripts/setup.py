@@ -225,58 +225,6 @@ def ensure_skill_clone(name: str, owner_repo: str) -> bool:
     return False
 
 
-def ensure_env_vars(label: str, prompts: list[tuple[str, str, bool]], comment: str) -> bool:
-    """Sync env vars to ~/.zshrc and ~/.claude/settings.json.
-
-    prompts: list of (var_name, prompt_text, is_password) tuples.
-    Asks user once, writes to both targets if either is missing.
-    """
-    rc = HOME / ".zshrc"
-    settings_path = CLAUDE_DIR / "settings.json"
-    primary_var = prompts[0][0]
-
-    has_rc = rc.exists() and primary_var in rc.read_text()
-    has_claude = False
-    if settings_path.exists():
-        try:
-            settings = json.loads(settings_path.read_text())
-            has_claude = primary_var in settings.get("env", {})
-        except json.JSONDecodeError:
-            pass
-
-    if has_rc and has_claude:
-        skip(f"{label} env aktif (rc + Claude)")
-        return True
-
-    if not Confirm.ask(f"{label} env vars'ı şimdi yapılandırayım mı?", default=True):
-        return False
-
-    values: dict[str, str] = {}
-    for var_name, prompt_text, is_password in prompts:
-        v = Prompt.ask(prompt_text, default="", show_default=False, password=is_password)
-        if not v:
-            warn(f"{var_name} boş — env yapılandırılmadı")
-            return False
-        values[var_name] = v
-
-    if not has_rc:
-        with rc.open("a") as f:
-            f.write(f"\n# {comment}\n")
-            for k, v in values.items():
-                f.write(f'export {k}="{v}"\n')
-        ok("~/.zshrc'ye eklendi")
-
-    if not has_claude and settings_path.exists():
-        try:
-            settings = json.loads(settings_path.read_text())
-            settings.setdefault("env", {}).update(values)
-            settings_path.write_text(json.dumps(settings, indent=2) + "\n")
-            ok("settings.json env güncellendi")
-        except (json.JSONDecodeError, OSError) as e:
-            warn(f"settings.json güncellenemedi: {e}")
-    return True
-
-
 def ensure_repo(owner_repo: str, target: Path) -> bool:
     if (target / ".git").exists():
         skip(f"{target.name} clone'lu")
@@ -607,23 +555,6 @@ def section_app_store_mcp():
     info("Fastlane gerekli — eksikse: brew install fastlane")
 
 
-def section_plane_cli():
-    """Install plane-cli + skill."""
-    section("plane-cli (Plane project management)")
-    if not ensure_rust_cli_release("plane-cli", "omert11/plane-cli"):
-        return
-    ensure_skill_from_repo("plane-cli", "omert11/plane-cli")
-    ensure_env_vars(
-        "PLANE",
-        [
-            ("PLANE_URL", "PLANE_URL (örn. https://support.example.com — /api/v1 EKLEME)", False),
-            ("PLANE_API_KEY", "PLANE_API_KEY (plane_api_...)", True),
-            ("PLANE_WORKSPACE_SLUG", "PLANE_WORKSPACE_SLUG (örn. diji-tech)", False),
-        ],
-        "Plane CLI (project management)",
-    )
-
-
 def section_po_cli():
     """Install po-cli + skill, replacing legacy po-mcp."""
     section("po-cli (Django gettext)")
@@ -812,7 +743,6 @@ def section_credentials():
     guide.add_column("MCP", style="cyan")
     guide.add_column("Yapılacak")
     guide.add_row("WhatsApp", "github.com/omert11/whatsapp-mcp README — QR okut, bridge başlat")
-    guide.add_row("Plane",    "~/.zshrc → PLANE_URL + PLANE_API_KEY + PLANE_WORKSPACE_SLUG (plane-cli kullanır)")
     guide.add_row("Google",   "Claude Code → /mcp → claude.ai servisi seç → Authenticate")
     console.print(guide)
 
@@ -848,7 +778,6 @@ def main():
     section_playwright_cli()
     section_playwright_best_practices()
     section_po_cli()
-    section_plane_cli()
     section_settings()
     section_statusline()
     section_register_mcps()

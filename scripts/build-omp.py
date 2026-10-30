@@ -27,7 +27,7 @@ OMP = ROOT / "omp"
 TARGETS = ROOT / "targets"
 OUT = TARGETS / "omp"
 WHATSAPP_SERVER = Path.home() / "Desktop" / "local" / "whatsapp-mcp" / "whatsapp-mcp-server"
-# Skills setup.py installs user-level for Claude Code (plane-cli, po-cli, playwright-cli, ...).
+# Skills setup.py installs user-level for Claude Code (po-cli, playwright-cli, ...).
 CLAUDE_USER_SKILLS = Path.home() / ".claude" / "skills"
 # load-rules.sh copies local-skills/ there and lists them in this manifest.
 CLAUDE_USER_SKILLS_MANIFEST = CLAUDE_USER_SKILLS / ".personal-assistant-manifest"
