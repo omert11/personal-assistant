@@ -417,7 +417,7 @@
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><ul>
           <li><code>1</code>: kaynak + <code>AGENTS.md</code> "## Orchestrate" okunur; gerekirse analiz sub-agent'ları mevcut durumu ve kök nedeni doğrular</li>
           <li><code>2</code>: <strong>karar</strong>: doğru karar netse ajan kararı alır, teslim özetine yazar; yalnız kullanıcı onayı/kararı kesin gerekiyorsa tek blokta sorar</li>
-          <li><code>3</code>: <strong>worktree</strong> içinde görevler sub-agent'lara dağıtılır; her çağrıda model/effort <code>core.md</code> tablosundan açıkça verilir, aynı dosyaya yazanlar paralel koşmaz</li>
+          <li><code>3</code>: <strong>worktree</strong> içinde görevler sub-agent'lara dağıtılır; her çağrıda model/effort <code>core.md</code> tablosundan açıkça verilir, aynı dosyaya yazanlar paralel koşmaz; işi biten sub-agent hemen kapatılır, yeni iş için yeni sub-agent açılır</li>
           <li><code>4</code>: iş bitince tek <strong>doğrulama sub-agent'ı</strong>: diff, değişen paketlerin build'i, etkilenen testler, lint; sırayla, ön planda; tam suite CI'da; görsel olmayan işte doğrulama koddur, ekran görüntüsü/canlı veri kanıtı toplanmaz; arayüz değiştiyse merge öncesi yerelde kabul kriterindeki ekran genişlikleriyle görsel kontrol; canlı ekran görüntüsü yalnız kabul kriteri gerektiriyorsa deploy sonrası tek seferlik onay; hatalar sub-agent'lara düzelttirilir</li>
           <li><code>5</code>: aksi söylenmedikçe tüm iş <strong>tek PR</strong>'da toplanır; deploy sonrası bulgular tek takip PR'ında; <code>commit</code> skill (code review tekrarlanmaz)</li>
         </ul></div>

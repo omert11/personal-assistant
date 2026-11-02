@@ -18,6 +18,7 @@ Orkestratörsün: kod yazma, test/build çalıştırma; işi sub-agent'lara dağ
 - Prompta worktree yolunu, kapsamı ve dokunulmayacak alanları yaz.
 - Kodlama sub-agent'ı test, build, lint çalıştırmaz.
 - Aynı dosyaya yazan sub-agent'ları paralel koşturma.
+- İşi biten sub-agent'ı hemen kapat; arka planda bekletme. Yeni iş için yeni sub-agent aç.
 
 ## 1. Kaynak ve analiz
 
