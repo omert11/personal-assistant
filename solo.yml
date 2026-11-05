@@ -42,3 +42,10 @@ processes:
   # test:
   #   command: bash scripts/load-rules.sh
   #   auto_start: false
+  # WhatsApp kendi sohbetinde "!" ile başlayan mesajları bu repodaki Claude oturumuna verir, cevabı 🤖 etiketiyle
+  # aynı sohbete yollar. Oturum id'si ~/.local/state/wa-agent/'da saklanır; açılamazsa yeni oturum başlatılır.
+  # Süreç düşerse Solo yeniden başlatır. ~/.local/bin/wa-agent (makineye özel).
+  wa-agent:
+    command: wa-agent
+    auto_start: true
+    auto_restart: true
