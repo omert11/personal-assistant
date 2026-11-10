@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 17 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 16 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -196,7 +196,7 @@
     <div class="hero-stats">
       <div class="stat"><div class="num">1</div><div class="lbl">Kural</div></div>
       <div class="stat"><div class="num">4</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">17</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">16</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">1</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -219,7 +219,7 @@
         <p><code>commit</code> skill, kod değişen her teslimatta <code>/code-review</code>'u <strong>zorunlu</strong> çalıştırır; kullanıcı "hızlıca commit" dese bile. Tek istisna: <code>orchestrate</code> diff'i doğrulamada zaten incelediyse review tekrarlanmaz. Bulgular sorulmadan düzeltilir, commit mesajı diff'ten üretilir, yalnız teslimat şekli sorulur.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="scroll-text"></i></div><div class="body">
         <h3>Oturum Başı Kural Disiplini</h3>
-        <p>SessionStart'ta tek çekirdek kural dosyası <code>~/.claude/rules/</code> altına kopyalanır; Django projelerinde <code>django</code> skill'i otomatik yüklenir. Plugin omp ve jcode üzerinde de çalışır: kurallar, skill'ler ve hook'lar <code>scripts/build-omp.py</code> / <code>scripts/build-jcode.py</code> ile çevrilir.</p></div></div>
+        <p>SessionStart'ta tek çekirdek kural dosyası <code>~/.claude/rules/</code> altına kopyalanır; Django projelerinde <code>django</code> skill'i otomatik yüklenir.</p></div></div>
       <div class="card"><div class="icon"><i data-lucide="presentation"></i></div><div class="body">
         <h3>Görsel Rapor</h3>
         <p><code>user-report</code> yapılan işi <a href="https://github.com/omert11/report-kit">report-kit</a> ile tek dosyalık, etkileşimli HTML rapora döker: ölçülmüş KPI'lar, önce/sonra grafikleri, onay/soru blokları, sürümler.</p></div></div>
@@ -318,7 +318,7 @@
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 17 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 16 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
       <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır; ağır iş agent'lara delege edilir.</p>
     </div>
@@ -378,16 +378,6 @@
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"siteyi crawl et", "URL'i markdown yap", <code>/crawl2md &lt;url&gt; &lt;dir&gt; [--depth N] [--delay S]</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>uv</code> kontrol → parametre parse → crawl onayı → <code>uv run --script</code> (PEP 723 inline deps, ephemeral venv) → rapor → temizleme onayı → cleaner agent.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Same-host kilidi</strong>: sadece aynı hosttaki linkleri izler. Delay zorunlu (rate-limit). Cleaner aggressive modda yedek önerir.</p></div>
-      </div>
-    </div>
-
-    <!-- gemini-chat -->
-    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="sparkles"></i></div><div><div class="etitle">gemini-chat</div></div></div>
-      <div class="ebody">
-        <p><strong>Kullanıcının oturum açık Chrome'undaki Gemini ile sohbet eder, görsel üretir ve indirir.</strong> Akış, bekleme, kurtarma ve indirme <code>scripts/gemini.js</code>'te; agent yalnız <code>ask</code> / <code>generate</code> çağırır.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"gemini'ye sor", "gemini ile görsel oluştur", "gemini chat", <code>/gemini-chat</code>.</p></div>
-        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Agent'a ait etiketli sekme (<code>agent-gemini</code>) → <code>ask</code>: gönder → en yeni cevabın bitmesini bekle → metni dön · <code>generate</code>: görsel aracını seç → gönder → bekle → doğrulanmış indir → <code>close()</code>.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Hep kullanıcının profili</strong>: Mac'te kullanıcının kendi Chrome'u (relay), remote container'da <code>gbrowser</code> paylaşımlı oturumlu Chromium'u; yönetilen temiz tarayıcıya hiç düşmez. <strong>Kurtarma</strong>: metin/hata cevabında "Yeniden yap", donmada aynı sohbeti yeniden yükle, 4 denemede pes. <strong>Doğrulanmış indirme</strong>: tam boy, cevabın önizlemesiyle 32×32 karşılaştırılır; eşleşmezse önizleme tutulur. Kullanıcının sekmelerine dokunmaz, pencereyi öne getirmez. Stil tutarlılığı ve görsel prompt kuralları skill'de.</p></div>
       </div>
     </div>
 
@@ -560,7 +550,7 @@
     <!-- whatsapp -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="message-circle"></i></div><div><div class="etitle">WhatsApp</div><div class="emeta">whatsapp-mcp · mesaj kanalı</div></div></div>
       <div class="ebody">
-        <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır. Claude Code'a <code>setup.py</code> ile, omp'ye kurulu olduğu makinede <code>build-omp.py</code> ile (<code>targets/omp/.mcp.json</code>), jcode'a <code>build-jcode.py</code> ile (<code>~/.jcode/mcp.json</code>) kaydedilir.</p>
+        <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır. Claude Code'a <code>setup.py</code> ile kaydedilir.</p>
         <p><strong>Ne işe yarar:</strong> Sohbetleri listeleme, mesaj arama, kişi bulma ve mesaj/dosya/ses gönderme.</p>
         <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin çıktı kanallarından biri. Skill müşteri/acenta mesajını kanal-agnostik üretir; WhatsApp seçilirse <code>mcp__whatsapp__*</code> araçlarıyla gönderilir (skill mesajı üretir, gönderimi entegrasyon yapar).</p></div>
       </div>
@@ -608,10 +598,6 @@
         <li>Plugin'i kur:<pre><code>/plugin install personal-assistant</code></pre></li>
         <li>Yeniden yükle ve yeni oturum aç:<pre><code>/reload-plugins</code></pre></li>
       </ol>
-      <p><strong>omp (oh-my-pi) için:</strong> repo'yu klonla, omp hedefini üretip bağla. Kurallar (yerel kurallar dahil), skill'ler (setup'ın <code>~/.claude/skills/</code>'e kurduğu <code>po-cli</code>, <code>playwright-cli</code> gibi skill'ler dahil) ve hook'lar omp karşılıklarına çevrilir; makinede kurulu yerel MCP'ler (WhatsApp) plugin'e eklenir; <code>targets/omp/</code> her oturum başında yeniden üretilir.</p>
-      <pre><code>python3 scripts/build-omp.py --link</code></pre>
-      <p><strong>jcode için:</strong> repo'yu klonla, kurulumu çalıştır. Kurallar <code>~/.jcode/prompt-overlay.md</code>'ye, skill'ler (yerel skill'ler ve <code>~/.claude/skills/</code>'teki <code>po-cli</code>, <code>playwright-cli</code> gibi skill'ler dahil) <code>~/.jcode/skills/</code>'e, WhatsApp MCP <code>~/.jcode/mcp.json</code>'a yazılır; <code>config.toml</code>'a varsayılan model (çekirdek kuraldaki Orchestrator satırı), heavy guard (<code>pre_tool_transform</code>), Claude girişinin <code>~/.claude/.credentials.json</code>'dan okunması ve oturum başı yenileme eklenir; telemetri kapatılır. jcode'da soru aracı olmadığından skill'lerdeki sorular numaralı başlık ve harfli seçeneklerle metin içinde sorulur. Django otomatik yüklemesi jcode'da yok.</p>
-      <pre><code>python3 scripts/build-jcode.py</code></pre>
     </div>
   </div>
 </section>

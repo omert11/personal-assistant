@@ -1,5 +1,5 @@
 #!/bin/sh
-# SessionStart hook (Claude Code) / session hook (omp): when the session cwd is a
+# SessionStart hook: when the session cwd is a
 # Django project, print the django skill body so it lands in the model context.
 # Detection: manage.py at the project root or one level below (e.g. djangomain/).
 # Prints nothing outside Django projects, so other sessions pay no context cost.
