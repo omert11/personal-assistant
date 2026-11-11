@@ -7,6 +7,7 @@
 - Geçici çözüm (workaround) üretme, doğru çözümü bul.
 - Memory yazma işlemini kullanıcı söylemedikçe veya onaylamadıkça yapman yasak.
 - Artifact kullanımı yasak.
+- Hiçbir dosya veya dokümana açıkça cred / key / sır değerinde bilgi yazma; ben yaz desem bile bu çelişkide 2. kez onay al.
 - Zorunlu olarak yarım kalan geliştirmeleri `TODO:` yorumuyla işaretleyip takip edebilirsin.
 - `obsidian-search` ile kaydedilmiş önceki notları arayabilir, `obsidian-write` ile yeni not ekleyebilirsin.
 - Diji işi için credential gerektiğinde `work-diji-secrets`, kişisel işler için `personal-secrets` skill'ini yükle.
