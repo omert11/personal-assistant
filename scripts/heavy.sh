@@ -24,7 +24,10 @@
 # CPU is not the only thing a build eats. On a memory-capped host (a container
 # with a cgroup limit) two big compiles can fit the cores and still push the
 # box into swap thrash, so a lane is only grown while HEAVY_MEM_FLOOR_MB of
-# memory is still available.
+# memory is still available, and no lane at all — base included — is taken
+# while less than HEAVY_MEM_BASE_FLOOR_MB is. Lanes grow one at a time
+# machine-wide: a build's memory peaks well after it starts, so the next
+# grant waits a full window for the previous one to show its real footprint.
 set -uo pipefail
 
 # Machine-local defaults (a 16 GB laptop may want a single slot where the shipped
@@ -32,7 +35,7 @@ set -uo pipefail
 # not, since it already picked the file.
 CONFIG_VARS='HEAVY_SLOTS HEAVY_TIMEOUT HEAVY_STATE_DIR HEAVY_LOG
 HEAVY_MAX_SLOTS HEAVY_GROW_WINDOW HEAVY_CPU_CEIL HEAVY_MEM_FLOOR_MB
-HEAVY_GOGC HEAVY_GOMEMLIMIT'
+HEAVY_MEM_BASE_FLOOR_MB HEAVY_GOGC HEAVY_GOMEMLIMIT'
 CONFIG="${HEAVY_CONFIG:-$HOME/.config/heavy/config.sh}"
 if [ -f "$CONFIG" ]; then
   # Read in a subshell: a config that aborts (unset var under set -u, a stray
@@ -66,12 +69,14 @@ LOCK_FILE="$STATE_DIR/heavy-build.lock"
 HOLDER_FILE="$STATE_DIR/heavy-build.current"
 WAIT_FILE="$STATE_DIR/heavy-build.waiting"
 CPU_FILE="$STATE_DIR/heavy-build.cpu"
+GROW_FILE="$STATE_DIR/heavy-build.grow"   # epoch of the last lane grant, machine-wide
 WAIT_TIMEOUT="${HEAVY_TIMEOUT:-1200}"
 SLOTS="${HEAVY_SLOTS:-2}"
 MAX_SLOTS="${HEAVY_MAX_SLOTS:-4}"    # hard ceiling for the side lanes
 GROW_WINDOW="${HEAVY_GROW_WINDOW:-30}"  # seconds of idle CPU that buy one lane
 CPU_CEIL="${HEAVY_CPU_CEIL:-90}"     # busy percent that counts as bottlenecked
 MEM_FLOOR="${HEAVY_MEM_FLOOR_MB:-0}" # MB that must stay available to grow; 0 = off
+MEM_BASE_FLOOR="${HEAVY_MEM_BASE_FLOOR_MB:-0}" # MB that must be available to take any lane; 0 = off
 
 # A non-numeric or sub-minimum value would leave the round-robin loop with
 # nothing to try, so the command would never run.
@@ -87,6 +92,7 @@ MAX_SLOTS=$(num_or "$MAX_SLOTS" 4 1)
 GROW_WINDOW=$(num_or "$GROW_WINDOW" 30 1)
 CPU_CEIL=$(num_or "$CPU_CEIL" 90 1)
 MEM_FLOOR=$(num_or "$MEM_FLOOR" 0 0)
+MEM_BASE_FLOOR=$(num_or "$MEM_BASE_FLOOR" 0 0)
 # A ceiling under the base would shrink the pool instead of extending it.
 [ "$MAX_SLOTS" -lt "$SLOTS" ] && MAX_SLOTS=$SLOTS
 # How wide this run currently believes the pool is; grows, never shrinks.
@@ -137,6 +143,7 @@ ortam:
   HEAVY_GROW_WINDOW ek slot icin gereken bos-CPU suresi, saniye (varsayilan 30)
   HEAVY_CPU_CEIL    bu yuzdenin ustundeki CPU darbogaz sayilir (varsayilan 90)
   HEAVY_MEM_FLOOR_MB ek slot icin bos kalmasi gereken bellek, MB (varsayilan 0 = kapali)
+  HEAVY_MEM_BASE_FLOOR_MB herhangi bir slot (taban dahil) icin gereken bos bellek, MB (varsayilan 0 = kapali)
   HEAVY_GOGC        slottaki komuta GOGC olarak verilir (Go derleyici bellegi; bos = dokunma)
   HEAVY_GOMEMLIMIT  slottaki komuta GOMEMLIMIT olarak verilir (ornek 3GiB; bos = dokunma)
   HEAVY_TIMEOUT     bekleme tavani, saniye (varsayilan 1200)
@@ -251,27 +258,41 @@ cpu_sampling_ok() {
 }
 
 # MB of memory still available to new work, empty when it cannot be read. Inside
-# a cgroup with a limit the limit is what counts, not the host's free memory.
+# a cgroup with a limit the limit is what counts, not the host's free memory —
+# and the lower of memory.high and memory.max: past memory.high the kernel
+# throttles and reclaims, which is where the thrash starts, not at the hard max.
 # memory.current includes page cache; its inactive part is reclaimable, so it is
 # counted as available (the same accounting podman stats uses).
 mem_available_mb() {
   if [ -r /sys/fs/cgroup/memory.max ] && [ -r /sys/fs/cgroup/memory.current ]; then
-    max=$(cat /sys/fs/cgroup/memory.max)
-    if [ "$max" != max ]; then
+    limit=
+    for f in /sys/fs/cgroup/memory.high /sys/fs/cgroup/memory.max; do
+      v=$(cat "$f" 2>/dev/null)
+      case "$v" in ''|max|*[!0-9]*) continue ;; esac
+      if [ -z "$limit" ] || [ "$v" -lt "$limit" ]; then limit=$v; fi
+    done
+    if [ -n "$limit" ]; then
       cache=$(awk '/^inactive_file / { print $2 }' /sys/fs/cgroup/memory.stat 2>/dev/null)
-      echo $(( (max - $(cat /sys/fs/cgroup/memory.current) + ${cache:-0}) / 1048576 ))
+      echo $(( (limit - $(cat /sys/fs/cgroup/memory.current) + ${cache:-0}) / 1048576 ))
       return
     fi
   fi
   awk '/^MemAvailable:/ { printf "%d", $2 / 1024 }' /proc/meminfo 2>/dev/null
 }
 
-# Growth needs memory headroom as well as idle CPU. Unknown counts as enough:
+# Is at least $1 MB available? A floor of 0 is off. Unknown counts as enough:
 # the floor guards hosts that can measure it, it is not a reason to stall.
-mem_ok_to_grow() {
-  [ "$MEM_FLOOR" -gt 0 ] || return 0
+mem_ok() {
+  [ "$1" -gt 0 ] || return 0
   avail=$(mem_available_mb)
-  [ -z "$avail" ] || [ "$avail" -ge "$MEM_FLOOR" ]
+  [ -z "$avail" ] || [ "$avail" -ge "$1" ]
+}
+
+# Seconds since any run on this machine was last granted a side lane.
+since_last_grow() {
+  last=$(cat "$GROW_FILE" 2>/dev/null)
+  case "$last" in ''|*[!0-9]*) last=0 ;; esac
+  echo $(( $(date +%s) - last ))
 }
 
 # Take one sample and append it to the shared history. Lines are short and
@@ -360,6 +381,9 @@ case "${1:-}" in
       grep -v '^since=' "$f" | grep -v '^mode=' | sed 's/^/  /'
     done
     [ "$queued" -eq 0 ] && printf 'sirada: bos\n'
+    avail=$(mem_available_mb)
+    [ -n "$avail" ] && printf 'bos bellek: %sMB (taban esigi %sMB, ek slot esigi %sMB)\n' \
+      "$avail" "$MEM_BASE_FLOOR" "$MEM_FLOOR"
     exit 0
     ;;
   --stats)
@@ -449,6 +473,10 @@ case "${1:-}" in
     # others. A value the caller set on the command itself always wins.
     [ -n "${HEAVY_GOGC:-}" ] && [ -z "${GOGC:-}" ] && export GOGC="$HEAVY_GOGC"
     [ -n "${HEAVY_GOMEMLIMIT:-}" ] && [ -z "${GOMEMLIMIT:-}" ] && export GOMEMLIMIT="$HEAVY_GOMEMLIMIT"
+    # One lane is one heavy process: `pnpm -r check` would otherwise run every
+    # workspace package's check side by side inside a single slot. pnpm reads
+    # pnpm_config_* (not npm_config_*); a value the caller set wins.
+    [ -z "${pnpm_config_workspace_concurrency:-}" ] && export pnpm_config_workspace_concurrency=1
     "$@"
     rc=$?
     [ $rc -eq $RC_LOCK_BUSY ] && rc=$RC_CMD_75
@@ -473,12 +501,15 @@ if [ -z "$LOCKER" ]; then
 fi
 
 announced=0
+mem_announced=0
 SECONDS=0
 
-last_grant=
-
 while :; do
-  for i in $(seq 1 "$SLOT_LIMIT"); do
+  # Below the base floor no lane is taken at all, the base one included: a slot
+  # that is free while memory is not would start a build straight into thrash.
+  mem_low=0
+  mem_ok "$MEM_BASE_FLOOR" || mem_low=1
+  [ "$mem_low" = 1 ] || for i in $(seq 1 "$SLOT_LIMIT"); do
     queued=$SECONDS
     HEAVY_WAITER="$WAIT_FILE.$$" try_lock "$LOCK_FILE.$i" "$0" __exec "$i" "$@"
     rc=$?
@@ -513,19 +544,38 @@ while :; do
   # finds the machine idle grows and runs *now* — waiting out a second window
   # would only re-measure an idleness that has already been measured.
   #
-  # Gradualism lives in last_grant, not in the wait: the first lane is free the
-  # instant the window reads clean, each further lane costs GROW_WINDOW of wall
-  # clock after the previous grant. At MAX_SLOTS the queue is hard.
-  if [ "$SLOT_LIMIT" -lt "$MAX_SLOTS" ] &&
-     { [ -z "$last_grant" ] ||
-       [ "$(($(date +%s) - last_grant))" -ge "$GROW_WINDOW" ]; }; then
-    if [ "$(cpu_window_verdict "$GROW_WINDOW")" = clean ] && mem_ok_to_grow; then
-      SLOT_LIMIT=$((SLOT_LIMIT + 1))
-      last_grant=$(date +%s)
-      printf '[heavy] CPU son %ss boyunca %%%s altinda, ek slot: %s/%s\n' \
-        "$GROW_WINDOW" "$CPU_CEIL" "$SLOT_LIMIT" "$MAX_SLOTS" >&2
-      continue                        # retry the wider pool at once, no sleep
-    fi
+  # Gradualism lives in the shared grant file, not in the wait: a lane is free the
+  # instant the window reads clean, but any further lane — for this run or any
+  # other — costs GROW_WINDOW of wall clock after the previous grant, so the
+  # memory reading behind the next one already includes the last build's peak.
+  # The file is claimed under a lock so two waiters cannot both grow at once.
+  # At MAX_SLOTS the queue is hard.
+  # A grant opens the first free side lane, not merely this run's next index: a
+  # lane another run grew into is already taken, and spending a window on it
+  # would stall this run for nothing.
+  next_free=
+  if [ "$mem_low" = 0 ] && [ "$SLOT_LIMIT" -lt "$MAX_SLOTS" ]; then
+    for i in $(seq $((SLOT_LIMIT + 1)) "$MAX_SLOTS"); do
+      if slot_is_free "$i"; then next_free=$i; break; fi
+    done
+  fi
+  if [ -n "$next_free" ] &&
+     [ "$(since_last_grow)" -ge "$GROW_WINDOW" ] &&
+     [ "$(cpu_window_verdict "$GROW_WINDOW")" = clean ] && mem_ok "$MEM_FLOOR" &&
+     try_lock "$GROW_FILE.lock" "$BASH" -c '
+       last=$(cat "$1" 2>/dev/null); case "$last" in ""|*[!0-9]*) last=0 ;; esac
+       now=$(date +%s); [ $((now - last)) -ge "$2" ] || exit 1
+       echo "$now" > "$1"' _ "$GROW_FILE" "$GROW_WINDOW" 2>/dev/null; then
+    SLOT_LIMIT=$next_free
+    printf '[heavy] CPU son %ss boyunca %%%s altinda, ek slot: %s/%s\n' \
+      "$GROW_WINDOW" "$CPU_CEIL" "$SLOT_LIMIT" "$MAX_SLOTS" >&2
+    continue                          # retry the wider pool at once, no sleep
+  fi
+
+  if [ "$mem_low" = 1 ] && [ "$mem_announced" -eq 0 ]; then
+    printf '[heavy] bos bellek %sMB < %sMB, bellek acilana kadar bekleniyor\n' \
+      "$(mem_available_mb)" "$MEM_BASE_FLOOR" >&2
+    mem_announced=1
   fi
 
   if [ "$announced" -eq 0 ]; then
@@ -540,10 +590,12 @@ while :; do
     trap 'rm -f "$WAIT_FILE.$$"' EXIT
     trap 'exit 130' INT
     trap 'exit 143' TERM
-    printf '[heavy] %s slotun hepsi dolu:\n' "$SLOT_LIMIT" >&2
-    for i in $(seq 1 "$SLOT_LIMIT"); do
-      printf '[heavy]   slot %s: %s\n' "$i" "$(holder_line "$i")" >&2
-    done
+    if [ "$mem_low" = 0 ]; then
+      printf '[heavy] %s slotun hepsi dolu:\n' "$SLOT_LIMIT" >&2
+      for i in $(seq 1 "$SLOT_LIMIT"); do
+        printf '[heavy]   slot %s: %s\n' "$i" "$(holder_line "$i")" >&2
+      done
+    fi
     printf '[heavy] sirada bekleniyor (tavan %ss)...\n' "$WAIT_TIMEOUT" >&2
     announced=1
   fi
