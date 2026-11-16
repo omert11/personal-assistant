@@ -272,7 +272,8 @@ mem_available_mb() {
       if [ -z "$limit" ] || [ "$v" -lt "$limit" ]; then limit=$v; fi
     done
     if [ -n "$limit" ]; then
-      cache=$(awk '/^inactive_file / { print $2 }' /sys/fs/cgroup/memory.stat 2>/dev/null)
+      # Charged but reclaimable on demand: idle page cache and reclaimable slab.
+      cache=$(awk '/^(inactive_file|slab_reclaimable) / { s += $2 } END { print s + 0 }' /sys/fs/cgroup/memory.stat 2>/dev/null)
       echo $(( (limit - $(cat /sys/fs/cgroup/memory.current) + ${cache:-0}) / 1048576 ))
       return
     fi
