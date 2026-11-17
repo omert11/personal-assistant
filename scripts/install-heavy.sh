@@ -44,4 +44,12 @@ for tool in go pnpm npm npx yarn; do
   fi
 done
 
+# Linux hosts (the remote container): keep the dev-server reaper running. It is
+# single-instance and replaces an older copy left from before a plugin update.
+REAPER="${CLAUDE_PLUGIN_ROOT}/scripts/dev-reaper.sh"
+if [ "$(uname)" = Linux ] && [ -f "$REAPER" ]; then
+  chmod +x "$REAPER" 2>/dev/null || true
+  (setsid "$REAPER" </dev/null >/dev/null 2>&1 &) || true
+fi
+
 exit 0

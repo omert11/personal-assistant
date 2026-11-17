@@ -28,6 +28,8 @@
 # while less than HEAVY_MEM_BASE_FLOOR_MB is. Lanes grow one at a time
 # machine-wide: a build's memory peaks well after it starts, so the next
 # grant waits a full window for the previous one to show its real footprint.
+# The base floor yields once every lane has sat idle for HEAVY_MEM_STARVE: memory
+# held by idle sessions and caches must not shut the queue for good.
 set -uo pipefail
 
 # Machine-local defaults (a 16 GB laptop may want a single slot where the shipped
@@ -35,7 +37,7 @@ set -uo pipefail
 # not, since it already picked the file.
 CONFIG_VARS='HEAVY_SLOTS HEAVY_TIMEOUT HEAVY_STATE_DIR HEAVY_LOG
 HEAVY_MAX_SLOTS HEAVY_GROW_WINDOW HEAVY_CPU_CEIL HEAVY_MEM_FLOOR_MB
-HEAVY_MEM_BASE_FLOOR_MB HEAVY_GOGC HEAVY_GOMEMLIMIT'
+HEAVY_MEM_BASE_FLOOR_MB HEAVY_MEM_STARVE HEAVY_GOGC HEAVY_GOMEMLIMIT'
 CONFIG="${HEAVY_CONFIG:-$HOME/.config/heavy/config.sh}"
 if [ -f "$CONFIG" ]; then
   # Read in a subshell: a config that aborts (unset var under set -u, a stray
@@ -77,6 +79,7 @@ GROW_WINDOW="${HEAVY_GROW_WINDOW:-30}"  # seconds of idle CPU that buy one lane
 CPU_CEIL="${HEAVY_CPU_CEIL:-90}"     # busy percent that counts as bottlenecked
 MEM_FLOOR="${HEAVY_MEM_FLOOR_MB:-0}" # MB that must stay available to grow; 0 = off
 MEM_BASE_FLOOR="${HEAVY_MEM_BASE_FLOOR_MB:-0}" # MB that must be available to take any lane; 0 = off
+MEM_STARVE="${HEAVY_MEM_STARVE:-300}" # seconds after which an all-idle pool ignores the base floor; 0 = never
 
 # A non-numeric or sub-minimum value would leave the round-robin loop with
 # nothing to try, so the command would never run.
@@ -93,6 +96,7 @@ GROW_WINDOW=$(num_or "$GROW_WINDOW" 30 1)
 CPU_CEIL=$(num_or "$CPU_CEIL" 90 1)
 MEM_FLOOR=$(num_or "$MEM_FLOOR" 0 0)
 MEM_BASE_FLOOR=$(num_or "$MEM_BASE_FLOOR" 0 0)
+MEM_STARVE=$(num_or "$MEM_STARVE" 300 0)
 # A ceiling under the base would shrink the pool instead of extending it.
 [ "$MAX_SLOTS" -lt "$SLOTS" ] && MAX_SLOTS=$SLOTS
 # How wide this run currently believes the pool is; grows, never shrinks.
@@ -144,6 +148,7 @@ ortam:
   HEAVY_CPU_CEIL    bu yuzdenin ustundeki CPU darbogaz sayilir (varsayilan 90)
   HEAVY_MEM_FLOOR_MB ek slot icin bos kalmasi gereken bellek, MB (varsayilan 0 = kapali)
   HEAVY_MEM_BASE_FLOOR_MB herhangi bir slot (taban dahil) icin gereken bos bellek, MB (varsayilan 0 = kapali)
+  HEAVY_MEM_STARVE  hicbir slot dolu degilken bu kadar saniye bekleyen is bellek esigine bakmadan taban slotu alir (varsayilan 300, 0 = kapali)
   HEAVY_GOGC        slottaki komuta GOGC olarak verilir (Go derleyici bellegi; bos = dokunma)
   HEAVY_GOMEMLIMIT  slottaki komuta GOMEMLIMIT olarak verilir (ornek 3GiB; bos = dokunma)
   HEAVY_TIMEOUT     bekleme tavani, saniye (varsayilan 1200)
@@ -219,6 +224,13 @@ slot_is_free() {
   try_lock "$LOCK_FILE.$1" true 2>/dev/null
 }
 
+# No lane at all is held, base or side.
+pool_idle() {
+  for i in $(seq 1 "$MAX_SLOTS"); do
+    slot_is_free "$i" || return 1
+  done
+}
+
 # Busy CPU percent averaged over $1 seconds, empty when it cannot be read.
 # The measuring interval doubles as the poll sleep, so sampling costs no extra
 # wall-clock while queued. macOS: iostat, where idle is always the fourth field
@@ -261,8 +273,8 @@ cpu_sampling_ok() {
 # a cgroup with a limit the limit is what counts, not the host's free memory —
 # and the lower of memory.high and memory.max: past memory.high the kernel
 # throttles and reclaims, which is where the thrash starts, not at the hard max.
-# memory.current includes page cache; its inactive part is reclaimable, so it is
-# counted as available (the same accounting podman stats uses).
+# memory.current includes page cache and slab; their reclaimable part is
+# counted as available, close to how the kernel's MemAvailable estimates it.
 mem_available_mb() {
   if [ -r /sys/fs/cgroup/memory.max ] && [ -r /sys/fs/cgroup/memory.current ]; then
     limit=
@@ -272,8 +284,11 @@ mem_available_mb() {
       if [ -z "$limit" ] || [ "$v" -lt "$limit" ]; then limit=$v; fi
     done
     if [ -n "$limit" ]; then
-      # Charged but reclaimable on demand: idle page cache and reclaimable slab.
-      cache=$(awk '/^(inactive_file|slab_reclaimable) / { s += $2 } END { print s + 0 }' /sys/fs/cgroup/memory.stat 2>/dev/null)
+      # Charged but reclaimable on demand: idle page cache, half of the active
+      # page cache (the kernel demotes it under pressure, but part of it is a
+      # working set that would refault) and reclaimable slab.
+      cache=$(awk '/^(inactive_file|slab_reclaimable) / { s += $2 }
+        /^active_file / { s += $2 / 2 } END { printf "%d", s }' /sys/fs/cgroup/memory.stat 2>/dev/null)
       echo $(( (limit - $(cat /sys/fs/cgroup/memory.current) + ${cache:-0}) / 1048576 ))
       return
     fi
@@ -503,6 +518,7 @@ fi
 
 announced=0
 mem_announced=0
+starve_announced=0
 SECONDS=0
 
 while :; do
@@ -510,6 +526,17 @@ while :; do
   # that is free while memory is not would start a build straight into thrash.
   mem_low=0
   mem_ok "$MEM_BASE_FLOOR" || mem_low=1
+  # The floor guards against stacking builds, not against memory held by
+  # everything else. With every lane idle and the wait past MEM_STARVE, the
+  # base lane is granted anyway: otherwise idle sessions and caches alone keep
+  # the queue shut until every waiter times out.
+  if [ "$mem_low" = 1 ] && [ "$MEM_STARVE" -gt 0 ] && [ "$SECONDS" -ge "$MEM_STARVE" ] && pool_idle; then
+    mem_low=0
+    [ "$starve_announced" -eq 0 ] &&
+      printf '[heavy] bellek esigin altinda ama %ss boyunca hicbir slot dolu degil, taban slot veriliyor\n' \
+        "$MEM_STARVE" >&2
+    starve_announced=1
+  fi
   [ "$mem_low" = 1 ] || for i in $(seq 1 "$SLOT_LIMIT"); do
     queued=$SECONDS
     HEAVY_WAITER="$WAIT_FILE.$$" try_lock "$LOCK_FILE.$i" "$0" __exec "$i" "$@"
@@ -535,7 +562,10 @@ while :; do
       rm -f "$WAIT_FILE.$$"
       run_and_log queue-fallback "$SECONDS" "$@"
     fi
-    printf '[heavy] %ss icinde slot acilmadi, komut CALISTIRILMADI\n' "$WAIT_TIMEOUT" >&2
+    # The whole command was wrapped, so none of it ran — file edits chained
+    # before the build included. Say so plainly: a caller that only sees a
+    # failed build would assume its earlier steps went through.
+    printf '[heavy] %ss icinde slot acilmadi, komut CALISTIRILMADI: hicbir adimi (dosya duzenlemeleri dahil) uygulanmadi; ayni komutu tekrar calistir\n' "$WAIT_TIMEOUT" >&2
     log_run timeout "$SECONDS" 0 75 "$@"
     exit 75
   fi
