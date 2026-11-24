@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 16 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 17 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -196,7 +196,7 @@
     <div class="hero-stats">
       <div class="stat"><div class="num">1</div><div class="lbl">Kural</div></div>
       <div class="stat"><div class="num">4</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">16</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">17</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">1</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -319,7 +319,7 @@
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 16 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 17 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
       <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır; ağır iş agent'lara delege edilir.</p>
     </div>
@@ -359,6 +359,16 @@
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"obsidian'da ara", "X hakkında ne not almışım", "Y sorununu nasıl çözmüştük", <code>/obsidian-search [sorgu]</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Sorguyu terimlere ayır (<b>TR + EN çifti</b>; tek dilde arama eksik döner) → <code>Glob</code> ile yol tahmini → <code>Grep</code> ile içerik (<code>docs/</code> hariç) → aday dosyaların başlıklarını oku → en alakalı 1-3 dosyayı tam oku → sentez + kaynaklar. BM25 (<code>obsidian search</code>) tamamlayıcı: tek terim + <code>path=</code> şart.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Salt-okur</strong>; yazma gerekince <code>obsidian-write</code>'a geçilir. <code>docs/</code> (300+ dosya) genel aramadan hariç tutulur, ayrıca aranır. Genel alan (<code>flight/</code>, <code>django/</code>) ile proje klasörü <b>birbirini tamamlar</b>, ikisine de bakılır. <strong>Sıfır sonuç</strong> konunun henüz yazılmadığını gösterir; bu durum raporlanır, konu iş bitince yazılır.</p></div>
+      </div>
+    </div>
+
+    <!-- api-integration -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="plug"></i></div><div><div class="etitle">api-integration</div></div></div>
+      <div class="ebody">
+        <p><strong>Harici bir API'yi platformun yetenekleriyle eşleyip akışını doğrular, vault'a dokümante eder ve <code>orchestrate</code> ile entegre eder.</strong> Kesin API dokümanı yoksa iş başlamaz.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"API entegre et", "yeni API entegrasyonu", "şu servisi bağla", <code>/api-integration &lt;doküman&gt;</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p>Doküman kontrolü → <b>durum analizi</b> (mevcut entegrasyonlar + platform yetenek ağacı ↔ API yetenek ağacı) → <b>akış doğrulama</b> (test credential varsa curl ile senaryolar, yoksa dokümandan) → <code>obsidian-doc-source</code> ile dokümantasyon + doğrulama bulguları → <code>orchestrate</code> ile geliştirme.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Yetenek eşleme</strong>: platformda olup API'nin karşıladığı her yetenek (ek hizmet, koltuk seçimi vb.) kapsama zorunlu girer; yalnız API'de olanlar kullanıcıya sorulur. <strong>Gerçek kaynak API cevabıdır</strong>: dokümanla çelişen davranış not edilir. Credential değerleri dokümana yazılmaz.</p></div>
       </div>
     </div>
 
@@ -483,7 +493,7 @@
         <p><strong>Django projesinde tüm dillerin eksik/fuzzy çevirilerini uçtan uca tamamlar</strong>: makemessages → po-cli analyze → <b>entry yüküne göre çeviri</b> → apply → compilemessages → commit. <code>po-cli</code> skill tek <code>.po</code> dosyası için; bu skill <b>çok dil × çok domain</b> (django/djangojs/djangof7) matrisini orkestre eder.</p>
         <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"tam çeviri akışı", "tüm dilleri çevir", "i18n sync", "translation workflow", <code>/full-translation</code>.</p></div>
         <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış (7 adım)</div><p>Repo + <b>mobil pull (koşulsuz zorunlu: mobil HEAD=origin/main doğrulanmadan Adım 1'e geçilmez; atlanırsa F7 metinleri sahte "0 untranslated" verir)</b> → makemessages (3 domain) → <code>po-cli --json analyze</code> → <b>iş birimi = entry sayısı: toplam ≤200 ise inline (sub-agent yok), >200 ise dil sınırında ~200'lük chunk'lara bölünüp chunk başına 1 paralel sub-agent</b> → dry-run validate + tek onay + apply + perl temizlik → <code>compilemessages</code> + re-analyze (yakınsama) → <code>commit</code> skill. <b>Çeviri yoksa bile derle &amp; gönder</b>: hiç untranslated/fuzzy çıkmasa dahi makemessages <code>.po</code>'yu yeniden formatladıysa (line-wrap/header/kaynak konum) compile + commit atlanmaz; <code>.mo</code> tracked ve runtime okunur, <code>.po</code> ile senkron kalmalı. Sadece <code>.po</code> diff'i tamamen boşsa akış temiz sonlanır.</p></div>
-        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Fuzzy msgstr'ye güvenmez (msgid'den sıfırdan), placeholder/slug/marka kuralları ajan prompt'una gömülü, plural (nplurals) tablosu dile göre. <code>po-cli</code>'yi tekrar etmez, ona dayanır. <strong>Kapalı diller çevrilmez</strong>: <code>HIDDEN_LANGUAGES</code> (örn. <code>djangomain/app_options.py</code>) dinamik tespit edilir, analiz + çeviri + yakınsama matrisinden çıkarılır. Kapalı dile token harcanmaz; "tüm diller temiz" kriteri hidden hariç değerlendirilir.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p>Fuzzy msgstr'ye güvenmez (msgid'den sıfırdan), placeholder/slug/marka kuralları ajan prompt'una gömülü, plural (nplurals) tablosu dile göre. Analiz ve uygulama adımlarını <code>po-cli</code> yürütür. <strong>Kapalı diller çevrilmez</strong>: <code>HIDDEN_LANGUAGES</code> (örn. <code>djangomain/app_options.py</code>) dinamik tespit edilir, analiz + çeviri + yakınsama matrisinden çıkarılır. Kapalı dile token harcanmaz; "tüm diller temiz" kriteri hidden hariç değerlendirilir.</p></div>
       </div>
     </div>
 
@@ -553,7 +563,7 @@
       <div class="ebody">
         <p><strong>Nedir:</strong> WhatsApp Web bridge'i üzerinden mesaj gönderme/okuma sağlayan bir MCP server (<code>whatsapp-mcp</code>, stdio). QR kod okutulup bridge başlatılarak bağlanır. Claude Code'a <code>setup.py</code> ile kaydedilir.</p>
         <p><strong>Ne işe yarar:</strong> Sohbetleri listeleme, mesaj arama, kişi bulma ve mesaj/dosya/ses gönderme.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin çıktı kanallarından biri. Skill müşteri/acenta mesajını kanal-agnostik üretir; WhatsApp seçilirse <code>mcp__whatsapp__*</code> araçlarıyla gönderilir (skill mesajı üretir, gönderimi entegrasyon yapar).</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin çıktı kanallarından biri. Skill müşteri/acenta mesajını kanal-agnostik üretir; WhatsApp seçilirse <code>mcp__whatsapp__*</code> araçlarıyla gönderilir.</p></div>
       </div>
     </div>
 
