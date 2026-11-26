@@ -419,7 +419,7 @@ def with_progress(title: str, tasks: list[tuple[str, callable]]):
 
 def section_prereq():
     section("Prerequisites (Homebrew)")
-    pkgs = [("uv", "uv"), ("node", "node"), ("gh", "gh"), ("jq", "jq")]
+    pkgs = [("uv", "uv"), ("node", "node"), ("gh", "gh"), ("jq", "jq"), ("googleworkspace-cli", "gws")]
     with_progress("Brew paketleri", [(p, (lambda p=p, c=c: ensure_brew(p, c))) for p, c in pkgs])
     if not have("docker"):
         warn("docker yok — bazı dependency'ler için gerekli olabilir. Kurulum: https://www.docker.com/products/docker-desktop/")

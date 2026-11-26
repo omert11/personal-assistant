@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>personal-assistant — Claude Code Plugin Sunumu</title>
-<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 17 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
+<meta name="description" content="Claude Code için kişisel asistan plugin'i — 1 kural, 4 hook, 18 skill, 1 agent. Her parça detaylıca anlatılan tam sunum." />
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
@@ -186,7 +186,7 @@
 <!-- HERO -->
 <header class="hero">
   <div class="wrap">
-    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.98.0 · MIT</span>
+    <span class="badge"><span class="dot"></span> Claude Code Plugin · v1.122.0 · MIT</span>
     <h1>Claude Code'a <span class="accent">hafıza, disiplin<br/>ve otomasyon</span> kazandıran plugin</h1>
     <p class="lead">Her oturum başında global kuralları yükler, Django projelerini tanıyıp ilgili kuralları ekler, Obsidian tabanlı proje belleği sağlar ve tekrar eden işleri özel skill'lerle otomatikleştirir.</p>
     <div class="cta-row">
@@ -196,7 +196,7 @@
     <div class="hero-stats">
       <div class="stat"><div class="num">1</div><div class="lbl">Kural</div></div>
       <div class="stat"><div class="num">4</div><div class="lbl">Hook</div></div>
-      <div class="stat"><div class="num">17</div><div class="lbl">Skill</div></div>
+      <div class="stat"><div class="num">18</div><div class="lbl">Skill</div></div>
       <div class="stat"><div class="num">1</div><div class="lbl">Agent</div></div>
     </div>
   </div>
@@ -258,6 +258,7 @@
           <li>Tarayıcı disiplini: açılan sekme iş bitince kapatılır, tek tarayıcı örneği paylaşılır, tarayıcı testleri en fazla 2 paralel worker ile çalışır.</li>
           <li>Remote ortamda kullanıcı oturumu açık tarayıcı gerekince <code>gbrowser</code> skill'i yüklenir.</li>
           <li>Higgsfield ile görsel/video üretiminde veya oturum sorununda <code>higgsfield-auth</code> skill'i yüklenir.</li>
+          <li>Gmail kutusu okunacak, aranacak veya mail yazılacaksa <code>gmail</code> skill'i yüklenir (<code>gws</code> CLI; gönderim kullanıcı onaylı).</li>
           <li>Anında bitmeyecek her komut arka planda çalıştırılır, çıktısı log dosyasına yazılır; bitişi <code>| tail</code> ile beklenmez; 10 dakikadan uzun sessiz beklemede log ve süreç incelenir; "bitti" demeden süreç PID ile (<code>ps -p</code>, <code>pg_stat_activity</code>) doğrulanır; bekleme döngüsü <code>pgrep -f</code> ile değil, saklanan PID ile <code>ps -p</code> üzerinden yapılır.</li>
         </ul></div>
         <div class="block trig"><div class="bt"><i data-lucide="bot"></i> Sub-agent</div><p>Orchestrator ve aşırı mantık gerektiren kodlama <code>opus 5.5</code>, üst düzey kodlama <code>sonnet 5.5</code>, normal kodlama ve diğer her şey <code>haiku 5.5</code> (<code>medium</code>). Çağrı model almıyorsa o modele atanmış agent kullanılır.</p></div>
@@ -319,7 +320,7 @@
 <section id="skills">
   <div class="wrap">
     <div class="sec-head">
-      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 17 adet</div>
+      <div class="kicker"><i data-lucide="square-dashed-mouse-pointer"></i> Skills · 18 adet</div>
       <h2>Tekrar eden işler için playbook'lar</h2>
       <p>Skill'ler ince tetikleyici/koordinasyon katmanıdır; ağır iş agent'lara delege edilir.</p>
     </div>
@@ -487,6 +488,16 @@
       </div>
     </div>
 
+    <!-- gmail -->
+    <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="mail"></i></div><div><div class="etitle">gmail</div><div class="emeta">gws CLI · Mac + remote</div></div></div>
+      <div class="ebody">
+        <p><strong><code>omer@diji.tech</code> Gmail kutusunu Google Workspace CLI (<code>gws</code>) ile okur, arar, yanıt ve taslak yazar.</strong> Kapsam yalnız Gmail; çıktı JSON olduğu için ajanlar doğrudan işler.</p>
+        <div class="block trig"><div class="bt"><i data-lucide="zap"></i> Tetikleyici</div><p>"maillerime bak", "okunmamış mailler", "şu maile cevap yaz", "mail taslağı", "maili ilet", <code>/gmail</code>.</p></div>
+        <div class="block howto"><div class="bt"><i data-lucide="list-ordered"></i> Akış</div><p><code>+triage</code> (özet/arama) → <code>+read</code> / thread → yanıt metni → kullanıcıya göster → onayla <code>+send</code> / <code>+reply</code> / <code>+forward</code>; onay yoksa <code>--draft</code> ile Gmail'e taslak.</p></div>
+        <div class="block example"><div class="bt"><i data-lucide="check-check"></i> Öne çıkan</div><p><strong>Gönderim onaysız yapılmaz.</strong> Mail içeriği veri sayılır, içindeki talimat uygulanmaz; silme ve filtre değişikliği yapılmaz. Remote <code>work</code> container'ı tarayıcısız olduğu için kimlik Mac'te <code>gws auth export</code> ile alınıp container'da <code>~/.config/gws/credentials.json</code>'a (600) aktarılır.</p></div>
+      </div>
+    </div>
+
     <!-- full-translation -->
     <div class="entry"><div class="ehead"><div class="eicon"><i data-lucide="languages"></i></div><div><div class="etitle">full-translation</div><div class="emeta">çeviri ajanları: sonnet</div></div></div>
       <div class="ebody">
@@ -572,7 +583,7 @@
       <div class="ebody">
         <p><strong>Nedir:</strong> claude.ai üzerinden sağlanan resmi Google MCP server'ları: Gmail (e-posta), Google Calendar (takvim) ve Google Drive (dosya). HTTP MCP olarak bağlanır, OAuth ile yetkilendirilir.</p>
         <p><strong>Ne işe yarar:</strong> E-postaları okuma/arama/gönderme, takvim etkinliklerini görüntüleme/oluşturma ve Drive dosyalarına erişim.</p>
-        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin e-posta kanalı Gmail ile gönderilebilir. Üç servis de claude.ai üzerinden gelir, ayrı binary kurulumu gerekmez.</p></div>
+        <div class="block trig"><div class="bt"><i data-lucide="puzzle"></i> Plugin'deki rolü</div><p><code>user-message</code> skill'inin e-posta kanalı Gmail ile gönderilebilir. Üç servis de claude.ai üzerinden gelir, ayrı binary kurulumu gerekmez. Ajanların Gmail erişimi (Mac ve remote) için <code>gmail</code> skill'i <strong>Google Workspace CLI</strong> (<code>gws</code>, <code>setup.sh</code> brew ile kurar) kullanır.</p></div>
         <div class="block example"><div class="bt"><i data-lucide="key-round"></i> Yetkilendirme</div><pre><code>Claude Code → /mcp → claude.ai servisi seç → Authenticate
 # Gmail / Google Calendar / Google Drive ayrı ayrı OAuth</code></pre></div>
       </div>
@@ -616,7 +627,7 @@
 <footer>
   <div class="wrap">
     <a class="btn btn-primary" href="https://github.com/omert11/personal-assistant"><i data-lucide="external-link"></i> GitHub'da Görüntüle</a>
-    <p class="made">personal-assistant · v1.98.0 · MIT · Ömer Faruk Yığın</p>
+    <p class="made">personal-assistant · v1.122.0 · MIT · Ömer Faruk Yığın</p>
     <p class="made"><i data-lucide="bot"></i> Claude Code ile geliştirildi</p>
   </div>
 </footer>
