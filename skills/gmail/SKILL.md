@@ -27,19 +27,42 @@ Hesap: `omer@diji.tech`. Kapsam: yalnız Gmail. Kurulum yoksa veya `gws auth sta
 
 ## Yazma
 
-Gönderim kuralı: önce taslağı kullanıcıya göster (Kime/Cc/Konu/Gövde/Ek), açık onay gelmeden `--draft` olmadan komut çalıştırma. Onay yoksa veya kullanıcı yoksa `--draft` ile Gmail'e taslak bırak.
+Her mail önce taslak olarak oluşturulur, kullanıcı onaylayınca taslak gönderilir. `--draft` olmadan yazma komutu çalıştırma.
 
-| İş | Komut |
-|---|---|
-| Yeni mail | `gws gmail +send --to <a> --subject '<konu>' --body '<metin>' [--cc ..] [--bcc ..] [-a dosya] [--html]` |
-| Yanıt | `gws gmail +reply --message-id <ID> --body '<metin>'` |
-| Herkese yanıt | `gws gmail +reply-all --message-id <ID> --body '<metin>' [--remove <a>]` |
-| İlet | `gws gmail +forward --message-id <ID> --to <a> [--body '<not>']` |
-| Taslak | yukarıdakilerin hepsine `--draft` |
-| Kontrol | yukarıdakilerin hepsine `--dry-run` |
+1. İmzayı her seferinde Gmail ayarından oku; değeri koda, dokümana, vault'a yazma:
+   ```bash
+   SIG=$(gws gmail users settings sendAs list --params '{"userId":"me"}' 2>/dev/null \
+     | python3 -c 'import json,sys;print(next(s for s in json.load(sys.stdin)["sendAs"] if s.get("isDefault"))["signature"])')
+   ```
+2. Gövdeyi HTML dosyasına yaz; kapanış satırından sonra imzayı ekle, elle isim satırı ekleme:
+   ```html
+   <p>Saygılarımla,</p>
+   <div class="gmail_signature">$SIG</div>
+   ```
+3. Taslağı `--html`, `--from "Ömer Faruk Yığın <omer@diji.tech>"` ve `--draft` ile oluştur:
 
-- Uzun veya çok satırlı gövdeyi dosyaya yaz, `--body "$(cat <dosya>)"` ile ver.
-- HTML gövde: `--html`, yalnız fragment etiketleri (`<p>`, `<b>`, `<a>`, `<br>`, `<ul>`, `<table>`).
+   | İş | Komut |
+   |---|---|
+   | Yeni mail | `gws gmail +send --to <a> --subject '<konu>' [--cc ..] [--bcc ..] [-a dosya]` |
+   | Yanıt | `gws gmail +reply --message-id <ID> [--cc ..] [-a dosya]` |
+   | Herkese yanıt | `gws gmail +reply-all --message-id <ID> [--remove <a>]` |
+   | İlet | `gws gmail +forward --message-id <ID> --to <a>` |
+
+   Ortak ek: `--from "Ömer Faruk Yığın <omer@diji.tech>" --html --body "$(cat govde.html)" --draft`. Kontrol için `--dry-run`.
+4. Taslağı doğrula: From, Cc, ekler ve gövdede imza bulunmalı.
+   ```bash
+   gws gmail users messages get --params '{"userId":"me","id":"<MSG_ID>","format":"full"}'
+   ```
+5. Kullanıcıya Kime/Cc/Konu/Gövde/Ek göster; açık onay gelince gönder:
+   ```bash
+   gws gmail users drafts send --params '{"userId":"me"}' --json '{"id":"<DRAFT_ID>"}'
+   ```
+   `DRAFT_ID`: `--draft` çıktısındaki üst düzey `id` (`r-…`); mesaj id'si değil.
+
+- Düzeltme için yeni taslak aç; eski taslak Taslaklar'da kalır, kullanıcıya "eski taslağı silebilirsiniz" de.
+- `+reply` çıktısındaki "Fetching N original attachment(s)": alıntılanan mesajın satır içi görselleri; ek listesinde görünmez, işlem gerekmez.
+- `gws auth login` "profile scope" uyarısını yok say; gönderen adı `--from` ile gelir.
+- HTML gövde yalnız fragment etiketleri (`<p>`, `<b>`, `<a>`, `<br>`, `<ul>`, `<table>`) içerir.
 - Müşteri/acenta metni gerekiyorsa içeriği `user-message` skill'i ile üret, bu skill ile gönder/taslak bırak.
 - Silme, kalıcı çöpe atma, filtre/yönlendirme kuralı değiştirme yapma.
 
